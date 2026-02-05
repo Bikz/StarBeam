@@ -1,70 +1,44 @@
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
 import test from "node:test";
-import { fileURLToPath } from "node:url";
+import { URL } from "node:url";
 
-function runEvalInWebApp(env: NodeJS.ProcessEnv) {
-  const webRoot = fileURLToPath(new URL("..", import.meta.url));
+type ProvidersBuilder = (env: NodeJS.ProcessEnv) => unknown[];
 
-  return new Promise<{ code: number | null; stdout: string; stderr: string }>((resolve) => {
-    const child = spawn(
-      process.execPath,
-      [
-        "--import",
-        "tsx",
-        "--input-type=module",
-        "-e",
-        "import mod from './src/lib/auth.ts'; console.log(String(mod.authOptions.providers.length));",
-      ],
-      {
-        cwd: webRoot,
-        env,
-        stdio: ["ignore", "pipe", "pipe"],
-      },
-    );
+async function importBuildProvidersFromEnv(): Promise<ProvidersBuilder> {
+  const url = new URL("../src/lib/authProviders.ts", import.meta.url);
+  // Bust Node's module cache so edits in a dev session are always reflected.
+  url.searchParams.set("t", String(Date.now()));
 
-    let stdout = "";
-    let stderr = "";
-    child.stdout.setEncoding("utf8");
-    child.stderr.setEncoding("utf8");
-    child.stdout.on("data", (chunk) => {
-      stdout += chunk;
-    });
-    child.stderr.on("data", (chunk) => {
-      stderr += chunk;
-    });
-
-    child.on("close", (code) => resolve({ code, stdout, stderr }));
-    child.on("error", (err) =>
-      resolve({
-        code: 1,
-        stdout,
-        stderr: `${stderr}${stderr ? "\n" : ""}${String(err)}`,
-      }),
-    );
-  });
-}
-
-test("authOptions has no providers when Google auth env is not set", async () => {
-  const env = { ...process.env };
-  // Some tooling (and/or local shells) may load a `.env`. Ensure we explicitly
-  // set empty values so dotenv won't override them.
-  env.GOOGLE_CLIENT_ID = "";
-  env.GOOGLE_CLIENT_SECRET = "";
-
-  const result = await runEvalInWebApp(env);
-  assert.equal(result.code, 0, result.stderr || result.stdout);
-  assert.equal(result.stdout.trim(), "0");
-});
-
-test("authOptions includes Google provider when env is set", async () => {
-  const env = {
-    ...process.env,
-    GOOGLE_CLIENT_ID: "test-client-id",
-    GOOGLE_CLIENT_SECRET: "test-client-secret",
+  const mod = (await import(url.href)) as {
+    default?: unknown;
+    buildProvidersFromEnv?: unknown;
   };
 
-  const result = await runEvalInWebApp(env);
-  assert.equal(result.code, 0, result.stderr || result.stdout);
-  assert.equal(result.stdout.trim(), "1");
+  const direct = mod.buildProvidersFromEnv;
+  if (typeof direct === "function") return direct as ProvidersBuilder;
+
+  const def = mod.default;
+  if (def && typeof def === "object") {
+    const maybe = (def as { buildProvidersFromEnv?: unknown }).buildProvidersFromEnv;
+    if (typeof maybe === "function") return maybe as ProvidersBuilder;
+  }
+
+  throw new Error("buildProvidersFromEnv export not found");
+}
+
+test("buildProvidersFromEnv returns no providers when env is missing", async () => {
+  const buildProvidersFromEnv = await importBuildProvidersFromEnv();
+  const providers = buildProvidersFromEnv({ GOOGLE_CLIENT_ID: "", GOOGLE_CLIENT_SECRET: "" });
+  assert.equal(Array.isArray(providers), true);
+  assert.equal(providers.length, 0);
+});
+
+test("buildProvidersFromEnv returns Google provider when env is set", async () => {
+  const buildProvidersFromEnv = await importBuildProvidersFromEnv();
+  const providers = buildProvidersFromEnv({
+    GOOGLE_CLIENT_ID: "test-client-id",
+    GOOGLE_CLIENT_SECRET: "test-client-secret",
+  });
+  assert.equal(Array.isArray(providers), true);
+  assert.equal(providers.length, 1);
 });

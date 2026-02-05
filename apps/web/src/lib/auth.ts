@@ -1,27 +1,12 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@starbeam/db";
 import type { NextAuthOptions } from "next-auth";
-import GoogleProvider from "next-auth/providers/google";
 
-const hasGoogleAuth =
-  typeof process.env.GOOGLE_CLIENT_ID === "string" &&
-  process.env.GOOGLE_CLIENT_ID.length > 0 &&
-  typeof process.env.GOOGLE_CLIENT_SECRET === "string" &&
-  process.env.GOOGLE_CLIENT_SECRET.length > 0;
+import { buildProvidersFromEnv } from "./authProviders";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
-  providers: hasGoogleAuth
-    ? [
-        GoogleProvider({
-          clientId: process.env.GOOGLE_CLIENT_ID!,
-          clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-          // v0: read-only Google service connections are configured separately.
-          // Keep OAuth here to "Sign in with Google" for Starbeam itself.
-          authorization: { params: { prompt: "select_account" } },
-        }),
-      ]
-    : [],
+  providers: buildProvidersFromEnv(process.env),
   pages: {
     signIn: "/",
   },
