@@ -2,18 +2,23 @@ import SwiftUI
 
 @main
 struct StarbeamApp: App {
+  @State private var model = AppModel()
+
   var body: some Scene {
     MenuBarExtra {
       ContentView()
-        .frame(width: 420, height: 720)
+        .environment(model)
+        .frame(width: 460, height: 760)
     } label: {
       Image(systemName: "sparkles")
+        .accessibilityLabel("Starbeam")
     }
     .menuBarExtraStyle(.window)
 
     Settings {
       SettingsView()
-        .frame(width: 520)
+        .environment(model)
+        .frame(width: 560, height: 440)
     }
   }
 }
