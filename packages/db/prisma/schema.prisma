@@ -22,6 +22,7 @@ model User {
 
   memberships   Membership[]
   createdWorkspaces Workspace[] @relation("WorkspaceCreatedBy")
+  usedInvites   Invite[] @relation("InviteUsedBy")
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -78,6 +79,7 @@ model Workspace {
   createdBy   User @relation("WorkspaceCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
 
   memberships Membership[]
+  invites     Invite[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -103,3 +105,22 @@ model Membership {
   @@unique([workspaceId, userId])
 }
 
+model Invite {
+  id          String   @id @default(cuid())
+  workspaceId String
+  email       String
+  role        Role
+  tokenHash   String   @unique
+  expiresAt   DateTime
+
+  usedAt       DateTime?
+  usedByUserId String?
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  usedBy    User?     @relation("InviteUsedBy", fields: [usedByUserId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([workspaceId])
+  @@index([email])
+}
