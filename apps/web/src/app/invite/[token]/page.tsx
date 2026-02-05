@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/purity */
+
 import crypto from "node:crypto";
 
 import Link from "next/link";
@@ -17,10 +19,10 @@ function sha256Hex(input: string): string {
 export default async function InvitePage({
   params,
 }: {
-  params: { token: string };
+  params: Promise<{ token: string }>;
 }) {
   const session = await getServerSession(authOptions);
-  const { token } = params;
+  const { token } = await params;
 
   const invite = await prisma.invite.findUnique({
     where: { tokenHash: sha256Hex(token) },
