@@ -108,6 +108,8 @@ export async function syncGoogleConnection(args: {
       const from = headerValue(m, "From").trim();
       const fromDomain = extractFromDomain(from);
       const isUnread = Array.isArray(m.labelIds) ? m.labelIds.includes("UNREAD") : false;
+      const snippet =
+        typeof m.snippet === "string" && m.snippet.trim() ? m.snippet.trim() : null;
 
       const internalDateMs = typeof m.internalDate === "string" ? Number(m.internalDate) : NaN;
       const occurredAt = Number.isFinite(internalDateMs) ? new Date(internalDateMs) : new Date();
@@ -132,8 +134,8 @@ export async function syncGoogleConnection(args: {
         externalId,
         url,
         title: subject,
-        snippet: null,
-        contentText: null,
+        snippet,
+        contentText: snippet,
         occurredAt,
         endsAt: null,
         metadata,
@@ -167,6 +169,10 @@ export async function syncGoogleConnection(args: {
       const end = eventEnd(e);
       const title = (typeof e.summary === "string" && e.summary.trim()) ? e.summary.trim() : "(untitled event)";
       const url = typeof e.htmlLink === "string" ? e.htmlLink : undefined;
+      const snippet =
+        typeof e.description === "string" && e.description.trim()
+          ? e.description.trim().slice(0, 280)
+          : null;
 
       const metadata = {
         status: e.status,
@@ -180,8 +186,8 @@ export async function syncGoogleConnection(args: {
         externalId,
         url,
         title,
-        snippet: null,
-        contentText: null,
+        snippet,
+        contentText: snippet,
         occurredAt: start,
         endsAt: end,
         metadata,
@@ -276,7 +282,7 @@ export async function generateFocusTasks(args: {
       userId: args.userId,
       sourceItemId: e.id,
       title: `Follow up: ${e.title}`,
-      body: "",
+      body: e.snippet ?? "",
       status: "OPEN" as const,
       dueAt: null,
       snoozedUntil: null,
