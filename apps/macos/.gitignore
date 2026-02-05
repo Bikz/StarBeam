@@ -1,0 +1,11 @@
+# Xcode
+.DS_Store
+*.xcuserstate
+xcuserdata/
+DerivedData/
+
+# SwiftPM
+.build/
+
+# Crash logs
+*.crash
