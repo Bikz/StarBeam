@@ -15,6 +15,8 @@ final class AppModel {
   var showingSignInSheet: Bool = false
 
   private let cacheStore = OverviewCacheStore()
+  private let notifications = NotificationScheduler()
+  private var autoRefreshTask: Task<Void, Never>?
 
   init(settings: SettingsStore? = nil, auth: AuthStore? = nil) {
     // Default arguments are evaluated outside the MainActor context; construct defaults inside.
@@ -30,11 +32,22 @@ final class AppModel {
       if self.settings.workspaceID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
         self.settings.workspaceID = cached.meta.workspaceID
       }
+
+      // If the cache is from today and includes pulse items, schedule the daily notification.
+      if Calendar.current.isDateInToday(cached.meta.cachedAt), !cached.overview.pulse.isEmpty {
+        Task {
+          await notifications.scheduleIfNeeded(
+            isPulseReady: true,
+            signedIn: true,
+            enabled: self.settings.notificationsEnabled,
+            time: self.settings.notificationTimeComponents()
+          )
+        }
+      }
     }
 
-    if canSync {
-      Task { await refresh() }
-    }
+    configureAutoRefreshLoop()
+    if canSync { Task { await refresh() } }
   }
 
   var workspaceName: String {
@@ -53,6 +66,76 @@ final class AppModel {
 
   var canSync: Bool {
     auth.isSignedIn && !settings.workspaceID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+  }
+
+  func configureAutoRefreshLoop() {
+    autoRefreshTask?.cancel()
+    autoRefreshTask = nil
+
+    guard canSync else { return }
+
+    // Refresh once per hour while the app is running.
+    autoRefreshTask = Task { [weak self] in
+      while !Task.isCancelled {
+        do {
+          try await Task.sleep(nanoseconds: 60 * 60 * 1_000_000_000)
+        } catch {
+          break
+        }
+        guard let self else { break }
+        await self.refresh()
+      }
+    }
+  }
+
+  func handleSettingsChanged(refreshIfPossible: Bool) {
+    configureAutoRefreshLoop()
+    if refreshIfPossible, canSync {
+      Task { await refresh() }
+    }
+  }
+
+  func handleNotificationSettingsChanged() {
+    Task {
+      if !settings.notificationsEnabled {
+        await notifications.cancelScheduledPulseNotification()
+        await notifications.clearLastNotifiedDay()
+        return
+      }
+      let ready = (overview?.pulse.isEmpty == false)
+      await notifications.scheduleIfNeeded(
+        isPulseReady: ready,
+        signedIn: auth.isSignedIn,
+        enabled: settings.notificationsEnabled,
+        time: settings.notificationTimeComponents()
+      )
+    }
+  }
+
+  func clearCache() {
+    try? cacheStore.clear()
+    cachedAt = nil
+  }
+
+  enum DashboardLinkKind {
+    case dashboardHome
+    case pulse
+  }
+
+  func dashboardURL(kind: DashboardLinkKind) -> URL? {
+    let raw = settings.dashboardBaseURL.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard let base = URL(string: raw) else { return nil }
+
+    // If we have a workspace slug, prefer deep-linking into the web dashboard.
+    let slug = overview?.workspace.slug?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    guard !slug.isEmpty else { return base }
+
+    switch kind {
+    case .dashboardHome:
+      return base.appendingPathComponent("w").appendingPathComponent(slug)
+    case .pulse:
+      return base.appendingPathComponent("w").appendingPathComponent(slug).appendingPathComponent("pulse")
+    }
   }
 
   func refresh() async {
@@ -95,6 +178,13 @@ final class AppModel {
       } catch {
         // Cache failure should not block rendering fresh data.
       }
+
+      await notifications.scheduleIfNeeded(
+        isPulseReady: !result.overview.pulse.isEmpty,
+        signedIn: true,
+        enabled: settings.notificationsEnabled,
+        time: settings.notificationTimeComponents()
+      )
     } catch {
       lastError = AppError(
         title: "Sync failed",
@@ -105,6 +195,9 @@ final class AppModel {
   }
 
   func signOut() {
+    autoRefreshTask?.cancel()
+    autoRefreshTask = nil
+    Task { await notifications.cancelScheduledPulseNotification() }
     auth.signOut()
     try? cacheStore.clear()
     overview = nil

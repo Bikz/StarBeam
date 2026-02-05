@@ -35,6 +35,16 @@ struct SettingsView: View {
           Text("Used for device sign-in and API requests. Default: http://localhost:3000")
             .font(.footnote)
             .foregroundStyle(.secondary)
+
+          HStack(spacing: 10) {
+            Button("Clear local cache") {
+              model.clearCache()
+            }
+
+            Text("Clears last successful overview JSON stored in Application Support.")
+              .font(.footnote)
+              .foregroundStyle(.secondary)
+          }
         }
       }
 
@@ -54,8 +64,24 @@ struct SettingsView: View {
 
       Section("Workspace") {
         VStack(alignment: .leading, spacing: 6) {
-          TextField("Workspace ID", text: $settings.workspaceID)
-            .textFieldStyle(.roundedBorder)
+          if let session = model.auth.session, !session.workspaces.isEmpty {
+            Picker("Workspace", selection: $settings.workspaceID) {
+              ForEach(session.workspaces) { ws in
+                Text(ws.name).tag(ws.id)
+              }
+            }
+            .pickerStyle(.menu)
+
+            if !settings.workspaceID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+              Text("Workspace ID: \(settings.workspaceID)")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .textSelection(.enabled)
+            }
+          } else {
+            TextField("Workspace ID", text: $settings.workspaceID)
+              .textFieldStyle(.roundedBorder)
+          }
 
           Text("Required for overview sync (used as workspace_id in /api/v1/macos/overview).")
             .font(.footnote)
@@ -86,6 +112,18 @@ struct SettingsView: View {
     .sheet(isPresented: $model.showingSignInSheet) {
       DeviceSignInView()
         .frame(width: 420, height: 420)
+    }
+    .onChange(of: settings.notificationsEnabled) { _, _ in
+      model.handleNotificationSettingsChanged()
+    }
+    .onChange(of: settings.notificationTimeMinutes) { _, _ in
+      model.handleNotificationSettingsChanged()
+    }
+    .onChange(of: settings.workspaceID) { _, _ in
+      model.handleSettingsChanged(refreshIfPossible: true)
+    }
+    .onChange(of: settings.serverBaseURL) { _, _ in
+      model.handleSettingsChanged(refreshIfPossible: false)
     }
   }
 

@@ -30,7 +30,7 @@ struct PopoverRootView: View {
             HStack {
               Spacer()
               Button {
-                openDashboard()
+                openViewMore()
               } label: {
                 HStack(spacing: 6) {
                   Text("View more…")
@@ -305,7 +305,12 @@ struct PopoverRootView: View {
   }
 
   private func openDashboard() {
-    guard let url = URL(string: model.settings.dashboardBaseURL.trimmingCharacters(in: .whitespacesAndNewlines)) else { return }
+    guard let url = model.dashboardURL(kind: .dashboardHome) else { return }
+    NSWorkspace.shared.open(url)
+  }
+
+  private func openViewMore() {
+    guard let url = model.dashboardURL(kind: .pulse) else { return }
     NSWorkspace.shared.open(url)
   }
 
