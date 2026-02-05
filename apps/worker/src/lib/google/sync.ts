@@ -137,7 +137,6 @@ export async function syncGoogleConnection(args: {
         occurredAt,
         endsAt: null,
         metadata,
-        raw: null,
       };
     })
     .filter((x): x is NonNullable<typeof x> => x !== null);
@@ -186,7 +185,6 @@ export async function syncGoogleConnection(args: {
         occurredAt: start,
         endsAt: end,
         metadata,
-        raw: null,
       };
     })
     .filter((x): x is NonNullable<typeof x> => x !== null);

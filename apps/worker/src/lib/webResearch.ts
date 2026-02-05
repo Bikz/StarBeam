@@ -124,7 +124,6 @@ export async function generateWebInsights({
       client.responses.create({
         model,
         reasoning: { effort: "low" },
-        include: ["web_search_call.action.sources"],
         tools,
         tool_choice: "auto",
         input,
