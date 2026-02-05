@@ -101,3 +101,17 @@ Minimum required env vars:
 
 - Open the deployed web URL, sign in, create an org workspace, and trigger “Run now”.
 - Confirm `starbeam-worker` is running and connected to the same `DATABASE_URL`.
+
+### Optional: Sync Local `.env` -> Render Env Vars
+
+If you used `render login` locally, you can sync your gitignored `.env` values into Render:
+
+```bash
+python scripts/render_sync_env.py
+```
+
+This will:
+
+- ensure `STARB_TOKEN_ENC_KEY_B64` exists (generates one if missing)
+- update env vars on `starbeam-web` and `starbeam-worker`
+- trigger deploys without clearing build cache
