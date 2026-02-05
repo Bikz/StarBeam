@@ -1,10 +1,33 @@
 import { prisma } from "@starbeam/db";
+import type { Prisma } from "@starbeam/db";
 import { z } from "zod";
+
+import { startOfDayUtc } from "../lib/dates";
+import {
+  buildDepartmentWebResearchPrompt,
+  generateWebInsights,
+} from "../lib/webResearch";
 
 const NightlyWorkspaceRunPayloadSchema = z.object({
   workspaceId: z.string().min(1),
   jobRunId: z.string().min(1),
 });
+
+function priorityForGoal(priority: string): number {
+  if (priority === "HIGH") return 880;
+  if (priority === "LOW") return 840;
+  return 860;
+}
+
+function toJsonCitations(
+  citations: Array<{ url: string; title?: string }>,
+): Prisma.InputJsonValue {
+  return {
+    citations: citations
+      .map((c) => (c.title ? { url: c.url, title: c.title } : { url: c.url }))
+      .slice(0, 6),
+  };
+}
 
 export async function nightly_workspace_run(payload: unknown) {
   const parsed = NightlyWorkspaceRunPayloadSchema.safeParse(payload);
@@ -22,11 +45,236 @@ export async function nightly_workspace_run(payload: unknown) {
     data: { status: "RUNNING", startedAt: new Date(), errorSummary: null },
   });
 
+  let partial = false;
+  let errorSummary: string | null = null;
+
   try {
-    // TODO(epic-4/5): Google ingestion + OpenAI web research + pulse generation.
+    const editionDate = startOfDayUtc(new Date());
+
+    const [workspace, profile, memberships, goals, announcements, departments] =
+      await Promise.all([
+        prisma.workspace.findUnique({
+          where: { id: workspaceId },
+          select: { id: true, name: true, slug: true },
+        }),
+        prisma.workspaceProfile.findUnique({
+          where: { workspaceId },
+          select: { websiteUrl: true, description: true, competitorDomains: true },
+        }),
+        prisma.membership.findMany({
+          where: { workspaceId },
+          select: { userId: true },
+        }),
+        prisma.goal.findMany({
+          where: { workspaceId, active: true },
+          select: { id: true, title: true, body: true, priority: true, departmentId: true },
+          orderBy: [{ priority: "asc" }, { createdAt: "desc" }],
+          take: 10,
+        }),
+        prisma.announcement.findMany({
+          where: { workspaceId, pinned: true },
+          select: {
+            id: true,
+            title: true,
+            body: true,
+            dismissals: { select: { userId: true } },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 10,
+        }),
+        prisma.department.findMany({
+          where: { workspaceId, enabled: true },
+          select: {
+            id: true,
+            name: true,
+            promptTemplate: true,
+            memberships: { select: { userId: true } },
+          },
+          orderBy: { createdAt: "asc" },
+        }),
+      ]);
+
+    if (!workspace) {
+      throw new Error("Workspace not found");
+    }
+
+    const memberUserIds = memberships.map((m) => m.userId);
+
+    const deptCardsByDeptId = new Map<
+      string,
+      Array<{
+        kind: "WEB_RESEARCH";
+        title: string;
+        body: string;
+        why: string;
+        action: string;
+        sources: Prisma.InputJsonValue;
+        priority: number;
+      }>
+    >();
+
+    const openaiApiKey = process.env.OPENAI_API_KEY ?? "";
+    const openaiModel = process.env.OPENAI_MODEL_DEFAULT ?? "gpt-5";
+
+    if (!openaiApiKey) {
+      partial = true;
+      errorSummary =
+        (errorSummary ? `${errorSummary}\n` : "") +
+        "OPENAI_API_KEY missing; web research skipped.";
+    } else {
+      for (const dept of departments) {
+        const deptMemberIds = dept.memberships.map((m) => m.userId);
+        if (deptMemberIds.length === 0) continue;
+
+        const deptGoals = goals.filter(
+          (g) => g.departmentId === dept.id || !g.departmentId,
+        );
+
+        const prompt = buildDepartmentWebResearchPrompt({
+          workspaceName: workspace.name,
+          websiteUrl: profile?.websiteUrl,
+          description: profile?.description,
+          competitorDomains: profile?.competitorDomains ?? [],
+          departmentName: dept.name,
+          departmentPromptTemplate: dept.promptTemplate,
+          goals: deptGoals.map((g) => ({
+            title: g.title,
+            body: g.body ?? "",
+            priority: g.priority,
+          })),
+        });
+
+        try {
+          const { cards } = await generateWebInsights({
+            openaiApiKey,
+            model: openaiModel,
+            input: prompt,
+          });
+
+          const stored = cards.map((c, idx) => ({
+            kind: "WEB_RESEARCH" as const,
+            title: c.title,
+            body: c.body,
+            why: c.why,
+            action: c.action,
+            sources: toJsonCitations(c.citations),
+            priority: 700 - idx,
+          }));
+
+          if (stored.length) {
+            deptCardsByDeptId.set(dept.id, stored);
+          }
+        } catch (err) {
+          partial = true;
+          const msg = err instanceof Error ? err.message : String(err);
+          errorSummary =
+            (errorSummary ? `${errorSummary}\n` : "") +
+            `Web research failed for department ${dept.name}: ${msg}`;
+        }
+      }
+    }
+
+    for (const userId of memberUserIds) {
+      const edition = await prisma.pulseEdition.upsert({
+        where: {
+          workspaceId_userId_editionDate: {
+            workspaceId,
+            userId,
+            editionDate,
+          },
+        },
+        update: { status: "GENERATING" },
+        create: {
+          workspaceId,
+          userId,
+          editionDate,
+          timezone: "UTC",
+          status: "GENERATING",
+        },
+        select: { id: true },
+      });
+
+      await prisma.pulseCard.deleteMany({ where: { editionId: edition.id } });
+
+      type CardKind = "ANNOUNCEMENT" | "GOAL" | "WEB_RESEARCH" | "INTERNAL";
+
+      const cards: Array<{
+        editionId: string;
+        kind: CardKind;
+        departmentId?: string | null;
+        title: string;
+        body: string;
+        why: string;
+        action: string;
+        sources?: Prisma.InputJsonValue;
+        priority: number;
+      }> = [];
+
+      for (const a of announcements) {
+        const dismissed = a.dismissals.some((d) => d.userId === userId);
+        if (dismissed) continue;
+
+        cards.push({
+          editionId: edition.id,
+          kind: "ANNOUNCEMENT",
+          title: a.title,
+          body: a.body ?? "",
+          why: "Pinned announcement from management.",
+          action: "Read and align on this.",
+          priority: 1000,
+        });
+      }
+
+      for (const g of goals) {
+        cards.push({
+          editionId: edition.id,
+          kind: "GOAL",
+          departmentId: g.departmentId,
+          title: g.title,
+          body: g.body ?? "",
+          why: "Active goal for this workspace.",
+          action: "Use this to prioritize today.",
+          priority: priorityForGoal(g.priority),
+        });
+      }
+
+      for (const dept of departments) {
+        const isMember = dept.memberships.some((m) => m.userId === userId);
+        if (!isMember) continue;
+
+        const deptCards = deptCardsByDeptId.get(dept.id) ?? [];
+        for (const wc of deptCards) {
+          cards.push({
+            editionId: edition.id,
+            kind: wc.kind,
+            departmentId: dept.id,
+            title: wc.title,
+            body: wc.body,
+            why: wc.why,
+            action: wc.action,
+            sources: wc.sources,
+            priority: wc.priority,
+          });
+        }
+      }
+
+      if (cards.length) {
+        await prisma.pulseCard.createMany({ data: cards });
+      }
+
+      await prisma.pulseEdition.update({
+        where: { id: edition.id },
+        data: { status: "READY" },
+      });
+    }
+
     await prisma.jobRun.update({
       where: { id: jobRun.id },
-      data: { status: "SUCCEEDED", finishedAt: new Date() },
+      data: {
+        status: partial ? "PARTIAL" : "SUCCEEDED",
+        finishedAt: new Date(),
+        errorSummary,
+      },
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Job failed";
@@ -37,4 +285,3 @@ export async function nightly_workspace_run(payload: unknown) {
     throw err;
   }
 }
-

@@ -16,6 +16,7 @@
     "@starbeam/shared": "workspace:*",
     "dotenv": "^17.2.2",
     "graphile-worker": "^0.16.6",
+    "openai": "^5.23.2",
     "pg": "^8.16.3",
     "zod": "^4.1.11"
   },

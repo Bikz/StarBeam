@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+export { Prisma } from "@prisma/client";
 
 declare global {
   // eslint-disable-next-line no-var
@@ -14,4 +15,3 @@ export const prisma: PrismaClient =
 if (process.env.NODE_ENV !== "production") {
   globalThis.__starbeam_prisma__ = prisma;
 }
-
