@@ -31,6 +31,7 @@ model User {
   announcementDismissals AnnouncementDismiss[]
   authoredIdeas          IdeaSubmission[]       @relation("IdeaAuthor")
   pulseEditions          PulseEdition[]
+  googleConnections      GoogleConnection[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -114,6 +115,7 @@ model Workspace {
   ideaSubmissions IdeaSubmission[]
   pulseEditions   PulseEdition[]
   jobRuns         JobRun[]
+  googleConnections GoogleConnection[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -273,6 +275,51 @@ model IdeaSubmission {
 
   @@index([workspaceId])
   @@index([status])
+}
+
+enum GoogleConnectionStatus {
+  CONNECTED
+  REVOKED
+  ERROR
+}
+
+model GoogleConnection {
+  id          String @id @default(cuid())
+  workspaceId String
+  ownerUserId String
+
+  googleAccountEmail String
+  scopes             String[]              @default([])
+  accessTokenEnc     String
+  refreshTokenEnc    String?
+  expiryAt           DateTime?
+  status             GoogleConnectionStatus @default(CONNECTED)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  owner     User      @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+
+  syncState GoogleSyncState?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([workspaceId, ownerUserId, googleAccountEmail])
+  @@index([workspaceId])
+  @@index([ownerUserId])
+}
+
+model GoogleSyncState {
+  id           String @id @default(cuid())
+  connectionId String @unique
+
+  lastGmailSyncAt    DateTime?
+  lastCalendarSyncAt DateTime?
+  lastDriveSyncAt    DateTime?
+  cursor             Json?
+
+  connection GoogleConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  updatedAt DateTime @updatedAt
 }
 
 enum PulseEditionStatus {
