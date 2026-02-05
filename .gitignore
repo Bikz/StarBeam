@@ -19,6 +19,9 @@ out/
 # Turborepo
 .turbo/
 
+# Build outputs
+dist/
+
 # TypeScript
 *.tsbuildinfo
 
@@ -40,4 +43,3 @@ DerivedData/
 *.ipa
 *.dSYM.zip
 *.dSYM
-
