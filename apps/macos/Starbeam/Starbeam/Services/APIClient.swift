@@ -14,6 +14,12 @@ struct APIClient {
     var workspaces: [AuthStore.Workspace]
   }
 
+  struct DeviceRefreshResponse: Codable, Equatable {
+    var accessToken: String
+    var refreshToken: String
+    var expiresIn: Int
+  }
+
   struct APIErrorPayload: Codable, Equatable {
     var error: String
     var errorDescription: String?
@@ -73,6 +79,27 @@ struct APIClient {
 
     if (200...299).contains(http.statusCode) {
       return try decode(DeviceExchangeResponse.self, from: data)
+    }
+
+    if let payload = try? decode(APIErrorPayload.self, from: data) {
+      throw APIError.oauth(code: payload.error, description: payload.errorDescription)
+    }
+
+    throw APIError.http(statusCode: http.statusCode, body: String(decoding: data, as: UTF8.self))
+  }
+
+  func deviceRefresh(refreshToken: String) async throws -> DeviceRefreshResponse {
+    let url = try urlForPath("/api/v1/device/refresh")
+    var request = URLRequest(url: url)
+    request.httpMethod = "POST"
+    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    request.httpBody = try JSONEncoder().encode(["refreshToken": refreshToken])
+
+    let (data, response) = try await urlSession.data(for: request)
+    let http = try requireHTTP(response)
+
+    if (200...299).contains(http.statusCode) {
+      return try decode(DeviceRefreshResponse.self, from: data)
     }
 
     if let payload = try? decode(APIErrorPayload.self, from: data) {

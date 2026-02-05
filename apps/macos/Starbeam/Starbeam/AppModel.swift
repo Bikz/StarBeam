@@ -166,9 +166,31 @@ final class AppModel {
     isRefreshing = true
     defer { isRefreshing = false }
 
+    let client = APIClient(baseURL: baseURL)
+    var activeSession = session
+
+    func applyRefreshedSession(_ refreshed: APIClient.DeviceRefreshResponse) throws {
+      let expiresAt = Date().addingTimeInterval(TimeInterval(refreshed.expiresIn))
+      let updated = AuthStore.Session(
+        accessToken: refreshed.accessToken,
+        refreshToken: refreshed.refreshToken,
+        expiresAt: expiresAt,
+        user: activeSession.user,
+        workspaces: activeSession.workspaces
+      )
+      try auth.saveSession(updated)
+      activeSession = updated
+    }
+
+    func refreshIfNeeded(skewSeconds: TimeInterval = 60) async throws {
+      if activeSession.expiresAt > Date().addingTimeInterval(skewSeconds) { return }
+      let refreshed = try await client.deviceRefresh(refreshToken: activeSession.refreshToken)
+      try applyRefreshedSession(refreshed)
+    }
+
     do {
-      let client = APIClient(baseURL: baseURL)
-      let result = try await client.fetchOverview(workspaceID: workspaceID, accessToken: session.accessToken)
+      try await refreshIfNeeded()
+      let result = try await client.fetchOverview(workspaceID: workspaceID, accessToken: activeSession.accessToken)
       overview = result.overview
       lastError = nil
 
@@ -186,6 +208,33 @@ final class AppModel {
         time: settings.notificationTimeComponents()
       )
     } catch {
+      // If the access token expired early, refresh and retry once.
+      if case APIClient.APIError.http(let statusCode, _) = error, statusCode == 401 {
+        do {
+          try await refreshIfNeeded(skewSeconds: 0)
+          let retry = try await client.fetchOverview(workspaceID: workspaceID, accessToken: activeSession.accessToken)
+          overview = retry.overview
+          lastError = nil
+
+          do {
+            try cacheStore.save(rawJSON: retry.rawJSON, workspaceID: workspaceID)
+            cachedAt = Date()
+          } catch {
+            // Cache failure should not block rendering fresh data.
+          }
+
+          await notifications.scheduleIfNeeded(
+            isPulseReady: !retry.overview.pulse.isEmpty,
+            signedIn: true,
+            enabled: settings.notificationsEnabled,
+            time: settings.notificationTimeComponents()
+          )
+          return
+        } catch {
+          // Fallthrough to error surface below.
+        }
+      }
+
       lastError = AppError(
         title: "Sync failed",
         message: "Couldn’t refresh your overview. Try again.",
