@@ -88,14 +88,11 @@ export async function updateDepartment(
 
   const promptTemplate = (parsed.data.promptTemplate ?? "").trim();
 
-  await prisma.department.update({
-    where: { id: departmentId },
-    data: {
-      promptTemplate,
-      enabled: Boolean(parsed.data.enabled),
-    },
+  const res = await prisma.department.updateMany({
+    where: { id: departmentId, workspaceId: membership.workspace.id },
+    data: { promptTemplate, enabled: Boolean(parsed.data.enabled) },
   });
+  if (res.count === 0) throw new Error("Department not found");
 
   redirect(`/w/${workspaceSlug}/departments`);
 }
-

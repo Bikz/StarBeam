@@ -85,12 +85,22 @@ export async function dismissAnnouncement(workspaceSlug: string, announcementId:
   });
   if (!membership) throw new Error("Not a member");
 
+  const announcement = await prisma.announcement.findFirst({
+    where: { id: announcementId, workspaceId: membership.workspace.id },
+    select: { id: true },
+  });
+  if (!announcement) throw new Error("Announcement not found");
+
   await prisma.announcementDismiss.upsert({
-    where: { announcementId_userId: { announcementId, userId: session.user.id } },
+    where: {
+      announcementId_userId: {
+        announcementId: announcement.id,
+        userId: session.user.id,
+      },
+    },
     update: {},
-    create: { announcementId, userId: session.user.id },
+    create: { announcementId: announcement.id, userId: session.user.id },
   });
 
   redirect(`/w/${workspaceSlug}/announcements`);
 }
-

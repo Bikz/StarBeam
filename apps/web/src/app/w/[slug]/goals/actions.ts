@@ -46,6 +46,15 @@ export async function createGoal(workspaceSlug: string, formData: FormData) {
     throw new Error("Too many active goals (max 5)");
   }
 
+  const departmentId = parsed.data.departmentId?.trim() || null;
+  if (departmentId) {
+    const dept = await prisma.department.findFirst({
+      where: { id: departmentId, workspaceId: membership.workspace.id },
+      select: { id: true },
+    });
+    if (!dept) throw new Error("Department not found");
+  }
+
   const targetDate =
     parsed.data.targetDate && parsed.data.targetDate.trim()
       ? new Date(`${parsed.data.targetDate}T00:00:00.000Z`)
@@ -54,7 +63,7 @@ export async function createGoal(workspaceSlug: string, formData: FormData) {
   await prisma.goal.create({
     data: {
       workspaceId: membership.workspace.id,
-      departmentId: parsed.data.departmentId?.trim() || null,
+      departmentId,
       authorUserId: session.user.id,
       title: parsed.data.title.trim(),
       body: (parsed.data.body ?? "").trim(),
@@ -83,6 +92,15 @@ export async function toggleGoalActive(workspaceSlug: string, goalId: string) {
   });
   if (!goal) throw new Error("Goal not found");
 
+  if (!goal.active) {
+    const activeCount = await prisma.goal.count({
+      where: { workspaceId: membership.workspace.id, active: true },
+    });
+    if (activeCount >= 5) {
+      throw new Error("Too many active goals (max 5)");
+    }
+  }
+
   await prisma.goal.update({
     where: { id: goal.id },
     data: { active: !goal.active },
@@ -108,4 +126,3 @@ export async function deleteGoal(workspaceSlug: string, goalId: string) {
 
   redirect(`/w/${workspaceSlug}/goals`);
 }
-
