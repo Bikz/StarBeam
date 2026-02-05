@@ -32,6 +32,8 @@ model User {
   authoredIdeas          IdeaSubmission[]       @relation("IdeaAuthor")
   pulseEditions          PulseEdition[]
   googleConnections      GoogleConnection[]
+  deviceAuthRequests     DeviceAuthRequest[]
+  apiRefreshTokens       ApiRefreshToken[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -408,4 +410,52 @@ model JobRun {
   @@index([workspaceId])
   @@index([kind])
   @@index([status])
+}
+
+// macOS device auth flow + API tokens (separate from Auth.js sessions).
+enum DeviceAuthStatus {
+  PENDING
+  APPROVED
+  CONSUMED
+}
+
+model DeviceAuthRequest {
+  id String @id @default(cuid())
+
+  // sha256(deviceCode) so we never persist the plaintext code.
+  deviceCodeHash String @unique
+  status         DeviceAuthStatus @default(PENDING)
+
+  approvedUserId String?
+  approvedAt     DateTime?
+  consumedAt     DateTime?
+  expiresAt      DateTime
+
+  approvedUser User? @relation(fields: [approvedUserId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([expiresAt])
+  @@index([approvedUserId])
+}
+
+model ApiRefreshToken {
+  id     String @id @default(cuid())
+  userId String
+
+  // sha256(refreshToken) so we never persist the plaintext token.
+  tokenHash String @unique
+
+  expiresAt DateTime
+  revokedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([revokedAt])
 }
