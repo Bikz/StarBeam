@@ -1,0 +1,43 @@
+# Internal (never publish)
+docs/
+
+# Node / JS
+node_modules/
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Env
+.env
+.env.*.local
+
+# Next.js
+.next/
+out/
+
+# Turborepo
+.turbo/
+
+# TypeScript
+*.tsbuildinfo
+
+# OS / Editor
+.DS_Store
+.idea/
+.vscode/
+
+# macOS / Xcode
+DerivedData/
+*.xcuserstate
+*.xcuserdata/
+*.moved-aside
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+

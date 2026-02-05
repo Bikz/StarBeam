@@ -1,0 +1,26 @@
+{
+  "name": "@starbeam/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts",
+    "lint": "node -e \"console.log('shared: lint handled by consuming apps')\"",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node -e \"console.log('shared: no tests yet')\""
+  },
+  "dependencies": {
+    "zod": "^4.1.11"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.32",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3"
+  }
+}

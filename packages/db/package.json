@@ -1,0 +1,31 @@
+{
+  "name": "@starbeam/db",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "prebuild": "prisma generate",
+    "build": "tsup src/index.ts --format esm --dts",
+    "lint": "node -e \"console.log('db: lint handled by consuming apps')\"",
+    "pretypecheck": "prisma generate",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node -e \"console.log('db: no tests yet')\"",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.16.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.32",
+    "prisma": "^6.16.0",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3"
+  }
+}
