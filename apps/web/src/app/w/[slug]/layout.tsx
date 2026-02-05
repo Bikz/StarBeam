@@ -28,6 +28,7 @@ export default async function WorkspaceLayout({
 
   const nav = [
     { href: base, label: "Overview" },
+    { href: `${base}/profile`, label: "Profile" },
     { href: `${base}/members`, label: "Members" },
     { href: `${base}/departments`, label: "Departments" },
     { href: `${base}/goals`, label: "Goals" },
