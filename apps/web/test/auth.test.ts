@@ -14,7 +14,7 @@ function runEvalInWebApp(env: NodeJS.ProcessEnv) {
         "tsx",
         "--input-type=module",
         "-e",
-        "import { authOptions } from './src/lib/auth.ts'; console.log(String(authOptions.providers.length));",
+        "import mod from './src/lib/auth.ts'; console.log(String(mod.authOptions.providers.length));",
       ],
       {
         cwd: webRoot,
@@ -53,7 +53,7 @@ test("authOptions has no providers when Google auth env is not set", async () =>
   env.GOOGLE_CLIENT_SECRET = "";
 
   const result = await runEvalInWebApp(env);
-  assert.equal(result.code, 0);
+  assert.equal(result.code, 0, result.stderr || result.stdout);
   assert.equal(result.stdout.trim(), "0");
 });
 
@@ -65,6 +65,6 @@ test("authOptions includes Google provider when env is set", async () => {
   };
 
   const result = await runEvalInWebApp(env);
-  assert.equal(result.code, 0);
+  assert.equal(result.code, 0, result.stderr || result.stdout);
   assert.equal(result.stdout.trim(), "1");
 });

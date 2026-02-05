@@ -12,14 +12,38 @@ This repository is being built from scratch. The internal planning docs live und
 - **Web dashboard (Next.js)**: auth, onboarding, workspace/org settings, goals/announcements, Google connections, pulse history/search, job status and “Run now”.
 - **Worker (Node + Postgres queue)**: hourly sync + nightly ingestion + pulse generation jobs.
 
-## Local Development (planned)
+## Local Development
 
-The project will use:
+### Requirements
 
-- `pnpm` + Turborepo monorepo
-- Next.js + Tailwind for web
-- Postgres + Prisma for data
-- Graphile Worker for background jobs
+- Node.js >= 20
+- pnpm (see `package.json#packageManager`)
+- Docker (for Postgres + MinIO)
 
-Once scaffolding lands, this README will include exact commands to run the full stack locally.
+### Setup
 
+```bash
+pnpm install
+cp .env.example .env
+docker compose up -d
+pnpm --filter @starbeam/db prisma:migrate
+```
+
+### Run
+
+```bash
+# Web dashboard (http://localhost:3000)
+pnpm --filter @starbeam/web dev
+
+# Worker (validates env and boots)
+pnpm --filter @starbeam/worker dev
+```
+
+### Validate
+
+```bash
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
+```
