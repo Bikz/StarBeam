@@ -7,120 +7,123 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0A8FFF7A5B5D11B6AB6E6726 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 707D21D9956885556CA1AD3C /* ContentView.swift */; };
-		0EE990C0A6E33C0892AF4C9C /* StarbeamBackgroundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B35E70E2F7CF304DD6A72C5 /* StarbeamBackgroundView.swift */; };
-		166661D4628289843ED70143 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E257C1166C86F1C62BC458CD /* KeychainStore.swift */; };
-		18B9ACBF27D2656C54A946D7 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 553046B087AC804F5F06D56C /* Cocoa.framework */; };
-		5AE3DAF02404C46334ED41E0 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0BF67A335804FDDD4FBF648 /* SettingsView.swift */; };
-		72DB631B1003024CCA769364 /* AuthStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 710C5D64C902307643A2D1B3 /* AuthStore.swift */; };
-		837D1E1A99744BECF318C14C /* StarbeamApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE2660BB3B8D328EC96BBB2B /* StarbeamApp.swift */; };
-		86183B56E7F2CD9A1227BF2B /* PopoverRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA5071ECE29521849CEEE880 /* PopoverRootView.swift */; };
-		8EE98F1C50D4D35AB08EDA76 /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4C0FD0A92B65ED8A02DF3DE /* SettingsStore.swift */; };
-		B6AAB13D9FFA86EEDAD60E05 /* OverviewPreviewMocks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69F9B4201C70992E661D91A3 /* OverviewPreviewMocks.swift */; };
-		C9CB9E987BB80692E6CD5E3B /* Overview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 656774996AA579C1D16D2C46 /* Overview.swift */; };
-		D80A6981BADB31AF939109C8 /* StarbeamTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E943769BBA314BFFAB3966C /* StarbeamTheme.swift */; };
-		E2E12EA3D03B9E4E5D7E35C3 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 022C6296CF72564B67AD4851 /* AppModel.swift */; };
-		F72B62CA214BB63133302131 /* DeviceSignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2CAC2B885F9A8079E84999B /* DeviceSignInView.swift */; };
+		0A532BDFB8388F3CFB8D8D3F /* Overview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F17D9C4060B39881C81D5B2 /* Overview.swift */; };
+		141E3DB72B6ABD57A5E9047E /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 98B690A67B658B1D590A4690 /* Cocoa.framework */; };
+		2EC59BBFB9306B4710835F31 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44E66C77D1C6E26CF1594B6A /* APIClient.swift */; };
+		7C4DBA4AC8412DA36B4DEE8D /* StarbeamTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0FDE3442F5F1AC00D5C331A /* StarbeamTheme.swift */; };
+		7D6EBFCD53D51E4466ECDCFA /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31417E5FAD27369A2557DB87 /* ContentView.swift */; };
+		7E9800F51C6B4316BB48CAD8 /* DeviceSignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0F6B70E05CD133FC1D52123 /* DeviceSignInView.swift */; };
+		8029A8E7FDAE347808334227 /* PopoverRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FFDC470411C325D3F5D699B /* PopoverRootView.swift */; };
+		89BFCBB4356A95D51FF4A9D6 /* StarbeamApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2503988D3D2298722CFFEF81 /* StarbeamApp.swift */; };
+		93F490FD90EA86CB7BE02664 /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E497B1A64B75A7C7EBF1E97B /* SettingsStore.swift */; };
+		97233DD08580CDA7F54B2E49 /* AuthStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6060FBD98080C003CE0D590B /* AuthStore.swift */; };
+		9B43A2E9273C03BC34A329BF /* StarbeamBackgroundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 435DCFE8BF4A8107377B101F /* StarbeamBackgroundView.swift */; };
+		B934DAD75856E7A94A4F2EC3 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5D07ABC00BDD1DC3024F27D /* KeychainStore.swift */; };
+		BD6FC5E0418B67B9DFA00BA2 /* OverviewPreviewMocks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8331B227054529282799E6A3 /* OverviewPreviewMocks.swift */; };
+		F5235C16A5B96BE8D86847C9 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB1A47AFF28A3FE4B3CACAC6 /* AppModel.swift */; };
+		FA331291895611C4F91E0F52 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63F8614E86276E7D98FE5628 /* SettingsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		022C6296CF72564B67AD4851 /* AppModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
-		1E943769BBA314BFFAB3966C /* StarbeamTheme.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = StarbeamTheme.swift; path = UI/StarbeamTheme.swift; sourceTree = "<group>"; };
-		51137C5A5ADF026B5CA6FFE1 /* Starbeam.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = Starbeam.entitlements; sourceTree = "<group>"; };
-		538CA4B212D58C3F3FBD90AB /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		553046B087AC804F5F06D56C /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.0.sdk/System/Library/Frameworks/Cocoa.framework; sourceTree = DEVELOPER_DIR; };
-		5B35E70E2F7CF304DD6A72C5 /* StarbeamBackgroundView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = StarbeamBackgroundView.swift; path = UI/StarbeamBackgroundView.swift; sourceTree = "<group>"; };
-		656774996AA579C1D16D2C46 /* Overview.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = Overview.swift; path = Model/Overview.swift; sourceTree = "<group>"; };
-		69F9B4201C70992E661D91A3 /* OverviewPreviewMocks.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = OverviewPreviewMocks.swift; path = PreviewSupport/OverviewPreviewMocks.swift; sourceTree = "<group>"; };
-		707D21D9956885556CA1AD3C /* ContentView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		710C5D64C902307643A2D1B3 /* AuthStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AuthStore.swift; path = Services/AuthStore.swift; sourceTree = "<group>"; };
-		AD03323065A039CE68A82282 /* Starbeam.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Starbeam.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		BE2660BB3B8D328EC96BBB2B /* StarbeamApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StarbeamApp.swift; sourceTree = "<group>"; };
-		C0BF67A335804FDDD4FBF648 /* SettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
-		D4C0FD0A92B65ED8A02DF3DE /* SettingsStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SettingsStore.swift; path = Services/SettingsStore.swift; sourceTree = "<group>"; };
-		E257C1166C86F1C62BC458CD /* KeychainStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = KeychainStore.swift; path = Services/KeychainStore.swift; sourceTree = "<group>"; };
-		E2CAC2B885F9A8079E84999B /* DeviceSignInView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = DeviceSignInView.swift; path = UI/DeviceSignInView.swift; sourceTree = "<group>"; };
-		EA5071ECE29521849CEEE880 /* PopoverRootView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = PopoverRootView.swift; path = UI/PopoverRootView.swift; sourceTree = "<group>"; };
+		2503988D3D2298722CFFEF81 /* StarbeamApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StarbeamApp.swift; sourceTree = "<group>"; };
+		31417E5FAD27369A2557DB87 /* ContentView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		435DCFE8BF4A8107377B101F /* StarbeamBackgroundView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = StarbeamBackgroundView.swift; path = UI/StarbeamBackgroundView.swift; sourceTree = "<group>"; };
+		44E66C77D1C6E26CF1594B6A /* APIClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = APIClient.swift; path = Services/APIClient.swift; sourceTree = "<group>"; };
+		4FFDC470411C325D3F5D699B /* PopoverRootView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = PopoverRootView.swift; path = UI/PopoverRootView.swift; sourceTree = "<group>"; };
+		6060FBD98080C003CE0D590B /* AuthStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AuthStore.swift; path = Services/AuthStore.swift; sourceTree = "<group>"; };
+		63F8614E86276E7D98FE5628 /* SettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		8331B227054529282799E6A3 /* OverviewPreviewMocks.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = OverviewPreviewMocks.swift; path = PreviewSupport/OverviewPreviewMocks.swift; sourceTree = "<group>"; };
+		8724F219750694E64A009160 /* Starbeam.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = Starbeam.entitlements; sourceTree = "<group>"; };
+		8F17D9C4060B39881C81D5B2 /* Overview.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = Overview.swift; path = Model/Overview.swift; sourceTree = "<group>"; };
+		98B690A67B658B1D590A4690 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.0.sdk/System/Library/Frameworks/Cocoa.framework; sourceTree = DEVELOPER_DIR; };
+		A0F6B70E05CD133FC1D52123 /* DeviceSignInView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = DeviceSignInView.swift; path = UI/DeviceSignInView.swift; sourceTree = "<group>"; };
+		C529087C760CC6F8F83B1AED /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		CB1A47AFF28A3FE4B3CACAC6 /* AppModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		D0FDE3442F5F1AC00D5C331A /* StarbeamTheme.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = StarbeamTheme.swift; path = UI/StarbeamTheme.swift; sourceTree = "<group>"; };
+		D5D07ABC00BDD1DC3024F27D /* KeychainStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = KeychainStore.swift; path = Services/KeychainStore.swift; sourceTree = "<group>"; };
+		DE026FC567E2DDAEA4CAFF12 /* Starbeam.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Starbeam.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E497B1A64B75A7C7EBF1E97B /* SettingsStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SettingsStore.swift; path = Services/SettingsStore.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		F028057AA5E43A8FF3C31119 /* Frameworks */ = {
+		FDD2976A968E154FCE947182 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				18B9ACBF27D2656C54A946D7 /* Cocoa.framework in Frameworks */,
+				141E3DB72B6ABD57A5E9047E /* Cocoa.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		61D3846E58B15DBCC29AEC05 /* OS X */ = {
+		1F5CE0A94E7C4A3E0AD98882 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				553046B087AC804F5F06D56C /* Cocoa.framework */,
-			);
-			name = "OS X";
-			sourceTree = "<group>";
-		};
-		6615914F94FBBBF133AFFD87 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				AD03323065A039CE68A82282 /* Starbeam.app */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
-		6DD2D74119606CF0C3321D77 /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				61D3846E58B15DBCC29AEC05 /* OS X */,
+				EC70CCABE6D1C75B765C57E1 /* OS X */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		6EB6692481C2D5A6E22A596D /* Starbeam */ = {
+		25B4F8A08229E6F409DB6BE7 = {
 			isa = PBXGroup;
 			children = (
-				022C6296CF72564B67AD4851 /* AppModel.swift */,
-				707D21D9956885556CA1AD3C /* ContentView.swift */,
-				656774996AA579C1D16D2C46 /* Overview.swift */,
-				69F9B4201C70992E661D91A3 /* OverviewPreviewMocks.swift */,
-				710C5D64C902307643A2D1B3 /* AuthStore.swift */,
-				E257C1166C86F1C62BC458CD /* KeychainStore.swift */,
-				D4C0FD0A92B65ED8A02DF3DE /* SettingsStore.swift */,
-				C0BF67A335804FDDD4FBF648 /* SettingsView.swift */,
-				BE2660BB3B8D328EC96BBB2B /* StarbeamApp.swift */,
-				E2CAC2B885F9A8079E84999B /* DeviceSignInView.swift */,
-				EA5071ECE29521849CEEE880 /* PopoverRootView.swift */,
-				5B35E70E2F7CF304DD6A72C5 /* StarbeamBackgroundView.swift */,
-				1E943769BBA314BFFAB3966C /* StarbeamTheme.swift */,
-				538CA4B212D58C3F3FBD90AB /* Info.plist */,
-				51137C5A5ADF026B5CA6FFE1 /* Starbeam.entitlements */,
+				3E1A5711665D6133EEE4C8EB /* Products */,
+				1F5CE0A94E7C4A3E0AD98882 /* Frameworks */,
+				394E751E3A46C0DCD853221B /* Starbeam */,
+			);
+			sourceTree = "<group>";
+		};
+		394E751E3A46C0DCD853221B /* Starbeam */ = {
+			isa = PBXGroup;
+			children = (
+				CB1A47AFF28A3FE4B3CACAC6 /* AppModel.swift */,
+				31417E5FAD27369A2557DB87 /* ContentView.swift */,
+				8F17D9C4060B39881C81D5B2 /* Overview.swift */,
+				8331B227054529282799E6A3 /* OverviewPreviewMocks.swift */,
+				44E66C77D1C6E26CF1594B6A /* APIClient.swift */,
+				6060FBD98080C003CE0D590B /* AuthStore.swift */,
+				D5D07ABC00BDD1DC3024F27D /* KeychainStore.swift */,
+				E497B1A64B75A7C7EBF1E97B /* SettingsStore.swift */,
+				63F8614E86276E7D98FE5628 /* SettingsView.swift */,
+				2503988D3D2298722CFFEF81 /* StarbeamApp.swift */,
+				A0F6B70E05CD133FC1D52123 /* DeviceSignInView.swift */,
+				4FFDC470411C325D3F5D699B /* PopoverRootView.swift */,
+				435DCFE8BF4A8107377B101F /* StarbeamBackgroundView.swift */,
+				D0FDE3442F5F1AC00D5C331A /* StarbeamTheme.swift */,
+				C529087C760CC6F8F83B1AED /* Info.plist */,
+				8724F219750694E64A009160 /* Starbeam.entitlements */,
 			);
 			name = Starbeam;
 			path = Starbeam;
 			sourceTree = "<group>";
 		};
-		A5AC3A09907E8E23E3F6BD97 = {
+		3E1A5711665D6133EEE4C8EB /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				6615914F94FBBBF133AFFD87 /* Products */,
-				6DD2D74119606CF0C3321D77 /* Frameworks */,
-				6EB6692481C2D5A6E22A596D /* Starbeam */,
+				DE026FC567E2DDAEA4CAFF12 /* Starbeam.app */,
 			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		EC70CCABE6D1C75B765C57E1 /* OS X */ = {
+			isa = PBXGroup;
+			children = (
+				98B690A67B658B1D590A4690 /* Cocoa.framework */,
+			);
+			name = "OS X";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		79B9CD7312F6EAEF5FBEF9BA /* Starbeam */ = {
+		F3A97C056F2D8D1CDFFC63C9 /* Starbeam */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 21ED7FF06E46DC4679493324 /* Build configuration list for PBXNativeTarget "Starbeam" */;
+			buildConfigurationList = 4B4D0B339E1E0EEC939C3DE7 /* Build configuration list for PBXNativeTarget "Starbeam" */;
 			buildPhases = (
-				8861253EC73D45C8C0034D0B /* Sources */,
-				F028057AA5E43A8FF3C31119 /* Frameworks */,
-				D0030F47E2C4EC996EA69924 /* Resources */,
+				7D77F63223E6D00987536208 /* Sources */,
+				FDD2976A968E154FCE947182 /* Frameworks */,
+				665F28D172DF74FA1717F281 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -128,19 +131,19 @@
 			);
 			name = Starbeam;
 			productName = Starbeam;
-			productReference = AD03323065A039CE68A82282 /* Starbeam.app */;
+			productReference = DE026FC567E2DDAEA4CAFF12 /* Starbeam.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		4C420F184A30D31654B555F1 /* Project object */ = {
+		34E9F3E21AD74FF3956582FD /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
 				LastSwiftUpdateCheck = 1600;
 				LastUpgradeCheck = 1600;
 			};
-			buildConfigurationList = F0BEECB60107B608DF051931 /* Build configuration list for PBXProject "Starbeam" */;
+			buildConfigurationList = 325C5EF8157887CEECA59073 /* Build configuration list for PBXProject "Starbeam" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -148,20 +151,20 @@
 				en,
 				Base,
 			);
-			mainGroup = A5AC3A09907E8E23E3F6BD97;
+			mainGroup = 25B4F8A08229E6F409DB6BE7;
 			minimizedProjectReferenceProxies = 0;
 			preferredProjectObjectVersion = 77;
-			productRefGroup = 6615914F94FBBBF133AFFD87 /* Products */;
+			productRefGroup = 3E1A5711665D6133EEE4C8EB /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				79B9CD7312F6EAEF5FBEF9BA /* Starbeam */,
+				F3A97C056F2D8D1CDFFC63C9 /* Starbeam */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		D0030F47E2C4EC996EA69924 /* Resources */ = {
+		665F28D172DF74FA1717F281 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -171,30 +174,104 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		8861253EC73D45C8C0034D0B /* Sources */ = {
+		7D77F63223E6D00987536208 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E2E12EA3D03B9E4E5D7E35C3 /* AppModel.swift in Sources */,
-				0A8FFF7A5B5D11B6AB6E6726 /* ContentView.swift in Sources */,
-				C9CB9E987BB80692E6CD5E3B /* Overview.swift in Sources */,
-				B6AAB13D9FFA86EEDAD60E05 /* OverviewPreviewMocks.swift in Sources */,
-				72DB631B1003024CCA769364 /* AuthStore.swift in Sources */,
-				166661D4628289843ED70143 /* KeychainStore.swift in Sources */,
-				8EE98F1C50D4D35AB08EDA76 /* SettingsStore.swift in Sources */,
-				5AE3DAF02404C46334ED41E0 /* SettingsView.swift in Sources */,
-				837D1E1A99744BECF318C14C /* StarbeamApp.swift in Sources */,
-				F72B62CA214BB63133302131 /* DeviceSignInView.swift in Sources */,
-				86183B56E7F2CD9A1227BF2B /* PopoverRootView.swift in Sources */,
-				0EE990C0A6E33C0892AF4C9C /* StarbeamBackgroundView.swift in Sources */,
-				D80A6981BADB31AF939109C8 /* StarbeamTheme.swift in Sources */,
+				F5235C16A5B96BE8D86847C9 /* AppModel.swift in Sources */,
+				7D6EBFCD53D51E4466ECDCFA /* ContentView.swift in Sources */,
+				0A532BDFB8388F3CFB8D8D3F /* Overview.swift in Sources */,
+				BD6FC5E0418B67B9DFA00BA2 /* OverviewPreviewMocks.swift in Sources */,
+				2EC59BBFB9306B4710835F31 /* APIClient.swift in Sources */,
+				97233DD08580CDA7F54B2E49 /* AuthStore.swift in Sources */,
+				B934DAD75856E7A94A4F2EC3 /* KeychainStore.swift in Sources */,
+				93F490FD90EA86CB7BE02664 /* SettingsStore.swift in Sources */,
+				FA331291895611C4F91E0F52 /* SettingsView.swift in Sources */,
+				89BFCBB4356A95D51FF4A9D6 /* StarbeamApp.swift in Sources */,
+				7E9800F51C6B4316BB48CAD8 /* DeviceSignInView.swift in Sources */,
+				8029A8E7FDAE347808334227 /* PopoverRootView.swift in Sources */,
+				9B43A2E9273C03BC34A329BF /* StarbeamBackgroundView.swift in Sources */,
+				7C4DBA4AC8412DA36B4DEE8D /* StarbeamTheme.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		5BAA2DD23545C4619B402E5A /* Debug */ = {
+		0267F25E359A2708EE2233B0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_ENTITLEMENTS = Starbeam/Starbeam.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				INFOPLIST_FILE = Starbeam/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.starbeam.macos;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		2D4505A7CB90B12D57E87632 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		2E5CDB114E863E3034B7B5AB /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -255,7 +332,7 @@
 			};
 			name = Debug;
 		};
-		795B3B570571A1AFC2649A21 /* Debug */ = {
+		DAAB024C32641EFA94296CA8 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -274,101 +351,28 @@
 			};
 			name = Debug;
 		};
-		BC778D1370116926D82F4E97 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGNING_ALLOWED = NO;
-				CODE_SIGNING_REQUIRED = NO;
-				CODE_SIGN_ENTITLEMENTS = Starbeam/Starbeam.entitlements;
-				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
-				INFOPLIST_FILE = Starbeam/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.starbeam.macos;
-				SDKROOT = macosx;
-			};
-			name = Release;
-		};
-		FF3FFAA1847EC7CABE16EC9B /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ANALYZER_NONNULL = YES;
-				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
-				CLANG_CXX_LIBRARY = "libc++";
-				CLANG_ENABLE_MODULES = YES;
-				CLANG_ENABLE_OBJC_ARC = YES;
-				CLANG_ENABLE_OBJC_WEAK = YES;
-				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
-				CLANG_WARN_BOOL_CONVERSION = YES;
-				CLANG_WARN_COMMA = YES;
-				CLANG_WARN_CONSTANT_CONVERSION = YES;
-				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
-				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
-				CLANG_WARN_EMPTY_BODY = YES;
-				CLANG_WARN_ENUM_CONVERSION = YES;
-				CLANG_WARN_INFINITE_RECURSION = YES;
-				CLANG_WARN_INT_CONVERSION = YES;
-				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
-				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
-				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
-				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
-				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
-				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
-				CLANG_WARN_STRICT_PROTOTYPES = YES;
-				CLANG_WARN_SUSPICIOUS_MOVE = YES;
-				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
-				CLANG_WARN_UNREACHABLE_CODE = YES;
-				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				COPY_PHASE_STRIP = NO;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				ENABLE_NS_ASSERTIONS = NO;
-				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu11;
-				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
-				GCC_WARN_UNDECLARED_SELECTOR = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
-				GCC_WARN_UNUSED_FUNCTION = YES;
-				GCC_WARN_UNUSED_VARIABLE = YES;
-				MTL_ENABLE_DEBUG_INFO = NO;
-				MTL_FAST_MATH = YES;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_COMPILATION_MODE = wholemodule;
-				SWIFT_OPTIMIZATION_LEVEL = "-O";
-				SWIFT_VERSION = 5.0;
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		21ED7FF06E46DC4679493324 /* Build configuration list for PBXNativeTarget "Starbeam" */ = {
+		325C5EF8157887CEECA59073 /* Build configuration list for PBXProject "Starbeam" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				BC778D1370116926D82F4E97 /* Release */,
-				795B3B570571A1AFC2649A21 /* Debug */,
+				2E5CDB114E863E3034B7B5AB /* Debug */,
+				2D4505A7CB90B12D57E87632 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		F0BEECB60107B608DF051931 /* Build configuration list for PBXProject "Starbeam" */ = {
+		4B4D0B339E1E0EEC939C3DE7 /* Build configuration list for PBXNativeTarget "Starbeam" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				5BAA2DD23545C4619B402E5A /* Debug */,
-				FF3FFAA1847EC7CABE16EC9B /* Release */,
+				0267F25E359A2708EE2233B0 /* Release */,
+				DAAB024C32641EFA94296CA8 /* Debug */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
-	rootObject = 4C420F184A30D31654B555F1 /* Project object */;
+	rootObject = 34E9F3E21AD74FF3956582FD /* Project object */;
 }
