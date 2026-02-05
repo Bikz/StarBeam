@@ -17,15 +17,22 @@ model User {
   emailVerified DateTime?
   image         String?
 
-  accounts      Account[]
-  sessions      Session[]
+  accounts Account[]
+  sessions Session[]
 
-  memberships   Membership[]
-  createdWorkspaces Workspace[] @relation("WorkspaceCreatedBy")
-  usedInvites   Invite[] @relation("InviteUsedBy")
+  memberships       Membership[]
+  createdWorkspaces Workspace[]  @relation("WorkspaceCreatedBy")
 
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  usedInvites Invite[] @relation("InviteUsedBy")
+
+  authoredGoals          Goal[]                 @relation("GoalAuthor")
+  authoredAnnouncements  Announcement[]         @relation("AnnouncementAuthor")
+  departmentMemberships  DepartmentMembership[]
+  announcementDismissals AnnouncementDismiss[]
+  authoredIdeas          IdeaSubmission[]       @relation("IdeaAuthor")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Account {
@@ -69,33 +76,51 @@ enum WorkspaceType {
   ORG
 }
 
-model Workspace {
-  id        String        @id @default(cuid())
-  slug      String        @unique
-  name      String
-  type      WorkspaceType @default(ORG)
-
-  createdById String
-  createdBy   User @relation("WorkspaceCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
-
-  memberships Membership[]
-  invites     Invite[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
 enum Role {
   ADMIN
   MANAGER
   MEMBER
 }
 
+enum GoalPriority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum IdeaStatus {
+  NEW
+  TRIAGED
+  CLOSED
+}
+
+model Workspace {
+  id   String        @id @default(cuid())
+  slug String        @unique
+  name String
+  type WorkspaceType @default(ORG)
+
+  createdById String
+  createdBy   User   @relation("WorkspaceCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+
+  memberships Membership[]
+  invites     Invite[]
+
+  profile         WorkspaceProfile?
+  departments     Department[]
+  goals           Goal[]
+  announcements   Announcement[]
+  ideaSubmissions IdeaSubmission[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model Membership {
-  id          String    @id @default(cuid())
+  id          String @id @default(cuid())
   workspaceId String
   userId      String
-  role        Role      @default(MEMBER)
+  role        Role   @default(MEMBER)
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -123,4 +148,125 @@ model Invite {
 
   @@index([workspaceId])
   @@index([email])
+}
+
+model WorkspaceProfile {
+  id          String @id @default(cuid())
+  workspaceId String @unique
+
+  websiteUrl        String?
+  description       String?
+  competitorDomains String[] @default([])
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  updatedAt DateTime @updatedAt
+}
+
+model Department {
+  id             String  @id @default(cuid())
+  workspaceId    String
+  name           String
+  promptTemplate String  @default("")
+  enabled        Boolean @default(true)
+
+  workspace   Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  memberships DepartmentMembership[]
+  goals       Goal[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([workspaceId, name])
+  @@index([workspaceId])
+}
+
+model DepartmentMembership {
+  id           String @id @default(cuid())
+  departmentId String
+  userId       String
+
+  department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([departmentId, userId])
+  @@index([userId])
+}
+
+model Goal {
+  id           String  @id @default(cuid())
+  workspaceId  String
+  departmentId String?
+  authorUserId String
+
+  title      String
+  body       String       @default("")
+  priority   GoalPriority @default(MEDIUM)
+  active     Boolean      @default(true)
+  targetDate DateTime?
+
+  workspace  Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  department Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  author     User        @relation("GoalAuthor", fields: [authorUserId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId])
+  @@index([departmentId])
+  @@index([active])
+}
+
+model Announcement {
+  id           String @id @default(cuid())
+  workspaceId  String
+  authorUserId String
+
+  title  String
+  body   String  @default("")
+  pinned Boolean @default(false)
+
+  workspace  Workspace             @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  author     User                  @relation("AnnouncementAuthor", fields: [authorUserId], references: [id], onDelete: Restrict)
+  dismissals AnnouncementDismiss[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId])
+  @@index([pinned])
+}
+
+model AnnouncementDismiss {
+  id             String   @id @default(cuid())
+  announcementId String
+  userId         String
+  dismissedAt    DateTime @default(now())
+
+  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([announcementId, userId])
+  @@index([userId])
+}
+
+model IdeaSubmission {
+  id           String @id @default(cuid())
+  workspaceId  String
+  authorUserId String
+
+  title  String
+  body   String     @default("")
+  status IdeaStatus @default(NEW)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  author    User      @relation("IdeaAuthor", fields: [authorUserId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId])
+  @@index([status])
 }
