@@ -86,22 +86,18 @@ export default async function DashboardPage() {
                       </div>
                     </div>
                     <div className="mt-4 flex gap-2">
-                      <button
-                        type="button"
+                      <Link
+                        href={`/w/${m.workspace.slug}`}
                         className="sb-btn px-4 py-2 text-xs font-semibold"
-                        disabled
-                        title="Workspace pages land in the next epic"
                       >
                         Open
-                      </button>
-                      <button
-                        type="button"
+                      </Link>
+                      <Link
+                        href={`/w/${m.workspace.slug}/members`}
                         className="sb-btn px-4 py-2 text-xs font-semibold"
-                        disabled
-                        title="Invites land in the next epic"
                       >
-                        Invite
-                      </button>
+                        Members
+                      </Link>
                     </div>
                   </div>
                 ))}
@@ -137,8 +133,8 @@ export default async function DashboardPage() {
             </form>
 
             <div className="mt-6 rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-4 text-xs text-[color:var(--sb-muted)] leading-relaxed">
-              Next: invites, departments, goals, announcements, Google
-              connections, and &quot;Run nightly job now&quot;.
+              Next: departments, goals, announcements, Google connections, and
+              nightly jobs.
             </div>
           </div>
         </div>

@@ -14,8 +14,8 @@ export const authOptions: NextAuthOptions = {
   providers: hasGoogleAuth
     ? [
         GoogleProvider({
-          clientId: process.env.GOOGLE_CLIENT_ID,
-          clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+          clientId: process.env.GOOGLE_CLIENT_ID!,
+          clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
           // v0: read-only Google service connections are configured separately.
           // Keep OAuth here to "Sign in with Google" for Starbeam itself.
           authorization: { params: { prompt: "select_account" } },

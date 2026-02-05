@@ -2,6 +2,8 @@
 
 import { prisma } from "@starbeam/db";
 import { getServerSession } from "next-auth";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { authOptions } from "@/lib/auth";
@@ -50,4 +52,7 @@ export async function createOrgWorkspace(formData: FormData) {
       memberships: { create: { userId: session.user.id, role: "ADMIN" } },
     },
   });
+
+  revalidatePath("/dashboard");
+  redirect("/dashboard");
 }
