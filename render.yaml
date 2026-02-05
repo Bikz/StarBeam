@@ -1,0 +1,51 @@
+services:
+  - type: web
+    name: starbeam-web
+    runtime: node
+    plan: starter
+    autoDeploy: true
+    buildCommand: pnpm install --frozen-lockfile && pnpm turbo run build --filter=@starbeam/web...
+    startCommand: pnpm --filter @starbeam/web start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: AUTH_SECRET
+        sync: false
+      - key: AUTH_URL
+        sync: false
+      - key: NEXT_PUBLIC_WEB_ORIGIN
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: STARB_TOKEN_ENC_KEY_B64
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+
+  - type: worker
+    name: starbeam-worker
+    runtime: node
+    plan: starter
+    autoDeploy: true
+    buildCommand: pnpm install --frozen-lockfile && pnpm turbo run build --filter=@starbeam/worker...
+    startCommand: pnpm --filter @starbeam/worker start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: STARB_TOKEN_ENC_KEY_B64
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      # Required for refresh-token exchange when syncing Google APIs.
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+
