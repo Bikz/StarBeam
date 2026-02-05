@@ -1,10 +1,11 @@
 import type { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 
-export function buildProvidersFromEnv(env: NodeJS.ProcessEnv): NextAuthOptions["providers"] {
-  const clientId = typeof env.GOOGLE_CLIENT_ID === "string" ? env.GOOGLE_CLIENT_ID : "";
-  const clientSecret =
-    typeof env.GOOGLE_CLIENT_SECRET === "string" ? env.GOOGLE_CLIENT_SECRET : "";
+export function buildProvidersFromEnv(
+  env: Record<string, string | undefined>,
+): NextAuthOptions["providers"] {
+  const clientId = env.GOOGLE_CLIENT_ID ?? "";
+  const clientSecret = env.GOOGLE_CLIENT_SECRET ?? "";
 
   if (!clientId || !clientSecret) return [];
 
@@ -18,4 +19,3 @@ export function buildProvidersFromEnv(env: NodeJS.ProcessEnv): NextAuthOptions["
     }),
   ];
 }
-

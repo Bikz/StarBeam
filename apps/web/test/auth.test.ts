@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { URL } from "node:url";
 
-type ProvidersBuilder = (env: NodeJS.ProcessEnv) => unknown[];
+type ProvidersBuilder = (env: Record<string, string | undefined>) => unknown[];
 
 async function importBuildProvidersFromEnv(): Promise<ProvidersBuilder> {
   const url = new URL("../src/lib/authProviders.ts", import.meta.url);
