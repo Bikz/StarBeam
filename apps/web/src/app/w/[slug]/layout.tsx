@@ -33,6 +33,7 @@ export default async function WorkspaceLayout({
     { href: `${base}/departments`, label: "Departments" },
     { href: `${base}/goals`, label: "Goals" },
     { href: `${base}/announcements`, label: "Announcements" },
+    { href: `${base}/jobs`, label: "Jobs" },
   ];
 
   return (
@@ -77,14 +78,6 @@ export default async function WorkspaceLayout({
             title="Integrations land next"
           >
             Google (next)
-          </button>
-          <button
-            type="button"
-            className="sb-btn px-4 py-2 text-xs font-semibold"
-            disabled
-            title="Jobs land next"
-          >
-            Run now (next)
           </button>
         </nav>
 
