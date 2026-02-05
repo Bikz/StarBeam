@@ -183,6 +183,8 @@ def main() -> int:
     for k in [
         "AUTH_SECRET",
         "AUTH_URL",
+        "NEXTAUTH_URL",
+        "NEXTAUTH_SECRET",
         "NEXT_PUBLIC_WEB_ORIGIN",
         "GOOGLE_CLIENT_ID",
         "GOOGLE_CLIENT_SECRET",
@@ -216,4 +218,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
