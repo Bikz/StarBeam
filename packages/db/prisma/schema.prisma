@@ -34,6 +34,8 @@ model User {
   googleConnections      GoogleConnection[]
   deviceAuthRequests     DeviceAuthRequest[]
   apiRefreshTokens       ApiRefreshToken[]
+  sourceItems            SourceItem[]
+  tasks                  Task[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -118,6 +120,8 @@ model Workspace {
   pulseEditions   PulseEdition[]
   jobRuns         JobRun[]
   googleConnections GoogleConnection[]
+  sourceItems     SourceItem[]
+  tasks           Task[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -301,6 +305,7 @@ model GoogleConnection {
   owner     User      @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
 
   syncState GoogleSyncState?
+  sourceItems SourceItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -322,6 +327,79 @@ model GoogleSyncState {
   connection GoogleConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
 
   updatedAt DateTime @updatedAt
+}
+
+enum SourceItemType {
+  GMAIL_MESSAGE
+  CALENDAR_EVENT
+  DRIVE_FILE
+}
+
+model SourceItem {
+  id          String @id @default(cuid())
+  workspaceId String
+  ownerUserId String
+  connectionId String?
+
+  type       SourceItemType
+  externalId String
+
+  url         String?
+  title       String
+  snippet     String?
+  contentText String?
+
+  occurredAt DateTime
+  endsAt     DateTime?
+
+  metadata Json?
+  raw      Json?
+
+  workspace   Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  owner       User             @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  connection  GoogleConnection? @relation(fields: [connectionId], references: [id], onDelete: SetNull)
+  tasks       Task[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([workspaceId, ownerUserId, type, externalId])
+  @@index([workspaceId])
+  @@index([ownerUserId])
+  @@index([connectionId])
+  @@index([occurredAt])
+}
+
+enum TaskStatus {
+  OPEN
+  DONE
+  SNOOZED
+}
+
+model Task {
+  id          String @id @default(cuid())
+  workspaceId String
+  userId      String
+  sourceItemId String?
+
+  title  String
+  body   String @default("")
+  status TaskStatus @default(OPEN)
+
+  dueAt         DateTime?
+  snoozedUntil  DateTime?
+
+  workspace  Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceItem SourceItem? @relation(fields: [sourceItemId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, sourceItemId])
+  @@index([workspaceId])
+  @@index([userId])
+  @@index([status])
 }
 
 enum PulseEditionStatus {
