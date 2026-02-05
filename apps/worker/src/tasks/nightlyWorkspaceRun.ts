@@ -3,6 +3,7 @@ import type { Prisma } from "@starbeam/db";
 import { z } from "zod";
 
 import { startOfDayUtc } from "../lib/dates";
+import { generateFocusTasks, syncGoogleConnection } from "../lib/google/sync";
 import {
   buildDepartmentWebResearchPrompt,
   generateWebInsights,
@@ -100,6 +101,23 @@ export async function nightly_workspace_run(payload: unknown) {
 
     const memberUserIds = memberships.map((m) => m.userId);
 
+    const googleConnections = await prisma.googleConnection.findMany({
+      where: {
+        workspaceId,
+        ownerUserId: { in: memberUserIds },
+        status: "CONNECTED",
+      },
+      select: { id: true, ownerUserId: true, googleAccountEmail: true },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const connectionsByUser = new Map<string, Array<{ id: string; email: string }>>();
+    for (const c of googleConnections) {
+      const list = connectionsByUser.get(c.ownerUserId) ?? [];
+      list.push({ id: c.id, email: c.googleAccountEmail });
+      connectionsByUser.set(c.ownerUserId, list);
+    }
+
     const deptCardsByDeptId = new Map<
       string,
       Array<{
@@ -175,6 +193,39 @@ export async function nightly_workspace_run(payload: unknown) {
     }
 
     for (const userId of memberUserIds) {
+      const conns = connectionsByUser.get(userId) ?? [];
+      for (const c of conns) {
+        try {
+          await syncGoogleConnection({
+            workspaceId,
+            userId,
+            connectionId: c.id,
+          });
+        } catch (err) {
+          partial = true;
+          const msg = err instanceof Error ? err.message : String(err);
+          errorSummary =
+            (errorSummary ? `${errorSummary}\n` : "") +
+            `Google sync failed for ${c.email}: ${msg}`;
+          // Mark the connection as ERROR so the UI can prompt reconnect.
+          await prisma.googleConnection
+            .update({ where: { id: c.id }, data: { status: "ERROR" } })
+            .catch(() => undefined);
+        }
+      }
+
+      if (conns.length) {
+        try {
+          await generateFocusTasks({ workspaceId, userId });
+        } catch (err) {
+          partial = true;
+          const msg = err instanceof Error ? err.message : String(err);
+          errorSummary =
+            (errorSummary ? `${errorSummary}\n` : "") +
+            `Focus task generation failed: ${msg}`;
+        }
+      }
+
       const edition = await prisma.pulseEdition.upsert({
         where: {
           workspaceId_userId_editionDate: {
