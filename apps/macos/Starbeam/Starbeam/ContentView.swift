@@ -8,7 +8,13 @@ struct ContentView: View {
 
 #Preview {
   let model = AppModel()
-  model.auth.tokens = .init(accessToken: nil, refreshToken: "preview", expiresAt: nil)
+  model.auth.session = .init(
+    accessToken: "preview",
+    refreshToken: "preview",
+    expiresAt: Date().addingTimeInterval(60 * 60),
+    user: .init(id: "u_123", email: "preview@starbeam.invalid", name: "Preview", image: nil),
+    workspaces: [.init(id: "w_123", type: "ORG", name: "Company Name", slug: "company")]
+  )
   model.overview = OverviewPreviewMocks.overview
 
   return ContentView()
