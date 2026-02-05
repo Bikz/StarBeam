@@ -20,14 +20,18 @@ function findUp(filename: string, startDir: string): string | undefined {
 }
 
 // Load a repo-root `.env` if present (useful in local dev); production should
-// provide env vars via the host.
-const envPath = findUp(".env", process.cwd());
-if (envPath) dotenv.config({ path: envPath });
+// provide env vars via the host. Skip in tests to avoid leaking local env
+// into deterministic unit tests.
+if (process.env.NODE_ENV !== "test") {
+  const envPath = findUp(".env", process.cwd());
+  if (envPath) dotenv.config({ path: envPath });
+}
 
 const EnvSchema = z.object({
   DATABASE_URL: z.string().min(1),
   NODE_ENV: z.enum(["development", "test", "production"]).optional(),
   WORKER_CONCURRENCY: z.string().optional(),
+  WORKER_MODE: z.enum(["run", "check"]).optional(),
 });
 
 const env = EnvSchema.parse(process.env);
@@ -42,7 +46,10 @@ async function main() {
     nodeEnv: env.NODE_ENV ?? "development",
     hasDatabaseUrl: Boolean(env.DATABASE_URL),
     concurrency,
+    mode: env.WORKER_MODE ?? "run",
   });
+
+  if (env.WORKER_MODE === "check") return;
 
   // Ensure Graphile Worker schema/tables exist. This is idempotent and safe to
   // run on startup.

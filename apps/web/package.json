@@ -6,9 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "eslint --max-warnings 0",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "node -e \"console.log('web: no tests yet')\""
+    "test": "node --import tsx --test test/*.test.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",

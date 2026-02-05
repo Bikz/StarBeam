@@ -12,9 +12,9 @@
   "scripts": {
     "dev": "tsup src/index.ts --format esm --dts --watch",
     "build": "tsup src/index.ts --format esm --dts",
-    "lint": "node -e \"console.log('shared: lint handled by consuming apps')\"",
+    "lint": "pnpm exec eslint src test --max-warnings 0",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "node -e \"console.log('shared: no tests yet')\""
+    "test": "node --import tsx --test test/*.test.ts"
   },
   "dependencies": {
     "zod": "^4.1.11"

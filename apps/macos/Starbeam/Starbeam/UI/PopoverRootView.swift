@@ -14,6 +14,11 @@ struct PopoverRootView: View {
           VStack(alignment: .leading, spacing: 14) {
             header
             bumpBanner
+            if let error = model.lastError {
+              ErrorCardView(error: error) {
+                Task { await model.refresh() }
+              }
+            }
 
             Text("Your Pulse")
               .font(.system(size: 18, weight: .bold, design: .rounded))
@@ -105,8 +110,15 @@ struct PopoverRootView: View {
         Task { await model.refresh() }
       } label: {
         HStack(spacing: 8) {
-          Image(systemName: "arrow.clockwise")
-            .font(.system(size: 13, weight: .semibold))
+          Group {
+            if model.isRefreshing {
+              ProgressView()
+                .controlSize(.small)
+            } else {
+              Image(systemName: "arrow.clockwise")
+            }
+          }
+          .font(.system(size: 13, weight: .semibold))
           Text("Refresh")
             .font(.system(size: 13, weight: .semibold, design: .rounded))
         }
@@ -184,43 +196,49 @@ struct PopoverRootView: View {
 
   private var pulseSection: some View {
     VStack(alignment: .leading, spacing: 12) {
-      if let overview = model.overview {
-        if overview.pulse.isEmpty {
-          emptyPulse
-        } else {
+      if model.isRefreshing && model.overview == nil {
+        PulseSkeletonList()
+      } else if let overview = model.overview {
+        if overview.pulse.isEmpty { emptyPulse } else {
           ForEach(overview.pulse) { card in
             PulseCardView(
               icon: card.icon,
               title: card.title,
               detail: card.body,
-              onRegenerate: {
-                Task { await model.refresh() }
-              }
+              onRegenerate: { Task { await model.refresh() } }
             )
           }
         }
       } else {
-        if model.auth.isSignedIn {
-          emptyPulse
-        } else {
-          emptyPulse
-        }
+        emptyPulse
       }
     }
   }
 
   private var emptyPulse: some View {
-    VStack(alignment: .leading, spacing: 6) {
+    let workspaceID = model.settings.workspaceID.trimmingCharacters(in: .whitespacesAndNewlines)
+
+    return VStack(alignment: .leading, spacing: 6) {
       Text("No pulse yet")
         .font(.system(size: 14, weight: .bold, design: .rounded))
 
-      Text(model.auth.isSignedIn ? "We’ll show your daily pulse cards here after your workspace is connected." : "Sign in to see your pulse cards each morning.")
+      Text(emptyPulseMessage(signedIn: model.auth.isSignedIn, workspaceID: workspaceID))
         .font(.system(size: 12, weight: .medium, design: .rounded))
         .foregroundStyle(.secondary)
         .fixedSize(horizontal: false, vertical: true)
     }
     .padding(14)
     .starbeamCard()
+  }
+
+  private func emptyPulseMessage(signedIn: Bool, workspaceID: String) -> String {
+    if !signedIn {
+      return "Sign in to see your pulse cards each morning."
+    }
+    if workspaceID.isEmpty {
+      return "Add your Workspace ID in Settings to enable sync."
+    }
+    return "We’ll show your daily pulse cards here once your workspace starts generating pulses."
   }
 
   private var splitPanels: some View {
@@ -294,6 +312,105 @@ struct PopoverRootView: View {
   private func openSubmitIdea() {
     guard let url = URL(string: model.settings.submitIdeaURL.trimmingCharacters(in: .whitespacesAndNewlines)) else { return }
     NSWorkspace.shared.open(url)
+  }
+}
+
+private struct ErrorCardView: View {
+  let error: AppError
+  let onRetry: () -> Void
+
+  @State private var showDetails = false
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 10) {
+      HStack(alignment: .top, spacing: 10) {
+        Image(systemName: "exclamationmark.triangle.fill")
+          .foregroundStyle(.orange)
+          .accessibilityHidden(true)
+
+        VStack(alignment: .leading, spacing: 4) {
+          Text(error.title)
+            .font(.system(size: 13, weight: .bold, design: .rounded))
+
+          Text(error.message)
+            .font(.system(size: 12, weight: .medium, design: .rounded))
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+
+        Spacer(minLength: 0)
+
+        Button("Retry") { onRetry() }
+          .buttonStyle(.bordered)
+          .controlSize(.small)
+          .accessibilityLabel("Retry")
+      }
+
+      if let debug = error.debugDetails, !debug.isEmpty {
+        DisclosureGroup("Details", isExpanded: $showDetails) {
+          Text(debug)
+            .font(.system(.caption, design: .monospaced))
+            .foregroundStyle(.secondary)
+            .textSelection(.enabled)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 6)
+        }
+        .font(.system(size: 12, weight: .semibold, design: .rounded))
+      }
+    }
+    .padding(14)
+    .starbeamCard()
+    .accessibilityElement(children: .contain)
+    .accessibilityLabel("Error")
+  }
+}
+
+private struct PulseSkeletonList: View {
+  var body: some View {
+    VStack(alignment: .leading, spacing: 12) {
+      ForEach(0..<3, id: \.self) { _ in
+        PulseSkeletonCard()
+      }
+    }
+  }
+}
+
+private struct PulseSkeletonCard: View {
+  var body: some View {
+    HStack(alignment: .top, spacing: 12) {
+      RoundedRectangle(cornerRadius: 7, style: .continuous)
+        .fill(Color.secondary.opacity(0.22))
+        .frame(width: 26, height: 26)
+        .accessibilityHidden(true)
+
+      VStack(alignment: .leading, spacing: 9) {
+        RoundedRectangle(cornerRadius: 6, style: .continuous)
+          .fill(Color.secondary.opacity(0.22))
+          .frame(height: 14)
+          .frame(maxWidth: 240, alignment: .leading)
+
+        RoundedRectangle(cornerRadius: 6, style: .continuous)
+          .fill(Color.secondary.opacity(0.16))
+          .frame(height: 12)
+          .frame(maxWidth: 290, alignment: .leading)
+
+        RoundedRectangle(cornerRadius: 6, style: .continuous)
+          .fill(Color.secondary.opacity(0.12))
+          .frame(height: 12)
+          .frame(maxWidth: 210, alignment: .leading)
+      }
+      .accessibilityHidden(true)
+
+      Spacer(minLength: 0)
+
+      RoundedRectangle(cornerRadius: 7, style: .continuous)
+        .fill(Color.secondary.opacity(0.16))
+        .frame(width: 24, height: 24)
+        .accessibilityHidden(true)
+    }
+    .padding(14)
+    .starbeamCard()
+    .accessibilityHidden(true)
   }
 }
 
@@ -444,14 +561,17 @@ private struct CalendarListView: View {
         .padding(12)
         .starbeamCard()
       } else {
-        ForEach(items) { item in
-          Text(CalendarRowView.text(for: item))
-            .font(.system(size: 13, weight: .medium, design: .rounded))
-            .foregroundStyle(.secondary)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(12)
-            .starbeamCard()
+        VStack(alignment: .leading, spacing: 8) {
+          ForEach(items) { item in
+            Text(CalendarRowView.text(for: item))
+              .font(.system(size: 13, weight: .medium, design: .rounded))
+              .foregroundStyle(.secondary)
+              .frame(maxWidth: .infinity, alignment: .leading)
+              .lineLimit(1)
+          }
         }
+        .padding(12)
+        .starbeamCard()
       }
 
       Button {
@@ -482,7 +602,7 @@ private enum CalendarRowView {
     df.timeStyle = .short
     df.dateStyle = .none
     let start = df.string(from: item.start)
-    return "\(start)  \(item.title)"
+    return "\(start) - \(item.title)"
   }
 }
 

@@ -13,10 +13,10 @@
     "dev": "prisma generate && tsup src/index.ts --format esm --dts --watch",
     "prebuild": "prisma generate",
     "build": "tsup src/index.ts --format esm --dts",
-    "lint": "node -e \"console.log('db: lint handled by consuming apps')\"",
+    "lint": "pnpm exec eslint src test --max-warnings 0",
     "pretypecheck": "prisma generate",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "node -e \"console.log('db: no tests yet')\"",
+    "test": "node --import tsx --test test/*.test.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev"
   },
