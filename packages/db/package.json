@@ -10,6 +10,7 @@
     }
   },
   "scripts": {
+    "dev": "prisma generate && tsup src/index.ts --format esm --dts --watch",
     "prebuild": "prisma generate",
     "build": "tsup src/index.ts --format esm --dts",
     "lint": "node -e \"console.log('db: lint handled by consuming apps')\"",

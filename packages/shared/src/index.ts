@@ -1,9 +1,9 @@
 import { z } from "zod";
 
-export const WorkspaceTypeSchema = z.enum(["personal", "org"]);
+export const WorkspaceTypeSchema = z.enum(["PERSONAL", "ORG"]);
 export type WorkspaceType = z.infer<typeof WorkspaceTypeSchema>;
 
-export const RoleSchema = z.enum(["admin", "manager", "member"]);
+export const RoleSchema = z.enum(["ADMIN", "MANAGER", "MEMBER"]);
 export type Role = z.infer<typeof RoleSchema>;
 
 export const WorkspaceSchema = z.object({
@@ -36,4 +36,3 @@ export const DeviceExchangeResponseSchema = z.object({
   workspaces: z.array(WorkspaceSchema),
 });
 export type DeviceExchangeResponse = z.infer<typeof DeviceExchangeResponseSchema>;
-

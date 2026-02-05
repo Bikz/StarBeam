@@ -10,6 +10,7 @@
     }
   },
   "scripts": {
+    "dev": "tsup src/index.ts --format esm --dts --watch",
     "build": "tsup src/index.ts --format esm --dts",
     "lint": "node -e \"console.log('shared: lint handled by consuming apps')\"",
     "typecheck": "tsc -p tsconfig.json --noEmit",
