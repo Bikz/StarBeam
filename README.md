@@ -76,6 +76,7 @@ pnpm --filter @starbeam/db exec prisma migrate deploy
 Create a Google OAuth client for the hosted domain and set:
 
 - Authorized redirect URI: `https://YOUR_DOMAIN/api/auth/callback/google`
+- Authorized redirect URI (Google integration): `https://YOUR_DOMAIN/api/google/callback`
 - Authorized JavaScript origin: `https://YOUR_DOMAIN`
 
 ### 3) Create Render Services From Blueprint
