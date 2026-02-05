@@ -33,6 +33,7 @@ export default async function WorkspaceLayout({
     { href: `${base}/departments`, label: "Departments" },
     { href: `${base}/goals`, label: "Goals" },
     { href: `${base}/announcements`, label: "Announcements" },
+    { href: `${base}/pulse`, label: "Pulse" },
     { href: `${base}/jobs`, label: "Jobs" },
   ];
 
