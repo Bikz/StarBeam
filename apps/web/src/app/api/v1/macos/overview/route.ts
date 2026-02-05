@@ -10,10 +10,37 @@ function iconForCardKind(kind: string): string | undefined {
   return "💡";
 }
 
+function iconForFocusSource(type: string | null | undefined): string | undefined {
+  if (type === "GMAIL_MESSAGE") return "sf:envelope";
+  if (type === "CALENDAR_EVENT") return "sf:calendar";
+  return "sf:checkmark.circle";
+}
+
 function getBearerToken(request: Request): string | null {
   const header = request.headers.get("authorization") ?? "";
   const match = header.match(/^Bearer\\s+(.+)$/i);
   return match?.[1] ?? null;
+}
+
+function formatRelativePast(then: Date, now: Date): string {
+  const ms = Math.max(0, now.getTime() - then.getTime());
+  const min = Math.floor(ms / (60 * 1000));
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  const day = Math.floor(hr / 24);
+  return `${day}d ago`;
+}
+
+function formatRelativeUntil(then: Date, now: Date): string {
+  const ms = then.getTime() - now.getTime();
+  const min = Math.round(ms / (60 * 1000));
+  if (min <= 0) return "Started";
+  if (min < 60) return `In ${min}m`;
+  const hr = Math.round(min / 60);
+  if (hr < 24) return `In ${hr}h`;
+  const day = Math.round(hr / 24);
+  return `In ${day}d`;
 }
 
 export async function GET(request: Request) {
@@ -72,6 +99,64 @@ export async function GET(request: Request) {
     body: c.body || c.action || c.why || "",
   }));
 
+  const now = new Date();
+  const [tasks, events] = await Promise.all([
+    prisma.task.findMany({
+      where: {
+        workspaceId,
+        userId,
+        status: "OPEN",
+        OR: [{ snoozedUntil: null }, { snoozedUntil: { lte: now } }],
+      },
+      include: { sourceItem: true },
+      orderBy: [{ createdAt: "desc" }],
+      take: 20,
+    }),
+    prisma.sourceItem.findMany({
+      where: {
+        workspaceId,
+        ownerUserId: userId,
+        type: "CALENDAR_EVENT",
+        occurredAt: { gte: now, lt: new Date(Date.now() + 24 * 60 * 60 * 1000) },
+      },
+      orderBy: { occurredAt: "asc" },
+      take: 10,
+    }),
+  ]);
+
+  const focus = tasks
+    .slice()
+    .sort((a, b) => {
+      const ad = a.dueAt ? a.dueAt.getTime() : Number.POSITIVE_INFINITY;
+      const bd = b.dueAt ? b.dueAt.getTime() : Number.POSITIVE_INFINITY;
+      if (ad !== bd) return ad - bd;
+      return b.createdAt.getTime() - a.createdAt.getTime();
+    })
+    .slice(0, 5)
+    .map((t) => {
+      const srcType = t.sourceItem?.type ?? null;
+      const subtitle =
+        srcType === "GMAIL_MESSAGE" && t.sourceItem
+          ? `From Gmail · ${formatRelativePast(t.sourceItem.occurredAt, now)}`
+          : srcType === "CALENDAR_EVENT" && t.sourceItem
+            ? `Calendar · ${formatRelativeUntil(t.sourceItem.occurredAt, now)}`
+            : "";
+
+      return {
+        id: t.id,
+        icon: iconForFocusSource(srcType),
+        title: t.title,
+        subtitle: subtitle || null,
+      };
+    });
+
+  const calendar = events.slice(0, 5).map((e) => ({
+    id: e.id,
+    start: e.occurredAt,
+    end: e.endsAt,
+    title: e.title,
+  }));
+
   return NextResponse.json(
     {
       workspace: {
@@ -81,11 +166,10 @@ export async function GET(request: Request) {
       },
       bumpMessage: null,
       pulse,
-      focus: [],
-      calendar: [],
-      generatedAt: new Date(),
+      focus,
+      calendar,
+      generatedAt: now,
     },
     { headers: { "Cache-Control": "no-store" } },
   );
 }
-
