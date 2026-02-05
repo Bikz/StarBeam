@@ -30,6 +30,7 @@ model User {
   departmentMemberships  DepartmentMembership[]
   announcementDismissals AnnouncementDismiss[]
   authoredIdeas          IdeaSubmission[]       @relation("IdeaAuthor")
+  pulseEditions          PulseEdition[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -111,6 +112,8 @@ model Workspace {
   goals           Goal[]
   announcements   Announcement[]
   ideaSubmissions IdeaSubmission[]
+  pulseEditions   PulseEdition[]
+  jobRuns         JobRun[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -173,6 +176,7 @@ model Department {
   workspace   Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   memberships DepartmentMembership[]
   goals       Goal[]
+  pulseCards  PulseCard[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -268,5 +272,93 @@ model IdeaSubmission {
   updatedAt DateTime @updatedAt
 
   @@index([workspaceId])
+  @@index([status])
+}
+
+enum PulseEditionStatus {
+  READY
+  GENERATING
+  ERROR
+}
+
+model PulseEdition {
+  id          String @id @default(cuid())
+  workspaceId String
+  userId      String
+  editionDate DateTime
+  timezone    String            @default("UTC")
+  status      PulseEditionStatus @default(GENERATING)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cards     PulseCard[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([workspaceId, userId, editionDate])
+  @@index([workspaceId])
+  @@index([userId])
+}
+
+enum PulseCardKind {
+  ANNOUNCEMENT
+  GOAL
+  WEB_RESEARCH
+  INTERNAL
+}
+
+model PulseCard {
+  id           String @id @default(cuid())
+  editionId    String
+  kind         PulseCardKind
+  departmentId String?
+
+  title  String
+  body   String @default("")
+  why    String @default("")
+  action String @default("")
+  sources Json?
+
+  priority Int @default(0)
+
+  edition    PulseEdition @relation(fields: [editionId], references: [id], onDelete: Cascade)
+  department Department?  @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([editionId])
+  @@index([kind])
+  @@index([departmentId])
+}
+
+enum JobKind {
+  NIGHTLY_WORKSPACE_RUN
+}
+
+enum JobStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  PARTIAL
+}
+
+model JobRun {
+  id           String    @id @default(cuid())
+  workspaceId  String
+  kind         JobKind
+  status       JobStatus @default(QUEUED)
+  startedAt    DateTime?
+  finishedAt   DateTime?
+  errorSummary String?
+  meta         Json?
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([workspaceId])
+  @@index([kind])
   @@index([status])
 }
