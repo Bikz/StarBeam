@@ -9,6 +9,7 @@
 
   --sb-card: rgba(255, 255, 255, 0.65);
   --sb-card-border: rgba(20, 16, 34, 0.10);
+  --sb-divider: rgba(20, 16, 34, 0.10);
 
   --sb-accent: #2563eb;
   --sb-accent-2: #38bdf8;
@@ -33,6 +34,7 @@
 
     --sb-card: rgba(16, 13, 24, 0.55);
     --sb-card-border: rgba(255, 255, 255, 0.10);
+    --sb-divider: rgba(255, 255, 255, 0.10);
 
     --sb-accent: #60a5fa;
     --sb-accent-2: #22d3ee;
@@ -46,6 +48,12 @@
 body {
   color: var(--sb-fg);
   font-family: var(--font-sb-body), ui-sans-serif, system-ui;
+}
+
+.sb-container {
+  max-width: 74rem;
+  margin-inline: auto;
+  padding-inline: 1.5rem;
 }
 
 .sb-bg {
@@ -80,6 +88,16 @@ body {
   box-shadow: var(--sb-shadow-soft);
 }
 
+.sb-card-inset {
+  border-radius: 18px;
+  border: 1px solid var(--sb-divider);
+  background: rgba(255, 255, 255, 0.34);
+}
+
+.dark .sb-card-inset {
+  background: rgba(255, 255, 255, 0.06);
+}
+
 .sb-title {
   font-family: var(--font-sb-display), ui-sans-serif, system-ui;
   letter-spacing: -0.02em;
@@ -88,7 +106,7 @@ body {
 .sb-btn {
   border-radius: 999px;
   border: 1px solid var(--sb-card-border);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.35));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.28));
   box-shadow: 0 10px 24px rgba(18, 12, 34, 0.10);
   transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
 }
@@ -102,4 +120,29 @@ body {
 .sb-btn:focus-visible {
   outline: none;
   box-shadow: 0 0 0 4px var(--sb-ring), var(--sb-shadow);
+}
+
+.sb-btn-primary {
+  border-color: rgba(37, 99, 235, 0.22);
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.14), rgba(37, 99, 235, 0.06));
+}
+
+.sb-btn-primary:hover {
+  filter: saturate(1.08);
+}
+
+.sb-kbd {
+  border: 1px solid var(--sb-divider);
+  border-bottom-color: rgba(20, 16, 34, 0.22);
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 10px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--sb-muted);
+}
+
+.dark .sb-kbd {
+  border-bottom-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.08);
 }

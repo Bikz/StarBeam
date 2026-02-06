@@ -11,13 +11,13 @@ export default async function DashboardPage() {
   if (!session?.user?.id) {
     return (
       <div className="sb-bg">
-        <div className="mx-auto max-w-3xl px-6 py-16">
+        <div className="sb-container py-16">
           <div className="sb-card p-8">
             <div className="sb-title text-2xl">Sign in required</div>
             <p className="mt-2 text-sm text-[color:var(--sb-muted)]">
               Starbeam uses Google sign-in for the demo.
             </p>
-            <Link href="/" className="sb-btn inline-flex mt-5 px-5 py-3">
+            <Link href="/" className="sb-btn sb-btn-primary inline-flex mt-5 px-5 py-3">
               Go to sign in
             </Link>
           </div>
@@ -32,71 +32,150 @@ export default async function DashboardPage() {
     orderBy: { createdAt: "asc" },
   });
 
+  const orgCount = memberships.filter((m) => m.workspace.type === "ORG").length;
+  const personalCount = memberships.filter((m) => m.workspace.type !== "ORG").length;
+
   return (
     <div className="sb-bg">
-      <div className="mx-auto max-w-6xl px-6 py-14">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <div className="sb-title text-3xl">Dashboard</div>
-            <div className="mt-1 text-sm text-[color:var(--sb-muted)]">
-              Signed in as{" "}
-              <span className="font-semibold text-[color:var(--sb-fg)]">
-                {session.user.email}
-              </span>
+      <div className="sb-container py-12 sm:py-14">
+        <header className="sb-card px-6 py-5 sm:px-7 sm:py-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="sb-card-inset grid h-11 w-11 place-items-center shadow-sm">
+                <span className="sb-title text-lg font-extrabold" aria-hidden>
+                  *
+                </span>
+              </div>
+              <div>
+                <div className="sb-title text-lg font-extrabold leading-tight">
+                  Starbeam
+                </div>
+                <div className="text-sm text-[color:var(--sb-muted)]">
+                  Dashboard
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="hidden sm:block text-sm text-[color:var(--sb-muted)]">
+                Signed in as{" "}
+                <span className="font-semibold text-[color:var(--sb-fg)]">
+                  {session.user.email}
+                </span>
+              </div>
+              <div className="h-8 w-px bg-[color:var(--sb-divider)] hidden sm:block" />
+              <Link
+                href="/"
+                className="sb-btn inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-[color:var(--sb-fg)]"
+                aria-label="Back to home"
+              >
+                <span aria-hidden>←</span>
+                Home
+              </Link>
+              <Link
+                href="/api/auth/signout?callbackUrl=/"
+                className="sb-btn inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-[color:var(--sb-fg)]"
+              >
+                Sign out
+              </Link>
             </div>
           </div>
-          <Link
-            href="/"
-            className="sb-btn inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-[color:var(--sb-fg)]"
-            aria-label="Back to home"
-          >
-            <span aria-hidden>←</span>
-            Home
-          </Link>
-        </div>
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-start">
-          <div className="sb-card p-7">
-            <div className="flex items-center justify-between">
-              <div className="sb-title text-xl">Your workspaces</div>
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            <div className="sb-card-inset px-4 py-3">
+              <div className="text-[11px] font-semibold tracking-wide uppercase text-[color:var(--sb-muted)]">
+                Workspaces
+              </div>
+              <div className="mt-1 sb-title text-2xl font-extrabold leading-none">
+                {memberships.length}
+              </div>
+            </div>
+            <div className="sb-card-inset px-4 py-3">
+              <div className="text-[11px] font-semibold tracking-wide uppercase text-[color:var(--sb-muted)]">
+                Orgs
+              </div>
+              <div className="mt-1 sb-title text-2xl font-extrabold leading-none">
+                {orgCount}
+              </div>
+              <div className="mt-1 text-xs text-[color:var(--sb-muted)]">
+                Personal: {personalCount}
+              </div>
+            </div>
+            <div className="sb-card-inset px-4 py-3">
+              <div className="text-[11px] font-semibold tracking-wide uppercase text-[color:var(--sb-muted)]">
+                Demo loop
+              </div>
+              <div className="mt-1 text-sm font-semibold text-[color:var(--sb-fg)]">
+                Create org → Connect Google → Add goal → Nightly job
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <div className="mt-7 grid gap-6 lg:grid-cols-[1.25fr_0.75fr] lg:items-start">
+          <section className="sb-card p-6 sm:p-7">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <div className="sb-title text-xl font-extrabold">
+                  Your workspaces
+                </div>
+                <div className="mt-1 text-sm text-[color:var(--sb-muted)]">
+                  Jump into an org to set goals, connect Google, and preview tomorrow’s pulse.
+                </div>
+              </div>
               <div className="text-xs text-[color:var(--sb-muted)]">
-                v0: invite-only org join
+                Invite-only org join (v0)
               </div>
             </div>
 
             {memberships.length === 0 ? (
-              <div className="mt-6 rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-5 text-sm text-[color:var(--sb-muted)]">
-                No workspaces yet. Creating your personal workspace may have
-                failed. Try signing out and back in.
+              <div className="mt-6 sb-card-inset p-5">
+                <div className="sb-title text-base font-extrabold">
+                  No workspaces found
+                </div>
+                <div className="mt-1 text-sm text-[color:var(--sb-muted)]">
+                  Personal workspace creation may have failed. Try signing out and back in.
+                </div>
+                <Link
+                  href="/api/auth/signout?callbackUrl=/"
+                  className="sb-btn sb-btn-primary inline-flex mt-4 px-4 py-2 text-xs font-semibold"
+                >
+                  Sign out to retry
+                </Link>
               </div>
             ) : (
-              <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <div className="mt-6 grid gap-3">
                 {memberships.map((m) => (
                   <div
                     key={m.id}
-                    className="rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-5 flex flex-col gap-4"
+                    className="sb-card-inset p-5"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <div className="sb-title text-lg leading-tight">
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                      <div className="min-w-[220px]">
+                        <div className="sb-title text-lg font-extrabold leading-tight">
                           {m.workspace.name}
                         </div>
-                        <div className="mt-1 text-xs text-[color:var(--sb-muted)]">
-                          {m.workspace.type === "ORG" ? "Org" : "Personal"} -{" "}
-                          {m.role.toLowerCase()}
+                        <div className="mt-1 text-sm text-[color:var(--sb-muted)]">
+                          {m.workspace.type === "ORG" ? "Org workspace" : "Personal"}{" "}
+                          <span aria-hidden>·</span>{" "}
+                          <span className="font-semibold text-[color:var(--sb-fg)]">
+                            {m.role.toLowerCase()}
+                          </span>
                         </div>
                       </div>
-                      <div
-                        className="flex-none max-w-[160px] truncate rounded-full border border-black/10 dark:border-white/15 bg-white/40 dark:bg-white/10 px-2.5 py-1 text-[11px] text-[color:var(--sb-muted)]"
-                        title={m.workspace.slug}
-                      >
-                        {m.workspace.slug}
+                      <div className="flex items-center gap-2">
+                        <span className="sb-kbd" title={m.workspace.slug}>
+                          {m.workspace.slug}
+                        </span>
+                        <span className="text-[11px] font-semibold tracking-wide uppercase text-[color:var(--sb-muted)]">
+                          {m.workspace.type}
+                        </span>
                       </div>
                     </div>
-                    <div className="mt-auto flex gap-2">
+                    <div className="mt-4 flex flex-wrap gap-2">
                       <Link
                         href={`/w/${m.workspace.slug}`}
-                        className="sb-btn px-4 py-2 text-xs font-semibold"
+                        className="sb-btn sb-btn-primary px-4 py-2 text-xs font-semibold"
                       >
                         Open
                       </Link>
@@ -106,19 +185,30 @@ export default async function DashboardPage() {
                       >
                         Members
                       </Link>
+                      <Link
+                        href={`/w/${m.workspace.slug}/google`}
+                        className="sb-btn px-4 py-2 text-xs font-semibold"
+                      >
+                        Connect Google
+                      </Link>
                     </div>
                   </div>
                 ))}
               </div>
             )}
-          </div>
+          </section>
 
-          <div className="sb-card p-7">
-            <div className="sb-title text-xl">Create an org</div>
-            <p className="mt-2 text-sm text-[color:var(--sb-muted)]">
-              For the demo: CEO creates an org workspace, sets a Marketing goal,
-              and an employee gets a cited web insight the next morning.
-            </p>
+          <aside className="sb-card p-6 sm:p-7">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="sb-title text-xl font-extrabold">
+                  Create org workspace
+                </div>
+                <div className="mt-1 text-sm text-[color:var(--sb-muted)]">
+                  CEO sets goals and context here. Employees receive a daily pulse in the menu bar app.
+                </div>
+              </div>
+            </div>
 
             <form action={createOrgWorkspace} className="mt-5 grid gap-3">
               <label className="grid gap-1 text-sm">
@@ -134,17 +224,65 @@ export default async function DashboardPage() {
               </label>
               <button
                 type="submit"
-                className="sb-btn h-11 px-5 text-sm font-extrabold"
+                className="sb-btn sb-btn-primary h-11 px-5 text-sm font-extrabold"
               >
                 Create workspace
               </button>
             </form>
 
-            <div className="mt-6 rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-4 text-xs text-[color:var(--sb-muted)] leading-relaxed">
-              Next: departments, goals, announcements, Google connections, and
-              nightly jobs.
+            <div className="mt-6 sb-card-inset p-5">
+              <div className="text-xs font-semibold tracking-wide uppercase text-[color:var(--sb-muted)]">
+                What happens next
+              </div>
+              <ol className="mt-3 grid gap-3 text-sm">
+                <li className="flex gap-3">
+                  <div className="mt-0.5 h-6 w-6 flex-none rounded-full bg-[rgba(37,99,235,0.14)] grid place-items-center border border-[rgba(37,99,235,0.18)]">
+                    <span className="text-xs font-extrabold text-[color:var(--sb-fg)]">
+                      1
+                    </span>
+                  </div>
+                  <div>
+                    <div className="font-semibold text-[color:var(--sb-fg)]">
+                      Connect Google (read-only)
+                    </div>
+                    <div className="text-[color:var(--sb-muted)]">
+                      Gmail + Calendar add context for better focus suggestions.
+                    </div>
+                  </div>
+                </li>
+                <li className="flex gap-3">
+                  <div className="mt-0.5 h-6 w-6 flex-none rounded-full bg-[rgba(37,99,235,0.14)] grid place-items-center border border-[rgba(37,99,235,0.18)]">
+                    <span className="text-xs font-extrabold text-[color:var(--sb-fg)]">
+                      2
+                    </span>
+                  </div>
+                  <div>
+                    <div className="font-semibold text-[color:var(--sb-fg)]">
+                      Add goals and announcements
+                    </div>
+                    <div className="text-[color:var(--sb-muted)]">
+                      Give the agent deliberate context to optimize for.
+                    </div>
+                  </div>
+                </li>
+                <li className="flex gap-3">
+                  <div className="mt-0.5 h-6 w-6 flex-none rounded-full bg-[rgba(37,99,235,0.14)] grid place-items-center border border-[rgba(37,99,235,0.18)]">
+                    <span className="text-xs font-extrabold text-[color:var(--sb-fg)]">
+                      3
+                    </span>
+                  </div>
+                  <div>
+                    <div className="font-semibold text-[color:var(--sb-fg)]">
+                      Nightly job produces tomorrow’s pulse
+                    </div>
+                    <div className="text-[color:var(--sb-muted)]">
+                      Web research with citations + your internal context.
+                    </div>
+                  </div>
+                </li>
+              </ol>
             </div>
-          </div>
+          </aside>
         </div>
       </div>
     </div>
