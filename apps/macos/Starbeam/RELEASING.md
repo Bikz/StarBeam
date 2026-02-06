@@ -35,9 +35,32 @@ export NOTARY_PROFILE=starbeam-notary
 
 ### 2) Sparkle public key
 
-In `apps/macos/Starbeam/Starbeam/Info.plist` there is a placeholder:
+Sparkle uses an **Ed25519 signing keypair**:
 
-- `SUPublicEDKey`: `REPLACE_ME_WITH_SPARKLE_PUBLIC_KEY`
+- The **public key** is committed into the app's `Info.plist` as `SUPublicEDKey`
+- The **private key** must stay secret and is used to sign the appcast / updates
+
+We use Sparkle's `generate_keys` tool (downloaded locally) to generate a key in your **macOS Keychain**,
+and export the private key to a local file for release automation.
+
+#### Automated (recommended)
+
+Run:
+
+```bash
+scripts/macos/setup_sparkle_keys.sh
+```
+
+This will:
+
+1. Download Sparkle developer tools to `~/Library/Caches/starbeam/sparkle-tools/<version>`
+2. Create/reuse a Keychain key under account `starbeam`
+3. Export the private key to `~/.config/starbeam/sparkle/ed25519_private.key`
+4. Write the public key into `apps/macos/Starbeam/Starbeam/Info.plist`
+
+#### Manual (if needed)
+
+In `apps/macos/Starbeam/Starbeam/Info.plist`, `SUPublicEDKey` must be set.
 
 To generate keys, download Sparkle tools and run `generate_keys`:
 
@@ -58,7 +81,7 @@ export DEVELOPER_ID_APP='Developer ID Application: Your Company (TEAMID)'
 export NOTARY_PROFILE=starbeam-notary
 
 # Optional (enables appcast generation):
-export SPARKLE_PRIVATE_KEY="$HOME/.config/starbeam/sparkle_ed25519_private.key"
+export SPARKLE_PRIVATE_KEY="$HOME/.config/starbeam/sparkle/ed25519_private.key"
 
 scripts/macos/release_direct.sh
 ```
@@ -79,4 +102,3 @@ For real updates you must host:
 at the same origin as `SUFeedURL`, typically:
 
 - `https://downloads.starbeamhq.com/macos/`
-

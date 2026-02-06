@@ -6,7 +6,7 @@ set -euo pipefail
 
 SPARKLE_VERSION="${SPARKLE_VERSION:-2.8.1}"
 CACHE_DIR="${SPARKLE_TOOLS_DIR:-$HOME/Library/Caches/starbeam/sparkle-tools/$SPARKLE_VERSION}"
-ZIP_URL="https://github.com/sparkle-project/Sparkle/releases/download/${SPARKLE_VERSION}/Sparkle-for-Developers.zip"
+ARCHIVE_URL="https://github.com/sparkle-project/Sparkle/releases/download/${SPARKLE_VERSION}/Sparkle-${SPARKLE_VERSION}.tar.xz"
 
 if [[ "${1:-}" == "--print-dir" ]]; then
   echo "$CACHE_DIR"
@@ -22,18 +22,19 @@ mkdir -p "$CACHE_DIR"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
-ZIP_PATH="$TMP/Sparkle-for-Developers.zip"
+ARCHIVE_PATH="$TMP/Sparkle-${SPARKLE_VERSION}.tar.xz"
 
-echo "Downloading Sparkle tools $SPARKLE_VERSION…"
-curl -L --fail --silent --show-error "$ZIP_URL" -o "$ZIP_PATH"
+echo "Downloading Sparkle tools $SPARKLE_VERSION..."
+curl -L --fail --silent --show-error "$ARCHIVE_URL" -o "$ARCHIVE_PATH"
 
-echo "Extracting…"
-unzip -q "$ZIP_PATH" -d "$TMP/extracted"
+echo "Extracting..."
+mkdir -p "$TMP/extracted"
+tar -xJf "$ARCHIVE_PATH" -C "$TMP/extracted"
 
-# The zip contains a Sparkle.framework plus a bin/ directory with tooling.
+# The archive contains a Sparkle.framework plus a bin/ directory with tooling.
 # Copy only what we need.
 if [[ ! -d "$TMP/extracted/bin" ]]; then
-  echo "Unexpected Sparkle-for-Developers layout (missing bin/)." >&2
+  echo "Unexpected Sparkle archive layout (missing bin/)." >&2
   exit 1
 fi
 

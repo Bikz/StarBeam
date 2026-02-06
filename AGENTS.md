@@ -109,3 +109,7 @@ If blocked:
 
 Otherwise: continue automatically.
 
+## Releasing (macOS)
+
+- Direct-download release process (Sparkle updates, signing/notarization): `apps/macos/Starbeam/RELEASING.md`
+- Private keys and notarization credentials must never be committed.
