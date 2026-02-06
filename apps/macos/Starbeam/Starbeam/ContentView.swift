@@ -7,19 +7,25 @@ struct ContentView: View {
 }
 
 #if DEBUG
-#Preview {
+@MainActor
+private func makeContentPreviewModel() -> AppModel {
   let model = AppModel()
   model.auth.session = .init(
     accessToken: "preview",
     refreshToken: "preview",
     expiresAt: Date().addingTimeInterval(60 * 60),
     user: .init(id: "u_123", email: "preview@starbeam.invalid", name: "Preview", image: nil),
-    workspaces: [.init(id: "w_123", type: "ORG", name: "Company Name", slug: "company")]
+    workspaces: [
+      .init(id: "w_123", type: "ORG", name: "Company Name", slug: "company"),
+    ]
   )
   model.overview = OverviewPreviewMocks.overview
+  return model
+}
 
+#Preview {
   ContentView()
-    .environment(model)
+    .environment(makeContentPreviewModel())
     .frame(width: 460, height: 760)
 }
 #endif

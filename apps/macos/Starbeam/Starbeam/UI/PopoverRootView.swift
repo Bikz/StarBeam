@@ -2,7 +2,7 @@ import SwiftUI
 
 struct PopoverRootView: View {
   @Environment(AppModel.self) private var model
-  @Environment(\.openWindow) private var openWindow
+  @State private var showingSettings = false
 
   var body: some View {
     @Bindable var model = model
@@ -73,6 +73,11 @@ struct PopoverRootView: View {
     .sheet(isPresented: $model.showingSignInSheet) {
       DeviceSignInView()
         .frame(width: 420, height: 420)
+    }
+    .sheet(isPresented: $showingSettings) {
+      SettingsSheetView()
+        .environment(model)
+        .frame(width: 560, height: 520)
     }
   }
 
@@ -296,10 +301,7 @@ struct PopoverRootView: View {
   private var footer: some View {
     HStack(spacing: 18) {
       Button {
-        // Menu bar apps can fail to open Settings if the app isn't the active app.
-        // Explicitly activate and open our dedicated settings window.
-        NSApp.activate(ignoringOtherApps: true)
-        openWindow(id: "settings")
+        showingSettings = true
       } label: {
         Label("Settings", systemImage: "gearshape")
       }
@@ -323,6 +325,14 @@ struct PopoverRootView: View {
       }
       .buttonStyle(.plain)
       .accessibilityLabel("Open dashboard")
+
+      Button {
+        NSApp.terminate(nil)
+      } label: {
+        Label("Quit", systemImage: "power")
+      }
+      .buttonStyle(.plain)
+      .accessibilityLabel("Quit Starbeam")
     }
     .font(.system(size: 12, weight: .semibold, design: .rounded))
     .foregroundStyle(.secondary)
@@ -343,6 +353,32 @@ struct PopoverRootView: View {
   private func openSubmitIdea() {
     guard let url = URL(string: model.settings.submitIdeaURL.trimmingCharacters(in: .whitespacesAndNewlines)) else { return }
     NSWorkspace.shared.open(url)
+  }
+}
+
+private struct SettingsSheetView: View {
+  @Environment(\.dismiss) private var dismiss
+  @Environment(AppModel.self) private var model
+
+  var body: some View {
+    VStack(spacing: 0) {
+      HStack {
+        Text("Settings")
+          .font(.system(size: 14, weight: .bold, design: .rounded))
+        Spacer()
+        Button("Done") { dismiss() }
+          .keyboardShortcut(.defaultAction)
+      }
+      .padding(.horizontal, 16)
+      .padding(.vertical, 12)
+
+      Divider()
+
+      SettingsView()
+        .environment(model)
+        .padding(.top, 4)
+    }
+    .background(.ultraThinMaterial)
   }
 }
 
