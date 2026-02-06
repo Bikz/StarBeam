@@ -8,9 +8,39 @@ enum OverviewPreviewMocks {
       workspace: .init(id: "w_123", name: "Company Name", slug: "company"),
       bumpMessage: "Here’s your pulse bump for today, let’s make it a great one.",
       pulse: [
-        .init(id: "c1", icon: "🚀", title: "Think about long-term growth", body: "Where are we headed in the next 1–3 years? Let’s brainstorm and jot down some milestones."),
-        .init(id: "c2", icon: "⭐️", title: "Make customer experience top-notch", body: "How can we make our product even better for our customers? Think of ways to enhance their journey with us."),
-        .init(id: "c3", icon: "💡", title: "Let’s inspire innovation", body: "Don’t be afraid to share those bold ideas. We thrive on creative solutions, so let’s get creative."),
+        .init(
+          id: "c1",
+          kind: "WEB_RESEARCH",
+          icon: "🚀",
+          title: "Reddit thread is spiking about onboarding",
+          body: "A thread about onboarding friction is picking up steam. People are confused about pricing tiers and the first-run experience.",
+          why: "This aligns with your activation goal and could be a fast win.",
+          action: "Draft a short post clarifying the 3 tiers and add a 30s onboarding walkthrough GIF.",
+          sources: [
+            .init(url: "https://news.ycombinator.com/", title: "Hacker News"),
+            .init(url: "https://www.reddit.com/", title: "Reddit"),
+          ]
+        ),
+        .init(
+          id: "c2",
+          kind: "GOAL",
+          icon: "⭐️",
+          title: "Make customer experience top-notch",
+          body: "How can we make our product even better for our customers? Think of ways to enhance their journey with us.",
+          why: "Active goal for this workspace.",
+          action: "Use this to prioritize today.",
+          sources: nil
+        ),
+        .init(
+          id: "c3",
+          kind: "INTERNAL",
+          icon: "💡",
+          title: "Let’s inspire innovation",
+          body: "Don’t be afraid to share those bold ideas. We thrive on creative solutions, so let’s get creative.",
+          why: nil,
+          action: nil,
+          sources: nil
+        ),
       ],
       focus: [
         .init(id: "f1", icon: "sf:calendar", title: "Focus on roadmap for Q3", subtitle: "Roadmap planning meeting in 30m"),

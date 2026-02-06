@@ -7,11 +7,22 @@ struct Overview: Codable, Equatable {
     var slug: String?
   }
 
+  struct Citation: Codable, Equatable, Identifiable {
+    var url: String
+    var title: String?
+
+    var id: String { url }
+  }
+
   struct PulseCard: Codable, Equatable, Identifiable {
     var id: String
+    var kind: String?
     var icon: String?
     var title: String
     var body: String
+    var why: String?
+    var action: String?
+    var sources: [Citation]?
   }
 
   struct FocusItem: Codable, Equatable, Identifiable {

@@ -3,11 +3,30 @@ import { NextResponse } from "next/server";
 
 import { parseAccessToken, sha256Hex } from "@/lib/apiTokens";
 
+type Citation = { url: string; title?: string };
+
 function iconForCardKind(kind: string): string | undefined {
   if (kind === "ANNOUNCEMENT") return "🔔";
   if (kind === "GOAL") return "⭐️";
   if (kind === "WEB_RESEARCH") return "🚀";
   return "💡";
+}
+
+function extractCitations(sources: unknown): Citation[] {
+  if (!sources || typeof sources !== "object") return [];
+  const obj = sources as Record<string, unknown>;
+  const citations = obj.citations;
+  if (!Array.isArray(citations)) return [];
+  return citations
+    .map((c) => {
+      if (!c || typeof c !== "object") return null;
+      const cc = c as Record<string, unknown>;
+      const url = typeof cc.url === "string" ? cc.url : "";
+      const title = typeof cc.title === "string" ? cc.title : undefined;
+      if (!url) return null;
+      return { url, ...(title ? { title } : {}) } satisfies Citation;
+    })
+    .filter((c): c is Citation => c !== null);
 }
 
 function iconForFocusSource(type: string | null | undefined): string | undefined {
@@ -109,9 +128,13 @@ export async function GET(request: Request) {
 
   const pulse = (edition?.cards ?? []).slice(0, 7).map((c) => ({
     id: c.id,
+    kind: c.kind,
     icon: iconForCardKind(c.kind),
     title: c.title,
     body: c.body || c.action || c.why || "",
+    why: c.why || null,
+    action: c.action || null,
+    sources: extractCitations(c.sources),
   }));
 
   const now = new Date();
