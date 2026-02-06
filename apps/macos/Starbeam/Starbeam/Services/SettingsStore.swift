@@ -15,6 +15,14 @@ final class SettingsStore {
 
   private let defaults: UserDefaults
 
+  private static var defaultWebOrigin: String {
+#if DEBUG
+    return "http://localhost:3000"
+#else
+    return "https://starbeam-web.onrender.com"
+#endif
+  }
+
   var serverBaseURL: String {
     didSet { defaults.set(serverBaseURL, forKey: Keys.serverBaseURL) }
   }
@@ -43,8 +51,8 @@ final class SettingsStore {
   init(defaults: UserDefaults = .standard) {
     self.defaults = defaults
 
-    serverBaseURL = defaults.string(forKey: Keys.serverBaseURL) ?? "http://localhost:3000"
-    dashboardBaseURL = defaults.string(forKey: Keys.dashboardBaseURL) ?? "http://localhost:3000"
+    serverBaseURL = defaults.string(forKey: Keys.serverBaseURL) ?? Self.defaultWebOrigin
+    dashboardBaseURL = defaults.string(forKey: Keys.dashboardBaseURL) ?? Self.defaultWebOrigin
     workspaceID = defaults.string(forKey: Keys.workspaceID) ?? ""
     notificationsEnabled = defaults.object(forKey: Keys.notificationsEnabled) as? Bool ?? true
 
@@ -52,7 +60,7 @@ final class SettingsStore {
     let defaultMinutes = (8 * 60) + 30
     notificationTimeMinutes = defaults.object(forKey: Keys.notificationTimeMinutes) as? Int ?? defaultMinutes
 
-    submitIdeaURL = defaults.string(forKey: Keys.submitIdeaURL) ?? "http://localhost:3000"
+    submitIdeaURL = defaults.string(forKey: Keys.submitIdeaURL) ?? Self.defaultWebOrigin
   }
 
   func notificationTimeComponents() -> DateComponents {

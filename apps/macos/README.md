@@ -16,6 +16,7 @@ This folder contains the SwiftUI macOS 14+ menu bar app.
 ## Configure
 
 - Server base URL: `Starbeam -> Settings… -> Server`
-- Default: `http://localhost:3000`
+- Default (Debug): `http://localhost:3000`
+- Default (Release): `https://starbeam-web.onrender.com`
 
 The app is designed to run even before backend endpoints exist (it will show a signed-out / empty state).
