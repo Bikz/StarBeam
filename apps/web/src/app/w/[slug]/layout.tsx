@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth";
 import { prisma } from "@starbeam/db";
 
 import { authOptions } from "@/lib/auth";
+import ThemeToggle from "@/components/theme-toggle";
 
 export default async function WorkspaceLayout({
   children,
@@ -55,14 +56,17 @@ export default async function WorkspaceLayout({
               </span>
             </div>
           </div>
-          <Link
-            href="/dashboard"
-            className="sb-btn inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-[color:var(--sb-fg)]"
-            aria-label="Back to dashboard"
-          >
-            <span aria-hidden>←</span>
-            Dashboard
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <ThemeToggle />
+            <Link
+              href="/dashboard"
+              className="sb-btn inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-[color:var(--sb-fg)]"
+              aria-label="Back to dashboard"
+            >
+              <span aria-hidden>←</span>
+              Dashboard
+            </Link>
+          </div>
         </div>
 
         <nav className="mt-7 flex flex-wrap gap-2">

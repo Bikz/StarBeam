@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { prisma } from "@starbeam/db";
 
 import { createOrgWorkspace } from "@/app/dashboard/actions";
+import ThemeToggle from "@/components/theme-toggle";
 import { authOptions } from "@/lib/auth";
 
 export default async function DashboardPage() {
@@ -64,6 +65,7 @@ export default async function DashboardPage() {
                 </span>
               </div>
               <div className="h-8 w-px bg-[color:var(--sb-divider)] hidden sm:block" />
+              <ThemeToggle />
               <Link
                 href="/"
                 className="sb-btn inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-[color:var(--sb-fg)]"

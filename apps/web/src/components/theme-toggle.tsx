@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 
 type ThemePref = "system" | "light" | "dark";
 
@@ -26,29 +26,31 @@ function applyPref(pref: ThemePref) {
   root.style.colorScheme = isDark ? "dark" : "light";
 
   window.localStorage.setItem("sb_theme", pref);
+  // Same-tab updates don't emit the `storage` event.
+  window.dispatchEvent(new Event("sb-theme-change"));
 }
 
 export default function ThemeToggle() {
-  const [pref, setPref] = useState<ThemePref>(() => readPref());
+  const pref = useSyncExternalStore(
+    (onStoreChange) => {
+      if (typeof window === "undefined") return () => {};
 
-  useEffect(() => {
-    // Sync DOM to React state.
-    applyPref(pref);
-  }, [pref]);
+      const handler = () => onStoreChange();
+      window.addEventListener("sb-theme-change", handler);
 
-  useEffect(() => {
-    if (pref !== "system") return;
+      const mql = window.matchMedia("(prefers-color-scheme: dark)");
+      if (mql.addEventListener) mql.addEventListener("change", handler);
+      else mql.addListener(handler);
 
-    const mql = window.matchMedia("(prefers-color-scheme: dark)");
-    const handler = () => applyPref("system");
-    if (mql.addEventListener) mql.addEventListener("change", handler);
-    else mql.addListener(handler);
-
-    return () => {
-      if (mql.removeEventListener) mql.removeEventListener("change", handler);
-      else mql.removeListener(handler);
-    };
-  }, [pref]);
+      return () => {
+        window.removeEventListener("sb-theme-change", handler);
+        if (mql.removeEventListener) mql.removeEventListener("change", handler);
+        else mql.removeListener(handler);
+      };
+    },
+    () => readPref(),
+    () => "system",
+  );
 
   const options = useMemo(
     () =>
@@ -65,6 +67,7 @@ export default function ThemeToggle() {
       className="sb-card-inset inline-flex items-center gap-1 p-1"
       role="group"
       aria-label="Theme"
+      suppressHydrationWarning
     >
       {options.map((o) => {
         const active = pref === o.id;
@@ -74,7 +77,6 @@ export default function ThemeToggle() {
             type="button"
             aria-pressed={active}
             onClick={() => {
-              setPref(o.id);
               applyPref(o.id);
             }}
             className={[
