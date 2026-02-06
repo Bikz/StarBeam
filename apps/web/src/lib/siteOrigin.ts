@@ -1,4 +1,4 @@
 export function siteOrigin(): string {
-  return process.env.NEXT_PUBLIC_SITE_ORIGIN || "https://starbeamhq.com";
+  const raw = process.env.NEXT_PUBLIC_SITE_ORIGIN || "https://starbeamhq.com";
+  return raw.trim().replace(/\/+$/, "");
 }
-

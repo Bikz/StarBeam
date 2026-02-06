@@ -1,0 +1,17 @@
+# Keep Vercel uploads small. Vercel will install/build during CI.
+
+node_modules/
+.turbo/
+.next/
+out/
+
+.venv/
+output/
+tmp/
+
+# Large local artifacts (macOS release outputs, etc.)
+dist/
+
+# Local tooling state
+.wrangler/
+

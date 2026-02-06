@@ -1,18 +1,31 @@
 import type { Metadata } from "next";
-import { Bricolage_Grotesque, M_PLUS_Rounded_1c } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import Providers from "./providers";
 import ThemeScript from "./theme-script";
 
-const display = Bricolage_Grotesque({
+const display = localFont({
   variable: "--font-sb-display",
-  subsets: ["latin"],
+  display: "swap",
+  src: [
+    {
+      path: "../fonts/bricolage-grotesque-variable-latin.woff2",
+      style: "normal",
+      weight: "200 800",
+    },
+  ],
 });
 
-const body = M_PLUS_Rounded_1c({
+const body = localFont({
   variable: "--font-sb-body",
-  subsets: ["latin"],
-  weight: ["400", "500", "700", "800"],
+  display: "swap",
+  src: [
+    {
+      path: "../fonts/manrope-variable-latin.woff2",
+      style: "normal",
+      weight: "200 800",
+    },
+  ],
 });
 
 export const metadata: Metadata = {
