@@ -44,7 +44,7 @@ export default async function WorkspaceLayout({
 
   const ops = [
     { href: `${base}/members`, label: "People" },
-    { href: `${base}/google`, label: "Integrations" },
+    { href: `${base}/integrations`, label: "Integrations" },
     { href: `${base}/jobs`, label: "Runs" },
   ];
 

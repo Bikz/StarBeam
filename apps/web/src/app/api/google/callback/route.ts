@@ -148,12 +148,12 @@ export async function GET(request: Request) {
     });
 
     return NextResponse.redirect(
-      `${webOrigin()}/w/${parsedState.workspaceSlug}/google?connected=1`,
+      `${webOrigin()}/w/${parsedState.workspaceSlug}/integrations?connected=google`,
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : "connect_failed";
     return NextResponse.redirect(
-      `${webOrigin()}/w/${parsedState.workspaceSlug}/google?error=${encodeURIComponent(message)}`,
+      `${webOrigin()}/w/${parsedState.workspaceSlug}/integrations?error=${encodeURIComponent(message)}`,
     );
   }
 }
