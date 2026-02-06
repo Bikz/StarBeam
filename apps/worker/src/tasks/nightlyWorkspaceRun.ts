@@ -4,6 +4,9 @@ import { z } from "zod";
 
 import { startOfDayUtc } from "../lib/dates";
 import { generateFocusTasks, syncGoogleConnection } from "../lib/google/sync";
+import { isAuthRevoked as isGitHubAuthRevoked, syncGitHubConnection } from "../lib/integrations/github";
+import { isAuthRevoked as isLinearAuthRevoked, syncLinearConnection } from "../lib/integrations/linear";
+import { isAuthRevoked as isNotionAuthRevoked, syncNotionConnection } from "../lib/integrations/notion";
 import {
   buildDepartmentWebResearchPrompt,
   generateWebInsights,
@@ -101,23 +104,74 @@ export async function nightly_workspace_run(payload: unknown) {
 
     const memberUserIds = memberships.map((m) => m.userId);
 
-    const googleConnections = await prisma.googleConnection.findMany({
-      where: {
-        workspaceId,
-        ownerUserId: { in: memberUserIds },
-        // If a sync failed due to an unrelated transient issue (e.g. missing tables during deploy),
-        // allow the next run to retry without forcing the user through OAuth again.
-        status: { in: ["CONNECTED", "ERROR"] },
-      },
-      select: { id: true, ownerUserId: true, googleAccountEmail: true },
-      orderBy: { createdAt: "desc" },
-    });
+    const [googleConnections, githubConnections, linearConnections, notionConnections] =
+      await Promise.all([
+        prisma.googleConnection.findMany({
+          where: {
+            workspaceId,
+            ownerUserId: { in: memberUserIds },
+            // If a sync failed due to an unrelated transient issue (e.g. missing tables during deploy),
+            // allow the next run to retry without forcing the user through OAuth again.
+            status: { in: ["CONNECTED", "ERROR"] },
+          },
+          select: { id: true, ownerUserId: true, googleAccountEmail: true },
+          orderBy: { createdAt: "desc" },
+        }),
+        prisma.gitHubConnection.findMany({
+          where: {
+            workspaceId,
+            ownerUserId: { in: memberUserIds },
+            status: { in: ["CONNECTED", "ERROR"] },
+          },
+          select: { id: true, ownerUserId: true, githubLogin: true },
+          orderBy: { createdAt: "desc" },
+        }),
+        prisma.linearConnection.findMany({
+          where: {
+            workspaceId,
+            ownerUserId: { in: memberUserIds },
+            status: { in: ["CONNECTED", "ERROR"] },
+          },
+          select: { id: true, ownerUserId: true, linearUserEmail: true },
+          orderBy: { createdAt: "desc" },
+        }),
+        prisma.notionConnection.findMany({
+          where: {
+            workspaceId,
+            ownerUserId: { in: memberUserIds },
+            status: { in: ["CONNECTED", "ERROR"] },
+          },
+          select: { id: true, ownerUserId: true, notionWorkspaceName: true },
+          orderBy: { createdAt: "desc" },
+        }),
+      ]);
 
-    const connectionsByUser = new Map<string, Array<{ id: string; email: string }>>();
+    const googleConnectionsByUser = new Map<string, Array<{ id: string; email: string }>>();
     for (const c of googleConnections) {
-      const list = connectionsByUser.get(c.ownerUserId) ?? [];
+      const list = googleConnectionsByUser.get(c.ownerUserId) ?? [];
       list.push({ id: c.id, email: c.googleAccountEmail });
-      connectionsByUser.set(c.ownerUserId, list);
+      googleConnectionsByUser.set(c.ownerUserId, list);
+    }
+
+    const githubConnectionsByUser = new Map<string, Array<{ id: string; login: string }>>();
+    for (const c of githubConnections) {
+      const list = githubConnectionsByUser.get(c.ownerUserId) ?? [];
+      list.push({ id: c.id, login: c.githubLogin });
+      githubConnectionsByUser.set(c.ownerUserId, list);
+    }
+
+    const linearConnectionsByUser = new Map<string, Array<{ id: string; email?: string | null }>>();
+    for (const c of linearConnections) {
+      const list = linearConnectionsByUser.get(c.ownerUserId) ?? [];
+      list.push({ id: c.id, email: c.linearUserEmail });
+      linearConnectionsByUser.set(c.ownerUserId, list);
+    }
+
+    const notionConnectionsByUser = new Map<string, Array<{ id: string; workspaceName?: string | null }>>();
+    for (const c of notionConnections) {
+      const list = notionConnectionsByUser.get(c.ownerUserId) ?? [];
+      list.push({ id: c.id, workspaceName: c.notionWorkspaceName });
+      notionConnectionsByUser.set(c.ownerUserId, list);
     }
 
     const deptCardsByDeptId = new Map<
@@ -195,8 +249,8 @@ export async function nightly_workspace_run(payload: unknown) {
     }
 
     for (const userId of memberUserIds) {
-      const conns = connectionsByUser.get(userId) ?? [];
-      for (const c of conns) {
+      const googleConns = googleConnectionsByUser.get(userId) ?? [];
+      for (const c of googleConns) {
         try {
           await syncGoogleConnection({
             workspaceId,
@@ -220,7 +274,63 @@ export async function nightly_workspace_run(payload: unknown) {
         }
       }
 
-      if (conns.length) {
+      const githubConns = githubConnectionsByUser.get(userId) ?? [];
+      for (const c of githubConns) {
+        try {
+          await syncGitHubConnection({ workspaceId, userId, connectionId: c.id });
+        } catch (err) {
+          partial = true;
+          const msg = err instanceof Error ? err.message : String(err);
+          errorSummary =
+            (errorSummary ? `${errorSummary}\n` : "") +
+            `GitHub sync failed for ${c.login}: ${msg}`;
+
+          const status = isGitHubAuthRevoked(err) ? "REVOKED" : "ERROR";
+          await prisma.gitHubConnection
+            .update({ where: { id: c.id }, data: { status } })
+            .catch(() => undefined);
+        }
+      }
+
+      const linearConns = linearConnectionsByUser.get(userId) ?? [];
+      for (const c of linearConns) {
+        try {
+          await syncLinearConnection({ workspaceId, userId, connectionId: c.id });
+        } catch (err) {
+          partial = true;
+          const msg = err instanceof Error ? err.message : String(err);
+          const label = c.email ? c.email : "viewer";
+          errorSummary =
+            (errorSummary ? `${errorSummary}\n` : "") +
+            `Linear sync failed for ${label}: ${msg}`;
+
+          const status = isLinearAuthRevoked(err) ? "REVOKED" : "ERROR";
+          await prisma.linearConnection
+            .update({ where: { id: c.id }, data: { status } })
+            .catch(() => undefined);
+        }
+      }
+
+      const notionConns = notionConnectionsByUser.get(userId) ?? [];
+      for (const c of notionConns) {
+        try {
+          await syncNotionConnection({ workspaceId, userId, connectionId: c.id });
+        } catch (err) {
+          partial = true;
+          const msg = err instanceof Error ? err.message : String(err);
+          const label = c.workspaceName ? c.workspaceName : "workspace";
+          errorSummary =
+            (errorSummary ? `${errorSummary}\n` : "") +
+            `Notion sync failed for ${label}: ${msg}`;
+
+          const status = isNotionAuthRevoked(err) ? "REVOKED" : "ERROR";
+          await prisma.notionConnection
+            .update({ where: { id: c.id }, data: { status } })
+            .catch(() => undefined);
+        }
+      }
+
+      if (googleConns.length) {
         try {
           await generateFocusTasks({ workspaceId, userId });
         } catch (err) {
