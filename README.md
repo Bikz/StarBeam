@@ -96,6 +96,11 @@ Minimum required env vars:
 - `GOOGLE_CLIENT_SECRET`
 - `STARB_TOKEN_ENC_KEY_B64` (32-byte base64 AES key)
 - `OPENAI_API_KEY` (used by the worker for web research)
+- `S3_ENDPOINT` (S3-compatible endpoint; MinIO locally, R2 in hosted)
+- `S3_REGION`
+- `S3_ACCESS_KEY_ID`
+- `S3_SECRET_ACCESS_KEY`
+- `S3_BUCKET` (used for encrypted Drive snapshots and attachments)
 
 ### 4) Verify
 
