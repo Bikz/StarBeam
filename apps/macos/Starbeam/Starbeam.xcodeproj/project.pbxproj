@@ -11,6 +11,7 @@
 		1984437B8E04342A0422055C /* AuthStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5435234FAAC6D23A6E58F5E2 /* AuthStore.swift */; };
 		1ABED13A77DD5CE45AC868A4 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4AC6F75573A9D86470EFE39 /* APIClient.swift */; };
 		B57DF5D3826A703705E61CEF /* SettingsSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AC1E0C63E12D9AC481FE21B /* SettingsSheetView.swift */; };
+		8E2D8A0C1F4E2D2A9C8A5B31 /* WorkspacePagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2A1C9B6D4F3A8B7C6D5E4F3 /* WorkspacePagerView.swift */; };
 		2D915F57A9F3E81D7D8C2B1A /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 9C4A2F1E0A9B4C7D8E3F1B2C /* Sparkle */; };
 		3536E90E1E179AD5C133D737 /* OverviewPreviewMocks.swift in Sources */ = {isa = PBXBuildFile; fileRef = F67C0AF3D7900D05249D3829 /* OverviewPreviewMocks.swift */; };
 		CE1A1E90B837469DB2621681 /* ErrorCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E565088EEC6201D2F15EDD8 /* ErrorCardView.swift */; };
@@ -35,6 +36,7 @@
 
 /* Begin PBXFileReference section */
 		1AC1E0C63E12D9AC481FE21B /* SettingsSheetView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SettingsSheetView.swift; path = UI/Popover/SettingsSheetView.swift; sourceTree = "<group>"; };
+		E2A1C9B6D4F3A8B7C6D5E4F3 /* WorkspacePagerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = WorkspacePagerView.swift; path = UI/Popover/WorkspacePagerView.swift; sourceTree = "<group>"; };
 		3270FA1FE2B9B19ECF10865D /* StarbeamBackgroundView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = StarbeamBackgroundView.swift; path = UI/StarbeamBackgroundView.swift; sourceTree = "<group>"; };
 		3D1598C3E6ACFF599BE47717 /* Starbeam.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = Starbeam.entitlements; sourceTree = "<group>"; };
 		3E8CCAD2B3D95AF3B2E49F36 /* ContentView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -93,6 +95,7 @@
 				B0FAFC6988189D3777170BEB /* DeviceSignInView.swift */,
 				872D286EE6956D2265E67CC2 /* PopoverRootView.swift */,
 				9CD36A21A8C4F7ADF5C9159A /* FocusAndCalendarViews.swift */,
+				E2A1C9B6D4F3A8B7C6D5E4F3 /* WorkspacePagerView.swift */,
 				60604C9EA9CA5D048427D6DB /* CardIcon.swift */,
 				4E565088EEC6201D2F15EDD8 /* ErrorCardView.swift */,
 				8EED07B4A08362D143A2CE85 /* PulseCardView.swift */,
@@ -230,6 +233,7 @@
 				E31BC50841B87A746AEC5827 /* DeviceSignInView.swift in Sources */,
 				A63D9B9241B07FBCCD43E245 /* PopoverRootView.swift in Sources */,
 				EE0190E4AE6CD3B899247203 /* CardIcon.swift in Sources */,
+				8E2D8A0C1F4E2D2A9C8A5B31 /* WorkspacePagerView.swift in Sources */,
 				F1D4B256B9EB67455208C893 /* PulseSkeletonView.swift in Sources */,
 				F48094D3F79A7C794546F633 /* PulseCardView.swift in Sources */,
 				F76CABECEA7CCE21B5D66ED9 /* FocusAndCalendarViews.swift in Sources */,

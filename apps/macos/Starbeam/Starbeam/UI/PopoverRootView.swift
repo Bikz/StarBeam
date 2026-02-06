@@ -56,6 +56,15 @@ struct PopoverRootView: View {
         }
         .scrollIndicators(.hidden)
 
+        WorkspacePagerView(
+          workspaces: model.auth.session?.workspaces ?? [],
+          selectedWorkspaceID: model.settings.workspaceID,
+          signedIn: model.auth.isSignedIn,
+          onSelect: { id in
+            model.selectWorkspace(id: id, shouldRefresh: true)
+          }
+        )
+
         Divider().opacity(0.6)
 
         footer
@@ -71,6 +80,9 @@ struct PopoverRootView: View {
       .padding(10)
       .shadow(color: .black.opacity(0.18), radius: 26, x: 0, y: 18)
     }
+    // Workspace switching: swipe left/right anywhere in the popover.
+    // Keep it strict to avoid interfering with normal vertical scrolling.
+    .simultaneousGesture(workspaceSwipeGesture())
     .sheet(isPresented: $model.showingSignInSheet) {
       DeviceSignInView()
         .frame(width: 420, height: 420)
@@ -186,28 +198,7 @@ struct PopoverRootView: View {
     .padding(14)
     .starbeamCard()
     .accessibilityElement(children: .contain)
-    .accessibilityLabel("Pulse bump")
-    // Quick workspace switching: swipe left/right on the bump banner.
-    // This avoids forcing Settings interaction during demos.
-    .gesture(
-      DragGesture(minimumDistance: 24, coordinateSpace: .local)
-        .onEnded { value in
-          guard model.auth.isSignedIn else { return }
-          guard (model.auth.session?.workspaces.count ?? 0) >= 2 else { return }
-
-          // Only treat mostly-horizontal drags as a workspace swipe.
-          let dx = value.translation.width
-          let dy = value.translation.height
-          guard abs(dx) > abs(dy) else { return }
-          guard abs(dx) > 60 else { return }
-
-          if dx < 0 {
-            model.cycleWorkspace(direction: +1)
-          } else {
-            model.cycleWorkspace(direction: -1)
-          }
-        }
-    )
+      .accessibilityLabel("Pulse bump")
   }
 
   private var bumpText: String {
@@ -360,6 +351,27 @@ struct PopoverRootView: View {
   private func openSubmitIdea() {
     guard let url = URL(string: model.settings.submitIdeaURL.trimmingCharacters(in: .whitespacesAndNewlines)) else { return }
     NSWorkspace.shared.open(url)
+  }
+
+  private func workspaceSwipeGesture() -> some Gesture {
+    DragGesture(minimumDistance: 24, coordinateSpace: .local)
+      .onEnded { value in
+        guard model.auth.isSignedIn else { return }
+        guard (model.auth.session?.workspaces.count ?? 0) >= 2 else { return }
+
+        let dx = value.translation.width
+        let dy = value.translation.height
+
+        // Only treat mostly-horizontal drags as a workspace swipe.
+        guard abs(dx) > abs(dy) else { return }
+        guard abs(dx) > 80 else { return }
+
+        if dx < 0 {
+          model.cycleWorkspace(direction: +1)
+        } else {
+          model.cycleWorkspace(direction: -1)
+        }
+      }
   }
 }
 
