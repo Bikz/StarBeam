@@ -12,15 +12,28 @@ const CitationSchema = z.object({
   title: z.string().optional(),
 });
 
-export const CodexPulseCardSchema = z.object({
-  kind: z.enum(["WEB_RESEARCH", "INTERNAL"]),
+const BaseCardSchema = z.object({
   department: z.string().optional(),
   title: z.string().min(1),
   body: z.string().min(1),
   why: z.string().min(1),
   action: z.string().min(1),
+});
+
+const InternalCardSchema = BaseCardSchema.extend({
+  kind: z.literal("INTERNAL"),
   citations: z.array(CitationSchema).max(6),
 });
+
+const WebResearchCardSchema = BaseCardSchema.extend({
+  kind: z.literal("WEB_RESEARCH"),
+  citations: z.array(CitationSchema).min(1).max(6),
+});
+
+export const CodexPulseCardSchema = z.discriminatedUnion("kind", [
+  WebResearchCardSchema,
+  InternalCardSchema,
+]);
 
 export const CodexPulseOutputSchema = z.object({
   cards: z.array(CodexPulseCardSchema).max(7),
@@ -29,7 +42,50 @@ export const CodexPulseOutputSchema = z.object({
 export type CodexPulseOutput = z.infer<typeof CodexPulseOutputSchema>;
 
 function pulseOutputJsonSchema(args: { includeWebResearch: boolean }): unknown {
-  const kinds = args.includeWebResearch ? ["WEB_RESEARCH", "INTERNAL"] : ["INTERNAL"];
+  const baseCardSchema = {
+    type: "object",
+    additionalProperties: false,
+    required: ["kind", "title", "body", "why", "action", "citations"],
+    properties: {
+      kind: { type: "string" },
+      department: { type: "string" },
+      title: { type: "string" },
+      body: { type: "string" },
+      why: { type: "string" },
+      action: { type: "string" },
+      citations: {
+        type: "array",
+        maxItems: 6,
+        items: {
+          type: "object",
+          additionalProperties: false,
+          required: ["url"],
+          properties: {
+            url: { type: "string" },
+            title: { type: "string" },
+          },
+        },
+      },
+    },
+  };
+
+  const internal = {
+    ...baseCardSchema,
+    properties: { ...baseCardSchema.properties, kind: { const: "INTERNAL" } },
+  };
+
+  const web = {
+    ...baseCardSchema,
+    properties: {
+      ...baseCardSchema.properties,
+      kind: { const: "WEB_RESEARCH" },
+      citations: {
+        ...baseCardSchema.properties.citations,
+        minItems: 1,
+      },
+    },
+  };
+
   return {
     type: "object",
     additionalProperties: false,
@@ -38,32 +94,7 @@ function pulseOutputJsonSchema(args: { includeWebResearch: boolean }): unknown {
       cards: {
         type: "array",
         maxItems: 7,
-        items: {
-          type: "object",
-          additionalProperties: false,
-          required: ["kind", "title", "body", "why", "action", "citations"],
-          properties: {
-            kind: { type: "string", enum: kinds },
-            department: { type: "string" },
-            title: { type: "string" },
-            body: { type: "string" },
-            why: { type: "string" },
-            action: { type: "string" },
-            citations: {
-              type: "array",
-              maxItems: 6,
-              items: {
-                type: "object",
-                additionalProperties: false,
-                required: ["url"],
-                properties: {
-                  url: { type: "string" },
-                  title: { type: "string" },
-                },
-              },
-            },
-          },
-        },
+        items: args.includeWebResearch ? { oneOf: [web, internal] } : internal,
       },
     },
   };
@@ -96,7 +127,8 @@ function buildPulsePrompt(args: {
         ].join("\n")
       : "Do NOT use web research. Only generate INTERNAL cards from the provided context.",
     "",
-    "Also use the internal source items (email/calendar/drive/github/linear/notion) to create INTERNAL cards that help the user prioritize.",
+    "Use the internal source items (email/calendar/drive/github/linear/notion) to create INTERNAL cards that help the user prioritize.",
+    "Use departments.json (including promptTemplate) + goals.json to keep the pulse aligned with goals and tracks.",
     "Keep it direct and actionable.",
     "",
     `Company/workspace: ${args.workspaceName}`,
@@ -162,6 +194,7 @@ export async function generatePulseCardsWithCodexExec(args: {
         cwd: dir,
         prompt,
         model: args.model,
+        enableWebSearch: includeWebResearch,
         outputSchemaPath: schemaPath,
         outputLastMessagePath: outputPath,
       });

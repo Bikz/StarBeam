@@ -53,6 +53,7 @@ export async function runCodexExec(args: {
   cwd: string;
   prompt: string;
   model?: string;
+  enableWebSearch?: boolean;
   outputSchemaPath: string;
   outputLastMessagePath: string;
   timeoutMs?: number;
@@ -67,6 +68,10 @@ export async function runCodexExec(args: {
       "--skip-git-repo-check",
       "-s",
       "read-only",
+      // Non-interactive worker job: never ask for approvals.
+      "-a",
+      "never",
+      ...(args.enableWebSearch ? ["--search"] : []),
       "--output-schema",
       args.outputSchemaPath,
       "-o",

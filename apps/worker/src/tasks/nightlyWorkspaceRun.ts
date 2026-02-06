@@ -206,12 +206,21 @@ export async function nightly_workspace_run(payload: unknown) {
         "codex binary not found; Codex pulse generation skipped.";
     }
 
+    const legacyDeptWebResearchEnabled = ["1", "true", "yes"].includes(
+      (
+        process.env.STARB_LEGACY_DEPT_WEB_RESEARCH_ENABLED ??
+        (codexAvailable ? "0" : "1")
+      )
+        .trim()
+        .toLowerCase(),
+    );
+
     if (!openaiApiKey) {
       partial = true;
       errorSummary =
         (errorSummary ? `${errorSummary}\n` : "") +
         "OPENAI_API_KEY missing; web research skipped.";
-    } else {
+    } else if (legacyDeptWebResearchEnabled) {
       for (const dept of departments) {
         const deptMemberIds = dept.memberships.map((m) => m.userId);
         if (deptMemberIds.length === 0) continue;
@@ -371,7 +380,7 @@ export async function nightly_workspace_run(payload: unknown) {
             departments,
             userId,
             model: codexModel,
-            includeWebResearch: false,
+            includeWebResearch: true,
           });
         } catch (err) {
           partial = true;
@@ -472,29 +481,42 @@ export async function nightly_workspace_run(payload: unknown) {
             .map((d) => d.id),
         );
 
+        let webIdx = 0;
         let internalIdx = 0;
         for (const c of codexPulse.output.cards) {
-          if (c.kind !== "INTERNAL") continue;
-
           const mapped =
             c.department && codexPulse.departmentNameToId.has(c.department)
               ? codexPulse.departmentNameToId.get(c.department) ?? null
               : null;
           const departmentId = mapped && memberDeptIds.has(mapped) ? mapped : null;
 
-          cards.push({
-            editionId: edition.id,
-            kind: "INTERNAL",
-            departmentId,
-            title: c.title,
-            body: c.body,
-            why: c.why,
-            action: c.action,
-            sources: c.citations.length ? toJsonCitations(c.citations) : undefined,
-            priority: 650 - internalIdx,
-          });
-
-          internalIdx += 1;
+          if (c.kind === "WEB_RESEARCH") {
+            cards.push({
+              editionId: edition.id,
+              kind: "WEB_RESEARCH",
+              departmentId,
+              title: c.title,
+              body: c.body,
+              why: c.why,
+              action: c.action,
+              sources: toJsonCitations(c.citations),
+              priority: 700 - webIdx,
+            });
+            webIdx += 1;
+          } else {
+            cards.push({
+              editionId: edition.id,
+              kind: "INTERNAL",
+              departmentId,
+              title: c.title,
+              body: c.body,
+              why: c.why,
+              action: c.action,
+              sources: c.citations.length ? toJsonCitations(c.citations) : undefined,
+              priority: 650 - internalIdx,
+            });
+            internalIdx += 1;
+          }
         }
       }
 
