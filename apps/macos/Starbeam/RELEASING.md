@@ -102,3 +102,31 @@ For real updates you must host:
 at the same origin as `SUFeedURL`, typically:
 
 - `https://downloads.starbeamhq.com/macos/`
+
+### Cloudflare R2 (recommended)
+
+We use a Cloudflare R2 bucket `starbeam-downloads` to host release artifacts.
+
+1. Enable public access (dev URL is fine for early testing):
+
+```bash
+wrangler r2 bucket dev-url enable starbeam-downloads
+wrangler r2 bucket dev-url get starbeam-downloads
+```
+
+2. When `starbeamhq.com` is added to your Cloudflare account, bind the custom domain:
+
+```bash
+# Find your Zone ID in the Cloudflare dashboard for starbeamhq.com
+scripts/macos/bind_r2_domain.sh <zone-id>
+```
+
+3. Upload release artifacts:
+
+```bash
+scripts/macos/upload_r2.sh
+```
+
+Notes:
+- If `downloads.starbeamhq.com` is not yet active, Sparkle updates will not work.
+- You can temporarily point `SUFeedURL` to the bucket's `r2.dev` URL for testing.
