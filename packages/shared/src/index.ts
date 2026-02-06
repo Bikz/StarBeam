@@ -1,5 +1,11 @@
 import { z } from "zod";
-export { decryptString, encryptString, parseAes256GcmKeyFromEnv } from "./tokenCrypto";
+export {
+  decryptBytes,
+  decryptString,
+  encryptBytes,
+  encryptString,
+  parseAes256GcmKeyFromEnv,
+} from "./tokenCrypto";
 
 export const WorkspaceTypeSchema = z.enum(["PERSONAL", "ORG"]);
 export type WorkspaceType = z.infer<typeof WorkspaceTypeSchema>;
