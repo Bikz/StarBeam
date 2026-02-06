@@ -36,6 +36,7 @@ model User {
   apiRefreshTokens       ApiRefreshToken[]
   sourceItems            SourceItem[]
   tasks                  Task[]
+  blobs                  Blob[]               @relation("UserBlobs")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -122,6 +123,7 @@ model Workspace {
   googleConnections GoogleConnection[]
   sourceItems     SourceItem[]
   tasks           Task[]
+  blobs           Blob[]          @relation("WorkspaceBlobs")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -335,6 +337,41 @@ enum SourceItemType {
   DRIVE_FILE
 }
 
+enum BlobEncryption {
+  AES_256_GCM_V1
+}
+
+model Blob {
+  id String @id @default(cuid())
+
+  workspaceId String
+  ownerUserId String
+
+  bucket String
+  key    String
+
+  contentType String?
+  sizeBytes   Int
+  sha256      String
+
+  encryption BlobEncryption @default(AES_256_GCM_V1)
+
+  deletedAt DateTime?
+
+  workspace Workspace @relation("WorkspaceBlobs", fields: [workspaceId], references: [id], onDelete: Cascade)
+  owner     User      @relation("UserBlobs", fields: [ownerUserId], references: [id], onDelete: Cascade)
+
+  sourceItems SourceItem[] @relation("SourceItemContentBlob")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([bucket, key])
+  @@index([workspaceId])
+  @@index([ownerUserId])
+  @@index([deletedAt])
+}
+
 model SourceItem {
   id          String @id @default(cuid())
   workspaceId String
@@ -348,6 +385,7 @@ model SourceItem {
   title       String
   snippet     String?
   contentText String?
+  contentBlobId String?
 
   occurredAt DateTime
   endsAt     DateTime?
@@ -358,6 +396,7 @@ model SourceItem {
   workspace   Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   owner       User             @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
   connection  GoogleConnection? @relation(fields: [connectionId], references: [id], onDelete: SetNull)
+  contentBlob Blob?            @relation("SourceItemContentBlob", fields: [contentBlobId], references: [id], onDelete: SetNull)
   tasks       Task[]
 
   createdAt DateTime @default(now())
@@ -367,6 +406,7 @@ model SourceItem {
   @@index([workspaceId])
   @@index([ownerUserId])
   @@index([connectionId])
+  @@index([contentBlobId])
   @@index([occurredAt])
 }
 
