@@ -96,6 +96,8 @@ Minimum required env vars:
 - `GOOGLE_CLIENT_SECRET`
 - `STARB_TOKEN_ENC_KEY_B64` (32-byte base64 AES key)
 - `OPENAI_API_KEY` (used by the worker for web research)
+- `STARB_CODEX_EXEC_ENABLED` (optional: set `1` to run `codex exec` for INTERNAL pulse synthesis)
+- `STARB_CODEX_MODEL_DEFAULT` (optional: defaults to `gpt-5.2-codex`)
 - `S3_ENDPOINT` (S3-compatible endpoint; MinIO locally, R2 in hosted)
 - `S3_REGION`
 - `S3_ACCESS_KEY_ID`
@@ -106,6 +108,18 @@ Minimum required env vars:
 
 - Open the deployed web URL, sign in, create an org workspace, and trigger “Run now”.
 - Confirm `starbeam-worker` is running and connected to the same `DATABASE_URL`.
+
+### Optional: Codex Exec (Nightly Pulse Synthesis)
+
+If `STARB_CODEX_EXEC_ENABLED=1` is set, the worker will run `codex exec` over a
+materialized context directory (source items + decrypted blobs) and store extra
+INTERNAL pulse cards.
+
+Install the Codex CLI and ensure `codex` is available on PATH for the worker runtime:
+
+```bash
+npm i -g @openai/codex
+```
 
 ### Optional: Sync Local `.env` -> Render Env Vars
 
