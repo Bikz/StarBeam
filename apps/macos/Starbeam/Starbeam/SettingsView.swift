@@ -13,6 +13,21 @@ struct SettingsView: View {
           Text("Signed in")
             .foregroundStyle(.secondary)
 
+          if let session = model.auth.session {
+            VStack(alignment: .leading, spacing: 4) {
+              Text(session.user.email)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .textSelection(.enabled)
+
+              let tokenOK = !session.accessToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+              Text("Access token: \(tokenOK ? "present" : "missing") · Expires: \(session.expiresAt.formatted(date: .abbreviated, time: .shortened))")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            }
+            .padding(.top, 2)
+          }
+
           Button("Sign out") {
             model.signOut()
           }
@@ -32,7 +47,7 @@ struct SettingsView: View {
           TextField("Base URL", text: $settings.serverBaseURL)
             .textFieldStyle(.roundedBorder)
 
-          Text("Used for device sign-in and API requests. Default: https://starbeam-web.onrender.com (Release) or http://localhost:3000 (Debug).")
+          Text("Used for device sign-in and API requests. Default: https://starbeam-web.onrender.com")
             .font(.footnote)
             .foregroundStyle(.secondary)
 
