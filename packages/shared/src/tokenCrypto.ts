@@ -51,3 +51,39 @@ export function decryptString(ciphertextEnc: string, key: Buffer): string {
   return plaintext.toString("utf8");
 }
 
+// Stored format (bytes): "SB1" || iv(12) || tag(16) || ciphertext(n)
+const BYTES_MAGIC = Buffer.from("SB1", "ascii");
+const BYTES_IV_LEN = 12;
+const BYTES_TAG_LEN = 16;
+
+export function encryptBytes(plaintext: Buffer, key: Buffer): Buffer {
+  const iv = crypto.randomBytes(BYTES_IV_LEN);
+  const cipher = crypto.createCipheriv("aes-256-gcm", key, iv);
+  const ciphertext = Buffer.concat([cipher.update(plaintext), cipher.final()]);
+  const tag = cipher.getAuthTag();
+
+  return Buffer.concat([BYTES_MAGIC, iv, tag, ciphertext]);
+}
+
+export function decryptBytes(ciphertextEnc: Buffer, key: Buffer): Buffer {
+  if (ciphertextEnc.byteLength < BYTES_MAGIC.byteLength + BYTES_IV_LEN + BYTES_TAG_LEN + 1) {
+    throw new Error("Invalid ciphertext format");
+  }
+
+  const magic = ciphertextEnc.subarray(0, BYTES_MAGIC.byteLength);
+  if (!magic.equals(BYTES_MAGIC)) {
+    throw new Error("Invalid ciphertext format");
+  }
+
+  const ivStart = BYTES_MAGIC.byteLength;
+  const tagStart = ivStart + BYTES_IV_LEN;
+  const dataStart = tagStart + BYTES_TAG_LEN;
+
+  const iv = ciphertextEnc.subarray(ivStart, tagStart);
+  const tag = ciphertextEnc.subarray(tagStart, dataStart);
+  const data = ciphertextEnc.subarray(dataStart);
+
+  const decipher = crypto.createDecipheriv("aes-256-gcm", key, iv);
+  decipher.setAuthTag(tag);
+  return Buffer.concat([decipher.update(data), decipher.final()]);
+}

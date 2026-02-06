@@ -2,7 +2,13 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import crypto from "node:crypto";
 
-import { decryptString, encryptString, parseAes256GcmKeyFromEnv } from "../src/tokenCrypto";
+import {
+  decryptBytes,
+  decryptString,
+  encryptBytes,
+  encryptString,
+  parseAes256GcmKeyFromEnv,
+} from "../src/tokenCrypto";
 
 test("tokenCrypto: encrypt/decrypt round trip", () => {
   const key = crypto.randomBytes(32);
@@ -10,6 +16,14 @@ test("tokenCrypto: encrypt/decrypt round trip", () => {
   const enc = encryptString(plaintext, key);
   const dec = decryptString(enc, key);
   assert.equal(dec, plaintext);
+});
+
+test("tokenCrypto: encryptBytes/decryptBytes round trip", () => {
+  const key = crypto.randomBytes(32);
+  const plaintext = crypto.randomBytes(256);
+  const enc = encryptBytes(plaintext, key);
+  const dec = decryptBytes(enc, key);
+  assert.deepEqual(dec, plaintext);
 });
 
 test("tokenCrypto: parseAes256GcmKeyFromEnv validates key length", () => {
@@ -22,4 +36,3 @@ test("tokenCrypto: parseAes256GcmKeyFromEnv validates key length", () => {
     else process.env.STARB_TOKEN_ENC_KEY_B64 = original;
   }
 });
-
