@@ -43,7 +43,8 @@ export async function runNightlyNow(workspaceSlug: string) {
       await workerUtils.addJob(
         "nightly_workspace_run",
         { workspaceId: membership.workspace.id, jobRunId: jobRun.id },
-        { jobKey: `nightly_workspace_run:${jobRun.id}` },
+        // Explicitly set runAt "now" so "Run now" never looks like a nightly schedule.
+        { jobKey: `nightly_workspace_run:${jobRun.id}`, runAt: new Date() },
       );
     } finally {
       await workerUtils.release();
@@ -60,4 +61,3 @@ export async function runNightlyNow(workspaceSlug: string) {
 
   redirect(`/w/${workspaceSlug}/jobs?queued=1`);
 }
-
