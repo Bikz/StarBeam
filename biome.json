@@ -1,0 +1,28 @@
+{
+  "files": {
+    "ignore": [
+      "**/node_modules/**",
+      "**/dist/**",
+      "**/.next/**",
+      "**/.turbo/**",
+      "**/.vercel/**",
+      "**/.wrangler/**",
+      "**/output/**",
+      "**/DerivedData/**",
+      "apps/macos/**"
+    ]
+  },
+  "formatter": {
+    "enabled": false
+  },
+  "organizeImports": {
+    "enabled": false
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true
+    }
+  }
+}
+
