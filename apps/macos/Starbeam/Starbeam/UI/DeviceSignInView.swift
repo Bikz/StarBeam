@@ -11,6 +11,7 @@ struct DeviceSignInView: View {
   @State private var verificationURL: URL?
   @State private var lastError: AppError?
   @State private var showDetails = false
+  @State private var didOpenVerificationURL = false
 
   @State private var pollTask: Task<Void, Never>?
 
@@ -160,6 +161,7 @@ struct DeviceSignInView: View {
             }
             .buttonStyle(.borderedProminent)
             .keyboardShortcut(.defaultAction)
+            .disabled(isWorking || pollTask != nil)
           }
         }
       }
@@ -168,7 +170,8 @@ struct DeviceSignInView: View {
     .onAppear {
       if !didStart {
         didStart = true
-        Task { await start() }
+        // Do not auto-open browser on appear; it can cause multiple windows
+        // if the sheet is presented repeatedly. User explicitly clicks "Start sign-in".
       }
     }
     .onDisappear {
@@ -178,11 +181,15 @@ struct DeviceSignInView: View {
   }
 
   private func start() async {
+    if isWorking { return }
+    if verificationURL != nil { return }
+
     pollTask?.cancel()
     pollTask = nil
 
     lastError = nil
     showDetails = false
+    didOpenVerificationURL = false
 
     let baseURLString = model.settings.serverBaseURL.trimmingCharacters(in: .whitespacesAndNewlines)
     guard let baseURL = URL(string: baseURLString) else {
@@ -200,7 +207,8 @@ struct DeviceSignInView: View {
       deviceCode = start.deviceCode
       verificationURL = URL(string: start.verificationUrl)
 
-      if let url = verificationURL {
+      if let url = verificationURL, !didOpenVerificationURL {
+        didOpenVerificationURL = true
         NSWorkspace.shared.open(url)
       }
 
