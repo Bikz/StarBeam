@@ -61,12 +61,12 @@ perl -pi -e "s/MARKETING_VERSION = \\Q${current_version}\\E;/MARKETING_VERSION =
 perl -pi -e "s/CURRENT_PROJECT_VERSION = \\Q${current_build}\\E;/CURRENT_PROJECT_VERSION = ${new_build};/g" "$PBXPROJ"
 
 # Keep generator script in sync (used by contributors).
-perl -pi -e "s/(MARKETING_VERSION'\\] = ')\\Q${current_version}\\E(')/\\$1${new_version}\\$2/g" "$GEN_RB"
-perl -pi -e "s/(CURRENT_PROJECT_VERSION'\\] = ')\\Q${current_build}\\E(')/\\$1${new_build}\\$2/g" "$GEN_RB" || true
+# Use backrefs as \\1 / \\2 to avoid shell expansion issues under `set -u`.
+perl -pi -e "s/(MARKETING_VERSION'\\] = ')\\Q${current_version}\\E(')/\\\\1${new_version}\\\\2/g" "$GEN_RB"
+perl -pi -e "s/(CURRENT_PROJECT_VERSION'\\] = ')\\Q${current_build}\\E(')/\\\\1${new_build}\\\\2/g" "$GEN_RB" || true
 
 # Sanity check.
 rg -n "MARKETING_VERSION = ${new_version};" "$PBXPROJ" >/dev/null
 rg -n "CURRENT_PROJECT_VERSION = ${new_build};" "$PBXPROJ" >/dev/null
 
 echo "Bumped macOS version: $current_version ($current_build) -> $new_version ($new_build)"
-
