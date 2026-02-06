@@ -156,7 +156,7 @@ if [[ -n "$SPARKLE_PRIVATE_KEY" ]]; then
 
   # Sparkle's generate_appcast will sign updates when provided an EdDSA private key.
   "$TOOLS_DIR/bin/generate_appcast" \
-    --ed25519-private-key-file "$SPARKLE_PRIVATE_KEY" \
+    --ed-key-file "$SPARKLE_PRIVATE_KEY" \
     --download-url-prefix "https://downloads.starbeamhq.com/macos/" \
     "$OUT_DIR" \
     > "$APPCAST_PATH"
