@@ -26,7 +26,7 @@ fi
 
 # Pick the newest dmg/zip in the output dir.
 DMG="$(ls -t "$OUT_DIR"/*.dmg 2>/dev/null | head -n 1 || true)"
-ZIP="$(ls -t "$OUT_DIR"/*.zip 2>/dev/null | head -n 1 || true)"
+ZIP="$(ls -t "$OUT_DIR"/updates/*.zip 2>/dev/null | head -n 1 || true)"
 
 if [[ -z "$DMG" || -z "$ZIP" ]]; then
   echo "Missing .dmg or .zip in $OUT_DIR" >&2

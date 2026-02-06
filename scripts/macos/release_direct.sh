@@ -16,12 +16,14 @@ ENTITLEMENTS="$ROOT/apps/macos/Starbeam/Starbeam/Starbeam.entitlements"
 OUT_DIR="$ROOT/dist/macos"
 BUILD_DIR="$OUT_DIR/build"
 ARCHIVE_PATH="$BUILD_DIR/$APP_NAME.xcarchive"
+UPDATES_DIR="$OUT_DIR/updates"
 
 DEVELOPER_ID_APP="${DEVELOPER_ID_APP:-}"
 NOTARY_PROFILE="${NOTARY_PROFILE:-}"
 SPARKLE_PRIVATE_KEY="${SPARKLE_PRIVATE_KEY:-}"
 
 mkdir -p "$OUT_DIR" "$BUILD_DIR"
+mkdir -p "$UPDATES_DIR"
 
 if [[ -z "$DEVELOPER_ID_APP" ]]; then
   echo "Missing DEVELOPER_ID_APP (e.g. 'Developer ID Application: Starbeam Inc (TEAMID)')" >&2
@@ -52,7 +54,7 @@ VERSION_BUILD="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP_PATH/
 VERSION="$VERSION_SHORT"
 
 DMG_PATH="$OUT_DIR/$APP_NAME-$VERSION.dmg"
-ZIP_PATH="$OUT_DIR/$APP_NAME-$VERSION.zip"
+ZIP_PATH="$UPDATES_DIR/$APP_NAME-$VERSION.zip"
 APPCAST_PATH="$OUT_DIR/appcast.xml"
 
 # 2) Sign nested components first (frameworks, XPC services, helpers), then the app.
@@ -158,8 +160,8 @@ if [[ -n "$SPARKLE_PRIVATE_KEY" ]]; then
   "$TOOLS_DIR/bin/generate_appcast" \
     --ed-key-file "$SPARKLE_PRIVATE_KEY" \
     --download-url-prefix "https://downloads.starbeamhq.com/macos/" \
-    "$OUT_DIR" \
-    > "$APPCAST_PATH"
+    -o "$APPCAST_PATH" \
+    "$UPDATES_DIR"
 
   echo "Wrote appcast: $APPCAST_PATH"
 else
