@@ -1,4 +1,4 @@
-export type CalendarEvent = {
+type CalendarEvent = {
   id?: string;
   htmlLink?: string;
   status?: string;
@@ -76,4 +76,3 @@ export async function listPrimaryEvents(args: {
 
   return out;
 }
-

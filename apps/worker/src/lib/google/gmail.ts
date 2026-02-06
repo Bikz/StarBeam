@@ -6,7 +6,7 @@ type GmailListResponse = {
 
 type GmailHeader = { name?: string; value?: string };
 
-export type GmailMessage = {
+type GmailMessage = {
   id?: string;
   threadId?: string;
   labelIds?: string[];
@@ -95,4 +95,3 @@ export async function fetchMessageMetadata(args: {
   const url = `https://gmail.googleapis.com/gmail/v1/users/me/messages/${encodeURIComponent(args.messageId)}?${params.toString()}`;
   return googleGetJson<GmailMessage>(url, args.accessToken);
 }
-

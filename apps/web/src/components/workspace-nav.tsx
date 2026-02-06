@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-export type WorkspaceNavItem = {
+type WorkspaceNavItem = {
   href: string;
   label: string;
   match?: "exact" | "prefix";

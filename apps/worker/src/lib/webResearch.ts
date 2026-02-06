@@ -19,7 +19,7 @@ const WebInsightOutputSchema = z.object({
   cards: z.array(WebInsightCardSchema).min(0).max(2),
 });
 
-export type WebInsightCard = z.infer<typeof WebInsightCardSchema>;
+type WebInsightCard = z.infer<typeof WebInsightCardSchema>;
 
 type ToolSource = { url?: string; title?: string };
 
