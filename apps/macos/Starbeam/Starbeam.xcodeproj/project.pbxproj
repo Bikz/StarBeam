@@ -10,6 +10,7 @@
 		183F81FFDB5672DC8EA6B029 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63E3F875F2F8632EAFEB33A6 /* AppModel.swift */; };
 		1984437B8E04342A0422055C /* AuthStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5435234FAAC6D23A6E58F5E2 /* AuthStore.swift */; };
 		1ABED13A77DD5CE45AC868A4 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4AC6F75573A9D86470EFE39 /* APIClient.swift */; };
+		2D915F57A9F3E81D7D8C2B1A /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 9C4A2F1E0A9B4C7D8E3F1B2C /* Sparkle */; };
 		3536E90E1E179AD5C133D737 /* OverviewPreviewMocks.swift in Sources */ = {isa = PBXBuildFile; fileRef = F67C0AF3D7900D05249D3829 /* OverviewPreviewMocks.swift */; };
 		569CF6E5CB71DC1394E546FC /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B52E95CE7BF04B2207A9C291 /* Cocoa.framework */; };
 		599C6BEE5F7F8B248ADF4F47 /* Overview.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4250514EF57A58CE4EE2CD1 /* Overview.swift */; };
@@ -55,6 +56,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				569CF6E5CB71DC1394E546FC /* Cocoa.framework in Frameworks */,
+				2D915F57A9F3E81D7D8C2B1A /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -83,7 +85,6 @@
 				573AACCB3728A1F04D6D7E56 /* Info.plist */,
 				3D1598C3E6ACFF599BE47717 /* Starbeam.entitlements */,
 			);
-			name = Starbeam;
 			path = Starbeam;
 			sourceTree = "<group>";
 		};
@@ -136,6 +137,9 @@
 			dependencies = (
 			);
 			name = Starbeam;
+			packageProductDependencies = (
+				9C4A2F1E0A9B4C7D8E3F1B2C /* Sparkle */,
+			);
 			productName = Starbeam;
 			productReference = 9073FF5584F414AE7EE49431 /* Starbeam.app */;
 			productType = "com.apple.product-type.application";
@@ -148,6 +152,12 @@
 			attributes = {
 				LastSwiftUpdateCheck = 1600;
 				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					7D435CC071D2D739776A3213 = {
+						DevelopmentTeam = AJ78LTXSBJ;
+						ProvisioningStyle = Automatic;
+					};
+				};
 			};
 			buildConfigurationList = 007EA2B8CC4CC85BF8AD3C65 /* Build configuration list for PBXProject "Starbeam" */;
 			compatibilityVersion = "Xcode 3.2";
@@ -158,8 +168,9 @@
 				Base,
 			);
 			mainGroup = C9801331F431E1CADF28BB07;
-			minimizedProjectReferenceProxies = 0;
-			preferredProjectObjectVersion = 77;
+			packageReferences = (
+				1A2B3C4D5E6F708192A3B4C5 /* XCRemoteSwiftPackageReference "Sparkle" */,
+			);
 			productRefGroup = 9A00E9CC57A3BCC47CA109C9 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -254,8 +265,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_COMPILATION_MODE = wholemodule;
-				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
@@ -268,13 +278,17 @@
 				CODE_SIGNING_ALLOWED = NO;
 				CODE_SIGNING_REQUIRED = NO;
 				CODE_SIGN_ENTITLEMENTS = Starbeam/Starbeam.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = AJ78LTXSBJ;
 				INFOPLIST_FILE = Starbeam/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.starbeam.macos;
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = macosx;
 			};
 			name = Release;
@@ -348,18 +362,33 @@
 				CODE_SIGNING_ALLOWED = NO;
 				CODE_SIGNING_REQUIRED = NO;
 				CODE_SIGN_ENTITLEMENTS = Starbeam/Starbeam.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = AJ78LTXSBJ;
 				INFOPLIST_FILE = Starbeam/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.starbeam.macos;
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = macosx;
 			};
 			name = Debug;
 		};
 /* End XCBuildConfiguration section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		1A2B3C4D5E6F708192A3B4C5 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.8.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCConfigurationList section */
 		007EA2B8CC4CC85BF8AD3C65 /* Build configuration list for PBXProject "Starbeam" */ = {
@@ -381,6 +410,14 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		9C4A2F1E0A9B4C7D8E3F1B2C /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1A2B3C4D5E6F708192A3B4C5 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 2C76F9E21538CA9872FDBAF7 /* Project object */;
 }

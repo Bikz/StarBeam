@@ -22,6 +22,10 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSUIElement</key>
 	<true/>
+	<key>SUFeedURL</key>
+	<string>https://downloads.starbeamhq.com/macos/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>REPLACE_ME_WITH_SPARKLE_PUBLIC_KEY</string>
   <key>NSAppTransportSecurity</key>
   <dict>
     <key>NSAllowsArbitraryLoadsInLocalNetworking</key>

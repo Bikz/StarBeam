@@ -1,6 +1,9 @@
 # Internal (never publish)
 docs/
 
+# Accidental / local-only workspace artifacts
+apps/apps/
+
 # Node / JS
 node_modules/
 npm-debug.log*
@@ -34,6 +37,7 @@ dist/
 DerivedData/
 *.xcuserstate
 *.xcuserdata/
+xcuserdata/
 *.moved-aside
 *.pbxuser
 *.mode1v3

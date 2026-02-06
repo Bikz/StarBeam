@@ -1,11 +1,13 @@
 import Foundation
 import Observation
+import Sparkle
 
 @MainActor
 @Observable
 final class AppModel {
   var settings: SettingsStore
   var auth: AuthStore
+  let updater = UpdaterStore()
 
   var overview: Overview?
   var isRefreshing: Bool = false
@@ -310,6 +312,30 @@ final class AppModel {
     overview = nil
     cachedAt = nil
     lastError = nil
+  }
+}
+
+// MARK: - Updates (Direct Download via Sparkle)
+
+@MainActor
+final class UpdaterStore: NSObject {
+  private let controller: SPUStandardUpdaterController
+
+  override init() {
+    // Starting the updater means it will perform scheduled checks as configured.
+    controller = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
+    super.init()
+
+    // Desired behavior:
+    // - check automatically
+    // - download silently
+    // - ask before install (Sparkle's standard user driver will prompt)
+    controller.updater.automaticallyChecksForUpdates = true
+    controller.updater.automaticallyDownloadsUpdates = true
+  }
+
+  func checkForUpdates() {
+    controller.checkForUpdates(nil)
   }
 }
 

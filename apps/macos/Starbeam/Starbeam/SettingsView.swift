@@ -121,6 +121,22 @@ struct SettingsView: View {
           .font(.footnote)
           .foregroundStyle(.secondary)
       }
+
+      Section("Updates") {
+        VStack(alignment: .leading, spacing: 8) {
+          Button("Check for updates…") {
+            model.updater.checkForUpdates()
+          }
+
+          Text("Direct-download builds use Sparkle for updates: download silently, ask before install.")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+
+          Text("Version: \(appVersionString())")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+        }
+      }
     }
     .formStyle(.grouped)
     .padding(20)
@@ -146,6 +162,13 @@ struct SettingsView: View {
     let now = Date()
     let day = calendar.startOfDay(for: now)
     return calendar.date(byAdding: .minute, value: minutes, to: day) ?? now
+  }
+
+  private func appVersionString() -> String {
+    let short = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
+    let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String
+    if let short, let build { return "\(short) (\(build))" }
+    return short ?? "Unknown"
   }
 }
 
