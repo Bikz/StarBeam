@@ -1,17 +1,53 @@
-import Link from "next/link";
+import type { Metadata } from "next";
+import Image from "next/image";
 import { headers } from "next/headers";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 
+import { joinWaitlist } from "@/app/waitlist/actions";
 import { authOptions } from "@/lib/auth";
 import { isAppHost } from "@/lib/hosts";
-import { webOrigin } from "@/lib/webOrigin";
-import { joinWaitlist } from "@/app/waitlist/actions";
-import SiteHeader from "@/components/site-header";
-import SiteFooter from "@/components/site-footer";
+import { siteOrigin } from "@/lib/siteOrigin";
 import { supportEmail } from "@/lib/supportEmail";
+import { webOrigin } from "@/lib/webOrigin";
+import SiteFooter from "@/components/site-footer";
+import SiteHeader from "@/components/site-header";
 
-export default async function Home() {
+export const metadata: Metadata = {
+  metadataBase: new URL(siteOrigin()),
+  title: "Starbeam | Daily pulse for startup teams",
+  description:
+    "A calm, cited daily pulse for startup founders and teams. Set context once. Starbeam runs overnight and delivers what changed, why it matters, and what to do next.",
+  openGraph: {
+    title: "Starbeam | Daily pulse for startup teams",
+    description:
+      "Set context once. Starbeam runs overnight and delivers a calm, cited pulse: what changed, why it matters, and what to do next.",
+    url: "/",
+    siteName: "Starbeam",
+    images: [
+      {
+        url: "/og/og.png",
+        width: 1200,
+        height: 630,
+        alt: "Starbeam: daily pulse for startup teams",
+      },
+    ],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Starbeam | Daily pulse for startup teams",
+    description:
+      "A calm, cited daily pulse for startup founders and teams. What changed, why it matters, what to do next.",
+    images: ["/og/og.png"],
+  },
+};
+
+export default async function Home({
+  searchParams,
+}: {
+  searchParams?: { ref?: string | string[] };
+}) {
   const host = (await headers()).get("host");
 
   // app.starbeamHQ.com: login-first entry.
@@ -23,189 +59,161 @@ export default async function Home() {
 
   const app = webOrigin();
   const email = supportEmail();
+  const ref =
+    typeof searchParams?.ref === "string" ? searchParams?.ref.trim() : "";
 
   return (
     <div className="sb-bg">
       <div className="mx-auto max-w-6xl px-6 py-12 sm:py-16">
         <SiteHeader appOrigin={app} />
 
-        <main className="mt-10 grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
+        <main className="mt-10">
           <section className="sb-marketing-shell">
-            <div className="sb-card p-8 sm:p-10 relative overflow-hidden">
+            <div className="sb-card relative overflow-hidden px-8 py-10 sm:px-10 sm:py-12">
               <div className="sb-orbit" aria-hidden />
 
-              <div className="relative">
-                <div className="inline-flex flex-wrap items-center gap-2 text-[11px] font-semibold tracking-wide uppercase text-[color:var(--sb-muted)]">
-                  <span className="rounded-full border border-black/10 dark:border-white/15 bg-white/40 dark:bg-white/10 px-3 py-1">
-                    Nightly web research (cited)
-                  </span>
-                  <span className="rounded-full border border-black/10 dark:border-white/15 bg-white/40 dark:bg-white/10 px-3 py-1">
-                    Goals + announcements
-                  </span>
-                  <span className="rounded-full border border-black/10 dark:border-white/15 bg-white/40 dark:bg-white/10 px-3 py-1">
-                    Read-only Google (v0)
-                  </span>
-                </div>
+              <div className="relative grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+                <div>
+                  <div className="inline-flex flex-wrap items-center gap-2 text-[11px] font-semibold tracking-wide uppercase text-[color:var(--sb-muted)]">
+                    <span className="rounded-full border border-black/10 dark:border-white/15 bg-white/40 dark:bg-white/10 px-3 py-1">
+                      Overnight, cited research
+                    </span>
+                    <span className="rounded-full border border-black/10 dark:border-white/15 bg-white/40 dark:bg-white/10 px-3 py-1">
+                      Calm by default
+                    </span>
+                    <span className="rounded-full border border-black/10 dark:border-white/15 bg-white/40 dark:bg-white/10 px-3 py-1">
+                      Built for startups
+                    </span>
+                  </div>
 
-                <h1 className="mt-5 sb-title text-4xl sm:text-5xl leading-[1.03] font-extrabold">
-                  Wake up to the <span className="underline decoration-black/15 dark:decoration-white/20 underline-offset-4">few things</span>{" "}
-                  your startup should care about today.
-                </h1>
-                <p className="mt-4 text-[color:var(--sb-muted)] text-lg leading-relaxed max-w-xl">
-                  Founders set context once. Starbeam runs overnight and delivers a calm, opinionated pulse: what changed, why it matters, and what to do next.
-                </p>
+                  <h1 className="mt-5 sb-title text-[42px] leading-[1.02] sm:text-[56px] font-extrabold">
+                    Your team’s attention,
+                    <br />
+                    delivered once a day.
+                  </h1>
+                  <p className="mt-4 text-[color:var(--sb-muted)] text-lg leading-relaxed max-w-xl">
+                    Set context once. Starbeam runs overnight and distills the
+                    web into a short, cited pulse: what changed, why it matters,
+                    and what to do next.
+                  </p>
 
-                <form action={joinWaitlist} className="mt-7 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
-                  <label className="grid gap-1 text-sm">
-                    <span className="text-[color:var(--sb-muted)]">Email</span>
-                    <input
-                      name="email"
-                      type="email"
-                      placeholder="you@company.com"
-                      className="h-12 rounded-2xl border border-black/10 dark:border-white/15 bg-white/55 dark:bg-white/10 px-4 text-[15px] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]"
-                      required
-                    />
-                  </label>
-                  <input type="hidden" name="ref" value="" />
-                  <button
-                    type="submit"
-                    className="sb-btn sb-btn-primary h-12 px-6 text-sm font-extrabold text-[color:var(--sb-fg)]"
+                  <form
+                    action={joinWaitlist}
+                    className="mt-7 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end"
                   >
-                    Join waitlist
-                  </button>
-                </form>
+                    <label className="grid gap-1 text-sm">
+                      <span className="text-[color:var(--sb-muted)]">
+                        Work email
+                      </span>
+                      <input
+                        name="email"
+                        type="email"
+                        placeholder="you@company.com"
+                        className="h-12 rounded-2xl border border-black/10 dark:border-white/15 bg-white/55 dark:bg-white/10 px-4 text-[15px] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]"
+                        required
+                      />
+                    </label>
+                    <input type="hidden" name="ref" value={ref} />
+                    <button
+                      type="submit"
+                      className="sb-btn sb-btn-primary h-12 px-6 text-sm font-extrabold text-[color:var(--sb-fg)]"
+                    >
+                      Join the waitlist
+                    </button>
+                  </form>
 
-                <div className="mt-3 text-xs text-[color:var(--sb-muted)] leading-relaxed">
-                  Private beta. No spam. If you already joined, you’ll see your referral link.
+                  <div className="mt-3 text-xs text-[color:var(--sb-muted)] leading-relaxed">
+                    Private beta. No spam. Already joined? You’ll see your
+                    referral link.
+                  </div>
+
+                  <div className="mt-7 flex flex-wrap items-center gap-2">
+                    <a
+                      href={`${app}/login`}
+                      className="sb-btn sb-btn-primary px-5 py-2.5 text-xs font-extrabold text-[color:var(--sb-fg)]"
+                    >
+                      Sign in
+                    </a>
+                    <a
+                      href="/download"
+                      className="sb-btn px-5 py-2.5 text-xs font-semibold text-[color:var(--sb-fg)]"
+                    >
+                      Download macOS app
+                    </a>
+                    <a
+                      href="/pricing"
+                      className="sb-btn px-5 py-2.5 text-xs font-semibold text-[color:var(--sb-fg)]"
+                    >
+                      Pricing
+                    </a>
+                  </div>
                 </div>
 
-                <div className="mt-7 grid gap-3 sm:grid-cols-3">
-                  <div className="sb-card-inset p-4">
-                    <div className="sb-title text-sm font-extrabold">Goals</div>
-                    <div className="mt-1 text-sm text-[color:var(--sb-muted)] leading-relaxed">
-                      Declare what matters so the pulse stays quiet and relevant.
-                    </div>
+                <div className="relative">
+                  <div className="pointer-events-none absolute -inset-6 rounded-[30px] bg-[radial-gradient(600px_420px_at_40%_40%,rgba(0,0,0,0.08),transparent_60%)] dark:bg-[radial-gradient(600px_420px_at_40%_40%,rgba(255,255,255,0.10),transparent_60%)]" />
+                  <div className="sb-card-inset relative overflow-hidden rounded-[26px] p-4">
+                    <Image
+                      src="/landing/v2/hero.png"
+                      alt="Starbeam delivers a daily pulse in the macOS menu bar."
+                      width={1536}
+                      height={1024}
+                      priority
+                      className="sb-img-soft h-auto w-full rounded-[20px] sb-hero-fade"
+                    />
                   </div>
-                  <div className="sb-card-inset p-4">
-                    <div className="sb-title text-sm font-extrabold">Signals</div>
-                    <div className="mt-1 text-sm text-[color:var(--sb-muted)] leading-relaxed">
-                      Overnight web research with citations and clear “why”.
-                    </div>
-                  </div>
-                  <div className="sb-card-inset p-4">
-                    <div className="sb-title text-sm font-extrabold">Focus</div>
-                    <div className="mt-1 text-sm text-[color:var(--sb-muted)] leading-relaxed">
-                      A short list of what actually needs attention today.
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-6 grid gap-4 sm:grid-cols-3">
-              <div className="sb-card p-6">
-                <div className="text-xs font-semibold tracking-wide uppercase text-[color:var(--sb-muted)]">
-                  Built for
-                </div>
-                <div className="mt-2 sb-title text-lg font-extrabold">
-                  5–50 person teams
-                </div>
-                <div className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
-                  Founder-led context, role-aware delivery, and minimal setup.
-                </div>
-              </div>
-              <div className="sb-card p-6">
-                <div className="text-xs font-semibold tracking-wide uppercase text-[color:var(--sb-muted)]">
-                  Not another
-                </div>
-                <div className="mt-2 sb-title text-lg font-extrabold">
-                  dashboard
-                </div>
-                <div className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
-                  Starbeam is a daily digest, not a place to scroll for hours.
-                </div>
-              </div>
-              <div className="sb-card p-6">
-                <div className="text-xs font-semibold tracking-wide uppercase text-[color:var(--sb-muted)]">
-                  v0 shipping with
-                </div>
-                <div className="mt-2 sb-title text-lg font-extrabold">
-                  citations + read-only
-                </div>
-                <div className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
-                  Every web insight explains where it came from and why it matters.
                 </div>
               </div>
             </div>
           </section>
 
-          <aside className="sb-marketing-shell">
-            <div className="sb-card p-7 sm:p-8 relative overflow-hidden">
-              <div className="sb-title text-xl font-extrabold">
-                Pulse preview
+          <section className="mt-10 grid gap-4 sm:grid-cols-3">
+            <div className="sb-card p-6">
+              <div className="text-xs font-semibold tracking-wide uppercase text-[color:var(--sb-muted)]">
+                For
               </div>
-              <p className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
-                The “morning update” you actually read. Short cards, clear reasons, cited sources.
-              </p>
-
-              <div className="mt-6 grid gap-3">
-                <div className="sb-card-inset p-5 sb-float" style={{ animationDelay: "0ms" }}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="sb-title text-sm font-extrabold">
-                        🔔 Pinned: Q2 focus
-                      </div>
-                      <div className="mt-1 text-sm text-[color:var(--sb-muted)] leading-relaxed">
-                        Ship onboarding improvements. Measure activation, not clicks.
-                      </div>
-                    </div>
-                    <div className="rounded-full border border-black/10 dark:border-white/15 bg-white/40 dark:bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-[color:var(--sb-muted)]">
-                      announcement
-                    </div>
-                  </div>
-                </div>
-
-                <div className="sb-card-inset p-5 sb-float" style={{ animationDelay: "900ms" }}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="sb-title text-sm font-extrabold">
-                        🚀 Signal: competitor pricing shift
-                      </div>
-                      <div className="mt-1 text-sm text-[color:var(--sb-muted)] leading-relaxed">
-                        New bundle spotted in the last 48h. Suggested response included.
-                      </div>
-                      <div className="mt-3 text-xs text-[color:var(--sb-muted)]">
-                        Sources: 2
-                      </div>
-                    </div>
-                    <div className="rounded-full border border-black/10 dark:border-white/15 bg-white/40 dark:bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-[color:var(--sb-muted)]">
-                      cited
-                    </div>
-                  </div>
-                </div>
-
-                <div className="sb-card-inset p-5 sb-float" style={{ animationDelay: "1600ms" }}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="sb-title text-sm font-extrabold">
-                        ✅ Today’s focus (3)
-                      </div>
-                      <div className="mt-1 text-sm text-[color:var(--sb-muted)] leading-relaxed">
-                        Follow up with 2 high-intent threads. Prep talking points for the 2pm call.
-                      </div>
-                    </div>
-                    <div className="rounded-full border border-black/10 dark:border-white/15 bg-white/40 dark:bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-[color:var(--sb-muted)]">
-                      tasks
-                    </div>
-                  </div>
-                </div>
+              <div className="mt-2 sb-title text-lg font-extrabold">
+                founders + leads
               </div>
+              <div className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
+                Reduce noise and keep momentum without turning your day into
+                research.
+              </div>
+            </div>
+            <div className="sb-card p-6">
+              <div className="text-xs font-semibold tracking-wide uppercase text-[color:var(--sb-muted)]">
+                Built for
+              </div>
+              <div className="mt-2 sb-title text-lg font-extrabold">
+                5–50 person teams
+              </div>
+              <div className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
+                Share goals and announcements so your pulse stays relevant for
+                everyone.
+              </div>
+            </div>
+            <div className="sb-card p-6">
+              <div className="text-xs font-semibold tracking-wide uppercase text-[color:var(--sb-muted)]">
+                With
+              </div>
+              <div className="mt-2 sb-title text-lg font-extrabold">
+                citations by default
+              </div>
+              <div className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
+                Every web insight includes sources so you can verify quickly.
+              </div>
+            </div>
+          </section>
 
-              <div className="mt-7 rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-5">
+          <section className="mt-10 grid gap-8 lg:grid-cols-2 lg:items-center">
+            <div className="sb-marketing-shell">
+              <div className="sb-card p-7 sm:p-8">
                 <div className="text-xs font-semibold tracking-wide uppercase text-[color:var(--sb-muted)]">
                   How it works
                 </div>
-                <ol className="mt-3 grid gap-3 text-sm text-[color:var(--sb-muted)]">
+                <div className="mt-2 sb-title text-2xl font-extrabold">
+                  Set context once. Wake up aligned.
+                </div>
+                <ol className="mt-5 grid gap-3 text-sm text-[color:var(--sb-muted)] leading-relaxed">
                   <li className="flex gap-3">
                     <div className="mt-0.5 h-6 w-6 flex-none rounded-full bg-black/5 dark:bg-white/10 grid place-items-center border border-black/10 dark:border-white/15">
                       <span className="text-xs font-extrabold text-[color:var(--sb-fg)]">
@@ -213,7 +221,7 @@ export default async function Home() {
                       </span>
                     </div>
                     <div>
-                      Set goals and a pinned announcement so everyone shares the same north star.
+                      Create an org, then set goals, announcements, and tracks.
                     </div>
                   </li>
                   <li className="flex gap-3">
@@ -223,38 +231,164 @@ export default async function Home() {
                       </span>
                     </div>
                     <div>
-                      Starbeam runs overnight research and ranks signals against your context.
+                      Starbeam runs overnight: research, summaries, and
+                      citations.
                     </div>
                   </li>
                   <li className="flex gap-3">
-                    <div className="mt-0.5 h-6 w-6 flex-none rounded-full bg-black/5 dark:bg-white/10 grid place-items-center border border-black/10 dark:border-white/15">
+                    <div className="mt-0.5 h-6 w-6 flex-none rounded-full bg-black/5 dark:border-white/15 dark:bg-white/10 grid place-items-center border border-black/10">
                       <span className="text-xs font-extrabold text-[color:var(--sb-fg)]">
                         3
                       </span>
                     </div>
                     <div>
-                      Your team starts the day aligned, without opening 7 tabs.
+                      You start the day with a short list of what to do next.
                     </div>
                   </li>
                 </ol>
-              </div>
-
-              <div className="mt-6 flex flex-wrap items-center gap-2">
-                <Link
-                  href="/waitlist"
-                  className="sb-btn sb-btn-primary px-5 py-2.5 text-xs font-extrabold text-[color:var(--sb-fg)]"
-                >
-                  Join waitlist
-                </Link>
-                <a
-                  href={`${app}/login`}
-                  className="sb-btn px-5 py-2.5 text-xs font-semibold text-[color:var(--sb-fg)]"
-                >
-                  Open app
-                </a>
+                <div className="mt-7 flex flex-wrap gap-2">
+                  <a
+                    href="/faq"
+                    className="sb-btn px-5 py-2.5 text-xs font-semibold text-[color:var(--sb-fg)]"
+                  >
+                    Read FAQ
+                  </a>
+                  <a
+                    href="/waitlist"
+                    className="sb-btn sb-btn-primary px-5 py-2.5 text-xs font-extrabold text-[color:var(--sb-fg)]"
+                  >
+                    Join waitlist
+                  </a>
+                </div>
               </div>
             </div>
-          </aside>
+
+            <div className="sb-marketing-shell">
+              <div className="sb-card-inset overflow-hidden rounded-[26px] p-4">
+                <Image
+                  src="/landing/v2/how.png"
+                  alt="Cited research distilled into a calm daily pulse."
+                  width={1536}
+                  height={1024}
+                  className="sb-img-soft h-auto w-full rounded-[20px]"
+                />
+              </div>
+            </div>
+          </section>
+
+          <section className="mt-10 grid gap-8 lg:grid-cols-2 lg:items-center">
+            <div className="sb-marketing-shell lg:order-2">
+              <div className="sb-card p-7 sm:p-8">
+                <div className="text-xs font-semibold tracking-wide uppercase text-[color:var(--sb-muted)]">
+                  Control
+                </div>
+                <div className="mt-2 sb-title text-2xl font-extrabold">
+                  Calm by design. Private by default.
+                </div>
+                <p className="mt-3 text-sm text-[color:var(--sb-muted)] leading-relaxed">
+                  Starbeam is built to reduce noise, not capture attention. In
+                  v0, Google access is read-only and web insights are cited.
+                </p>
+                <div className="mt-6 grid gap-3">
+                  <div className="sb-card-inset p-4">
+                    <div className="sb-title text-sm font-extrabold">
+                      Read-only connections (v0)
+                    </div>
+                    <div className="mt-1 text-sm text-[color:var(--sb-muted)] leading-relaxed">
+                      Connect Google to pull context, not push changes.
+                    </div>
+                  </div>
+                  <div className="sb-card-inset p-4">
+                    <div className="sb-title text-sm font-extrabold">
+                      Sources included
+                    </div>
+                    <div className="mt-1 text-sm text-[color:var(--sb-muted)] leading-relaxed">
+                      Verify quickly. Share links with your team.
+                    </div>
+                  </div>
+                  <div className="sb-card-inset p-4">
+                    <div className="sb-title text-sm font-extrabold">
+                      Human-editable context
+                    </div>
+                    <div className="mt-1 text-sm text-[color:var(--sb-muted)] leading-relaxed">
+                      Goals, announcements, and tracks are always yours to
+                      adjust.
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-7 flex flex-wrap gap-2">
+                  <a
+                    href="/privacy"
+                    className="sb-btn px-5 py-2.5 text-xs font-semibold text-[color:var(--sb-fg)]"
+                  >
+                    Privacy
+                  </a>
+                  <a
+                    href="/terms"
+                    className="sb-btn px-5 py-2.5 text-xs font-semibold text-[color:var(--sb-fg)]"
+                  >
+                    Terms
+                  </a>
+                  <a
+                    href={`mailto:${email}`}
+                    className="sb-btn sb-btn-primary px-5 py-2.5 text-xs font-extrabold text-[color:var(--sb-fg)]"
+                  >
+                    Contact
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <div className="sb-marketing-shell lg:order-1">
+              <div className="sb-card-inset overflow-hidden rounded-[26px] p-4">
+                <Image
+                  src="/landing/v2/privacy.png"
+                  alt="Privacy and control built into Starbeam."
+                  width={1536}
+                  height={1024}
+                  className="sb-img-soft h-auto w-full rounded-[20px]"
+                />
+              </div>
+            </div>
+          </section>
+
+          <section className="mt-10 sb-marketing-shell">
+            <div className="sb-card p-7 sm:p-8 relative overflow-hidden">
+              <div className="sb-orbit" aria-hidden />
+              <div className="relative grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+                <div>
+                  <div className="sb-title text-2xl font-extrabold">
+                    Get the pulse in your menu bar.
+                  </div>
+                  <p className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed max-w-xl">
+                    Download the macOS app for the cleanest “once a day”
+                    experience, or sign in on the web to set up your org.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2 lg:justify-end">
+                  <a
+                    href="/download"
+                    className="sb-btn sb-btn-primary px-5 py-2.5 text-xs font-extrabold text-[color:var(--sb-fg)]"
+                  >
+                    Download for macOS
+                  </a>
+                  <a
+                    href={`${app}/login`}
+                    className="sb-btn px-5 py-2.5 text-xs font-semibold text-[color:var(--sb-fg)]"
+                  >
+                    Sign in
+                  </a>
+                  <a
+                    href="/waitlist"
+                    className="sb-btn px-5 py-2.5 text-xs font-semibold text-[color:var(--sb-fg)]"
+                  >
+                    Join waitlist
+                  </a>
+                </div>
+              </div>
+            </div>
+          </section>
         </main>
 
         <SiteFooter appOrigin={app} supportEmail={email} />
@@ -262,3 +396,4 @@ export default async function Home() {
     </div>
   );
 }
+
