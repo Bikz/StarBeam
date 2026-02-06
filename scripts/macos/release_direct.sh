@@ -64,23 +64,42 @@ sign_one() {
 sign_nested() {
   local base="$1"
 
-  # Sparkle includes nested XPC services; sign them explicitly.
-  if [[ -d "$base/Contents/XPCServices" ]]; then
-    while IFS= read -r -d '' item; do
-      sign_one "$item"
-    done < <(find "$base/Contents/XPCServices" -type d \( -name "*.xpc" -o -name "*.app" \) -print0)
-  fi
+  # Signing order matters. For example, Sparkle.framework contains nested .app and .xpc bundles.
+  # If you sign the framework first, then sign nested bundles, the framework signature becomes invalid.
+  # We therefore sign deepest bundles first, then frameworks, then the app.
 
-  if [[ -d "$base/Contents/Frameworks" ]]; then
-    while IFS= read -r -d '' item; do
-      sign_one "$item"
-    done < <(find "$base/Contents/Frameworks" -type d \( -name "*.framework" -o -name "*.dylib" -o -name "*.bundle" -o -name "*.xpc" -o -name "*.app" \) -print0)
-  fi
-
+  # 1) Plug-ins (.appex)
   if [[ -d "$base/Contents/PlugIns" ]]; then
     while IFS= read -r -d '' item; do
       sign_one "$item"
     done < <(find "$base/Contents/PlugIns" -type d -name "*.appex" -print0)
+  fi
+
+  # 2) Nested .xpc/.app anywhere under Frameworks (deepest first)
+  if [[ -d "$base/Contents/Frameworks" ]]; then
+    while IFS= read -r item; do
+      [[ -z "$item" ]] && continue
+      sign_one "$item"
+    done < <(find "$base/Contents/Frameworks" -type d \( -name "*.xpc" -o -name "*.app" \) -print | awk '{ print length, $0 }' | sort -nr | cut -d" " -f2-)
+
+    # 3) Frameworks last
+    while IFS= read -r item; do
+      [[ -z "$item" ]] && continue
+      sign_one "$item"
+    done < <(find "$base/Contents/Frameworks" -maxdepth 1 -type d -name "*.framework" -print)
+
+    # 4) Any top-level dylibs/bundles in Frameworks
+    while IFS= read -r item; do
+      [[ -z "$item" ]] && continue
+      sign_one "$item"
+    done < <(find "$base/Contents/Frameworks" -maxdepth 1 \( -name "*.dylib" -o -name "*.bundle" \) -print)
+  fi
+
+  # 5) App-level XPC services
+  if [[ -d "$base/Contents/XPCServices" ]]; then
+    while IFS= read -r -d '' item; do
+      sign_one "$item"
+    done < <(find "$base/Contents/XPCServices" -type d -name "*.xpc" -print0)
   fi
 }
 
