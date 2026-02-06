@@ -47,7 +47,23 @@ final class AppModel {
     }
 
     configureAutoRefreshLoop()
+    ensureSelectedWorkspaceIsValid()
     if canSync { Task { await refresh() } }
+  }
+
+  /// Keep the app usable for the common demo case:
+  /// - If there's exactly one workspace, auto-select it.
+  /// - If multiple, default to the first if none is selected (or selection is stale).
+  private func ensureSelectedWorkspaceIsValid() {
+    guard let session = auth.session, !session.workspaces.isEmpty else { return }
+
+    let selected = settings.workspaceID.trimmingCharacters(in: .whitespacesAndNewlines)
+    let isSelectedValid = session.workspaces.contains(where: { $0.id == selected })
+
+    if isSelectedValid { return }
+
+    // Prefer deterministic default (first workspace returned by the API).
+    settings.workspaceID = session.workspaces.first?.id ?? ""
   }
 
   var workspaceName: String {
