@@ -152,6 +152,14 @@ final class AppModel {
       lastError = nil
       return
     }
+    if session.accessToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+      lastError = AppError(
+        title: "Signed in, but missing token",
+        message: "Please sign out and sign in again.",
+        debugDetails: "Session.accessToken is empty (will cause HTTP 401 unauthorized)."
+      )
+      return
+    }
 
     let baseURLString = settings.serverBaseURL.trimmingCharacters(in: .whitespacesAndNewlines)
     guard let baseURL = URL(string: baseURLString) else {

@@ -56,7 +56,14 @@ final class AuthStore {
       guard let data = try KeychainStore.read(service: keychainService, account: keychainAccount) else { return nil }
       let decoder = JSONDecoder()
       decoder.dateDecodingStrategy = .iso8601
-      return try decoder.decode(Session.self, from: data)
+      let session = try decoder.decode(Session.self, from: data)
+
+      // If we ever stored a partial/invalid session (common during early demo builds),
+      // treat it as signed-out to avoid endless 401 loops.
+      if session.accessToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return nil }
+      if session.refreshToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return nil }
+
+      return session
     } catch {
       return nil
     }
