@@ -2,12 +2,14 @@ import { prisma } from "@starbeam/db";
 
 import { fetchMessageMetadata, headerValue, listMessageRefs } from "./gmail";
 import { eventEnd, eventStart, listPrimaryEvents } from "./calendar";
+import { downloadDriveFile, listRecentlyModifiedFiles } from "./drive";
 import {
   decryptToken,
   encryptToken,
   isExpired,
   refreshGoogleAccessToken,
 } from "./oauth";
+import { putEncryptedObject } from "../blobStore";
 
 function isNoiseSender(fromHeader: string): boolean {
   const s = fromHeader.toLowerCase();
@@ -41,7 +43,7 @@ export async function syncGoogleConnection(args: {
   workspaceId: string;
   userId: string;
   connectionId: string;
-}): Promise<{ gmailIngested: number; calendarIngested: number }> {
+}): Promise<{ gmailIngested: number; calendarIngested: number; driveIngested: number }> {
   const connection = await prisma.googleConnection.findUnique({
     where: { id: args.connectionId },
     include: { syncState: true },
@@ -199,20 +201,166 @@ export async function syncGoogleConnection(args: {
     await prisma.sourceItem.createMany({ data: calendarData, skipDuplicates: true });
   }
 
+  // Drive: recently modified files (cap 20). Store content in the blob store so
+  // background agents can reason over files without re-fetching from Google.
+  let driveIngested = 0;
+  const driveScope = "https://www.googleapis.com/auth/drive.readonly";
+  const hasDriveScope = Array.isArray(connection.scopes) && connection.scopes.includes(driveScope);
+
+  if (hasDriveScope) {
+    const modifiedAfter =
+      connection.syncState?.lastDriveSyncAt ?? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const files = await listRecentlyModifiedFiles({
+      accessToken,
+      modifiedAfter,
+      maxResults: 20,
+    });
+
+    const maxFileBytes = 10 * 1024 * 1024;
+
+    for (const f of files) {
+      const occurredAt = new Date(f.modifiedTime);
+      const metadata = { mimeType: f.mimeType, sizeBytes: f.sizeBytes ?? null };
+
+      let contentBlobId: string | null = null;
+      let snippet: string | null = null;
+
+      const looksSmallEnough = typeof f.sizeBytes !== "number" || f.sizeBytes <= maxFileBytes;
+
+      if (looksSmallEnough) {
+        try {
+          const dl = await downloadDriveFile({
+            accessToken,
+            fileId: f.id,
+            mimeType: f.mimeType,
+          });
+
+          if (dl.bytes.byteLength <= maxFileBytes) {
+            const objectKey = `workspaces/${args.workspaceId}/users/${args.userId}/drive/${f.id}`;
+            const stored = await putEncryptedObject({
+              key: objectKey,
+              contentType: dl.contentType,
+              plaintext: dl.bytes,
+            });
+
+            const blob = await prisma.blob.upsert({
+              where: { bucket_key: { bucket: stored.bucket, key: stored.key } },
+              update: {
+                workspaceId: args.workspaceId,
+                ownerUserId: args.userId,
+                contentType: dl.contentType ?? null,
+                sizeBytes: stored.sizeBytes,
+                sha256: stored.sha256,
+                encryption: stored.encryption,
+                deletedAt: null,
+              },
+              create: {
+                workspaceId: args.workspaceId,
+                ownerUserId: args.userId,
+                bucket: stored.bucket,
+                key: stored.key,
+                contentType: dl.contentType ?? null,
+                sizeBytes: stored.sizeBytes,
+                sha256: stored.sha256,
+                encryption: stored.encryption,
+              },
+              select: { id: true },
+            });
+
+            contentBlobId = blob.id;
+
+            // Keep DB content light; store only a snippet for UI/triage. Full bytes are in blob store.
+            const ct = (dl.contentType ?? "").toLowerCase();
+            if (ct.startsWith("text/") || ct.includes("json") || ct.includes("xml") || ct.includes("csv")) {
+              const text = dl.bytes.toString("utf8").trim();
+              if (text) snippet = text.slice(0, 280);
+            }
+          }
+        } catch {
+          // If a specific file download fails, keep going with metadata-only.
+        }
+      }
+
+      await prisma.sourceItem.upsert({
+        where: {
+          workspaceId_ownerUserId_type_externalId: {
+            workspaceId: args.workspaceId,
+            ownerUserId: args.userId,
+            type: "DRIVE_FILE",
+            externalId: f.id,
+          },
+        },
+        update: {
+          connectionId: connection.id,
+          url: f.webViewLink ?? null,
+          title: f.name,
+          snippet,
+          contentText: snippet,
+          occurredAt,
+          endsAt: null,
+          metadata,
+          raw: {
+            id: f.id,
+            name: f.name,
+            mimeType: f.mimeType,
+            modifiedTime: f.modifiedTime,
+            webViewLink: f.webViewLink ?? null,
+            sizeBytes: f.sizeBytes ?? null,
+          },
+          contentBlobId,
+        },
+        create: {
+          workspaceId: args.workspaceId,
+          ownerUserId: args.userId,
+          connectionId: connection.id,
+          type: "DRIVE_FILE",
+          externalId: f.id,
+          url: f.webViewLink ?? null,
+          title: f.name,
+          snippet,
+          contentText: snippet,
+          occurredAt,
+          endsAt: null,
+          metadata,
+          raw: {
+            id: f.id,
+            name: f.name,
+            mimeType: f.mimeType,
+            modifiedTime: f.modifiedTime,
+            webViewLink: f.webViewLink ?? null,
+            sizeBytes: f.sizeBytes ?? null,
+          },
+          contentBlobId,
+        },
+      });
+
+      driveIngested += 1;
+    }
+  }
+
+  const syncNow = new Date();
+  const updateData: { lastGmailSyncAt: Date; lastCalendarSyncAt: Date; lastDriveSyncAt?: Date } = {
+    lastGmailSyncAt: syncNow,
+    lastCalendarSyncAt: syncNow,
+  };
+  const createData: { connectionId: string; lastGmailSyncAt: Date; lastCalendarSyncAt: Date; lastDriveSyncAt?: Date } = {
+    connectionId: connection.id,
+    lastGmailSyncAt: syncNow,
+    lastCalendarSyncAt: syncNow,
+  };
+  if (hasDriveScope) {
+    updateData.lastDriveSyncAt = syncNow;
+    createData.lastDriveSyncAt = syncNow;
+  }
+
   await prisma.googleSyncState.upsert({
     where: { connectionId: connection.id },
-    update: {
-      lastGmailSyncAt: new Date(),
-      lastCalendarSyncAt: new Date(),
-    },
-    create: {
-      connectionId: connection.id,
-      lastGmailSyncAt: new Date(),
-      lastCalendarSyncAt: new Date(),
-    },
+    update: updateData,
+    create: createData,
   });
 
-  // Retention: keep only 30 days of source items (no raw content stored).
+  // Retention: keep only 30 days of source items. File bytes live in the blob store;
+  // we'll add blob retention/GC once Drive ingestion is stable.
   const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   await prisma.sourceItem.deleteMany({
     where: {
@@ -223,7 +371,7 @@ export async function syncGoogleConnection(args: {
     },
   });
 
-  return { gmailIngested: gmailData.length, calendarIngested: calendarData.length };
+  return { gmailIngested: gmailData.length, calendarIngested: calendarData.length, driveIngested };
 }
 
 export async function generateFocusTasks(args: {
