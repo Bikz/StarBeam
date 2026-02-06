@@ -1,4 +1,5 @@
-import { Prisma, prisma } from "@starbeam/db";
+import type { Prisma } from "@starbeam/db";
+import { prisma } from "@starbeam/db";
 import { z } from "zod";
 
 import { isCodexInstalled } from "../lib/codex/exec";
@@ -148,14 +149,20 @@ export async function nightly_workspace_run(payload: unknown) {
       githubConnectionsByUser.set(c.ownerUserId, list);
     }
 
-    const linearConnectionsByUser = new Map<string, Array<{ id: string; email?: string | null }>>();
+    const linearConnectionsByUser = new Map<
+      string,
+      Array<{ id: string; email?: string | null }>
+    >();
     for (const c of linearConnections) {
       const list = linearConnectionsByUser.get(c.ownerUserId) ?? [];
       list.push({ id: c.id, email: c.linearUserEmail });
       linearConnectionsByUser.set(c.ownerUserId, list);
     }
 
-    const notionConnectionsByUser = new Map<string, Array<{ id: string; workspaceName?: string | null }>>();
+    const notionConnectionsByUser = new Map<
+      string,
+      Array<{ id: string; workspaceName?: string | null }>
+    >();
     for (const c of notionConnections) {
       const list = notionConnectionsByUser.get(c.ownerUserId) ?? [];
       list.push({ id: c.id, workspaceName: c.notionWorkspaceName });
