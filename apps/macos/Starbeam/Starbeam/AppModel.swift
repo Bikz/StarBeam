@@ -66,8 +66,33 @@ final class AppModel {
     settings.workspaceID = session.workspaces.first?.id ?? ""
   }
 
+  func selectWorkspace(id: String, shouldRefresh: Bool = true) {
+    let trimmed = id.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmed.isEmpty else { return }
+
+    settings.workspaceID = trimmed
+    configureAutoRefreshLoop()
+
+    // If we're switching workspaces, don't show the old workspace name while the refresh runs.
+    // We'll keep existing data on screen until the new overview arrives.
+    if shouldRefresh, canSync {
+      Task { await refresh() }
+    }
+  }
+
+  func cycleWorkspace(direction: Int) {
+    guard let session = auth.session, session.workspaces.count >= 2 else { return }
+    let list = session.workspaces
+
+    let selected = settings.workspaceID.trimmingCharacters(in: .whitespacesAndNewlines)
+    let currentIndex = list.firstIndex(where: { $0.id == selected }) ?? 0
+
+    let delta = direction >= 0 ? 1 : -1
+    let nextIndex = (currentIndex + delta + list.count) % list.count
+    selectWorkspace(id: list[nextIndex].id, shouldRefresh: true)
+  }
+
   var workspaceName: String {
-    if let name = overview?.workspace.name, !name.isEmpty { return name }
     if let session = auth.session {
       let selected = settings.workspaceID.trimmingCharacters(in: .whitespacesAndNewlines)
       if let ws = session.workspaces.first(where: { $0.id == selected }) {
@@ -77,6 +102,7 @@ final class AppModel {
         return first.name
       }
     }
+    if let name = overview?.workspace.name, !name.isEmpty { return name }
     return "Company"
   }
 

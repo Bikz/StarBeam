@@ -2,6 +2,7 @@ import SwiftUI
 
 struct PopoverRootView: View {
   @Environment(AppModel.self) private var model
+  @Environment(\.openWindow) private var openWindow
 
   var body: some View {
     @Bindable var model = model
@@ -170,7 +171,7 @@ struct PopoverRootView: View {
         .controlSize(.small)
         .accessibilityLabel("Sign in")
       } else {
-        Image(systemName: "sparkle")
+        Image(systemName: model.auth.session?.workspaces.count ?? 0 > 1 ? "chevron.left.slash.chevron.right" : "sparkle")
           .foregroundStyle(.secondary)
           .opacity(0.8)
           .accessibilityHidden(true)
@@ -180,6 +181,27 @@ struct PopoverRootView: View {
     .starbeamCard()
     .accessibilityElement(children: .contain)
     .accessibilityLabel("Pulse bump")
+    // Quick workspace switching: swipe left/right on the bump banner.
+    // This avoids forcing Settings interaction during demos.
+    .gesture(
+      DragGesture(minimumDistance: 24, coordinateSpace: .local)
+        .onEnded { value in
+          guard model.auth.isSignedIn else { return }
+          guard (model.auth.session?.workspaces.count ?? 0) >= 2 else { return }
+
+          // Only treat mostly-horizontal drags as a workspace swipe.
+          let dx = value.translation.width
+          let dy = value.translation.height
+          guard abs(dx) > abs(dy) else { return }
+          guard abs(dx) > 60 else { return }
+
+          if dx < 0 {
+            model.cycleWorkspace(direction: +1)
+          } else {
+            model.cycleWorkspace(direction: -1)
+          }
+        }
+    )
   }
 
   private var bumpText: String {
@@ -188,7 +210,12 @@ struct PopoverRootView: View {
     }
 
     if model.auth.isSignedIn {
-      return "Here’s your pulse bump for today, let’s make it a great one."
+      // Avoid cheerleader copy; keep it concise and contextual.
+      let name = model.workspaceName
+      if let generatedAt = model.overview?.generatedAt, Calendar.current.isDateInToday(generatedAt) {
+        return "Today’s pulse bump for \(name)."
+      }
+      return "Syncing today’s pulse bump for \(name)…"
     }
 
     return "Sign in to get your daily pulse bump, focus, and agenda."
@@ -269,7 +296,10 @@ struct PopoverRootView: View {
   private var footer: some View {
     HStack(spacing: 18) {
       Button {
-        openSettings()
+        // Menu bar apps can fail to open Settings if the app isn't the active app.
+        // Explicitly activate and open our dedicated settings window.
+        NSApp.activate(ignoringOtherApps: true)
+        openWindow(id: "settings")
       } label: {
         Label("Settings", systemImage: "gearshape")
       }
@@ -298,10 +328,6 @@ struct PopoverRootView: View {
     .foregroundStyle(.secondary)
     .padding(.horizontal, 18)
     .padding(.vertical, 12)
-  }
-
-  private func openSettings() {
-    NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
   }
 
   private func openDashboard() {
@@ -612,19 +638,25 @@ private enum CalendarRowView {
 }
 
 #if DEBUG
-#Preview {
+@MainActor
+private func makePopoverPreviewModel() -> AppModel {
   let model = AppModel()
   model.auth.session = .init(
     accessToken: "preview",
     refreshToken: "preview",
     expiresAt: Date().addingTimeInterval(60 * 60),
     user: .init(id: "u_123", email: "preview@starbeam.invalid", name: "Preview", image: nil),
-    workspaces: [.init(id: "w_123", type: "ORG", name: "Company Name", slug: "company")]
+    workspaces: [
+      .init(id: "w_123", type: "ORG", name: "Company Name", slug: "company"),
+    ]
   )
   model.overview = OverviewPreviewMocks.overview
+  return model
+}
 
+#Preview {
   PopoverRootView()
-    .environment(model)
+    .environment(makePopoverPreviewModel())
     .frame(width: 460, height: 760)
 }
 #endif
