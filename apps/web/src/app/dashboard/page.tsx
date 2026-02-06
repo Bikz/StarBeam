@@ -236,7 +236,7 @@ export default async function DashboardPage() {
               </div>
               <ol className="mt-3 grid gap-3 text-sm">
                 <li className="flex gap-3">
-                  <div className="mt-0.5 h-6 w-6 flex-none rounded-full bg-[rgba(37,99,235,0.14)] grid place-items-center border border-[rgba(37,99,235,0.18)]">
+                  <div className="mt-0.5 h-6 w-6 flex-none rounded-full bg-black/5 dark:bg-white/10 grid place-items-center border border-black/10 dark:border-white/15">
                     <span className="text-xs font-extrabold text-[color:var(--sb-fg)]">
                       1
                     </span>
@@ -251,7 +251,7 @@ export default async function DashboardPage() {
                   </div>
                 </li>
                 <li className="flex gap-3">
-                  <div className="mt-0.5 h-6 w-6 flex-none rounded-full bg-[rgba(37,99,235,0.14)] grid place-items-center border border-[rgba(37,99,235,0.18)]">
+                  <div className="mt-0.5 h-6 w-6 flex-none rounded-full bg-black/5 dark:bg-white/10 grid place-items-center border border-black/10 dark:border-white/15">
                     <span className="text-xs font-extrabold text-[color:var(--sb-fg)]">
                       2
                     </span>
@@ -266,7 +266,7 @@ export default async function DashboardPage() {
                   </div>
                 </li>
                 <li className="flex gap-3">
-                  <div className="mt-0.5 h-6 w-6 flex-none rounded-full bg-[rgba(37,99,235,0.14)] grid place-items-center border border-[rgba(37,99,235,0.18)]">
+                  <div className="mt-0.5 h-6 w-6 flex-none rounded-full bg-black/5 dark:bg-white/10 grid place-items-center border border-black/10 dark:border-white/15">
                     <span className="text-xs font-extrabold text-[color:var(--sb-fg)]">
                       3
                     </span>

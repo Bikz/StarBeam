@@ -1,19 +1,19 @@
 @import "tailwindcss";
 
 :root {
-  /* Enterprise blue, calm + neutral (no pink). */
-  --sb-bg0: #f6f9ff;
-  --sb-bg1: #eef4ff;
-  --sb-fg: #13121a;
-  --sb-muted: #5a5963;
+  /* Sleek monochrome (ChatGPT-like). */
+  --sb-bg0: #ffffff;
+  --sb-bg1: #f6f6f7;
+  --sb-fg: #0b0b0f;
+  --sb-muted: rgba(11, 11, 15, 0.62);
 
-  --sb-card: rgba(255, 255, 255, 0.65);
-  --sb-card-border: rgba(20, 16, 34, 0.10);
-  --sb-divider: rgba(20, 16, 34, 0.10);
+  --sb-card: rgba(255, 255, 255, 0.72);
+  --sb-card-border: rgba(11, 11, 15, 0.10);
+  --sb-divider: rgba(11, 11, 15, 0.12);
 
-  --sb-accent: #2563eb;
-  --sb-accent-2: #38bdf8;
-  --sb-ring: rgba(37, 99, 235, 0.28);
+  --sb-accent: #0b0b0f;
+  --sb-accent-2: #0b0b0f;
+  --sb-ring: rgba(11, 11, 15, 0.18);
 
   --sb-shadow: 0 12px 38px rgba(18, 12, 34, 0.14);
   --sb-shadow-soft: 0 10px 30px rgba(18, 12, 34, 0.10);
@@ -27,18 +27,18 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --sb-bg0: #070a12;
-    --sb-bg1: #071627;
-    --sb-fg: #f1f0f7;
-    --sb-muted: #b7b5c4;
+    --sb-bg0: #0b0b0f;
+    --sb-bg1: #0f0f14;
+    --sb-fg: #f5f5f7;
+    --sb-muted: rgba(245, 245, 247, 0.66);
 
-    --sb-card: rgba(16, 13, 24, 0.55);
-    --sb-card-border: rgba(255, 255, 255, 0.10);
-    --sb-divider: rgba(255, 255, 255, 0.10);
+    --sb-card: rgba(18, 18, 24, 0.62);
+    --sb-card-border: rgba(255, 255, 255, 0.12);
+    --sb-divider: rgba(255, 255, 255, 0.14);
 
-    --sb-accent: #60a5fa;
-    --sb-accent-2: #22d3ee;
-    --sb-ring: rgba(96, 165, 250, 0.25);
+    --sb-accent: #f5f5f7;
+    --sb-accent-2: #f5f5f7;
+    --sb-ring: rgba(245, 245, 247, 0.16);
 
     --sb-shadow: 0 16px 50px rgba(0, 0, 0, 0.35);
     --sb-shadow-soft: 0 14px 44px rgba(0, 0, 0, 0.25);
@@ -59,9 +59,9 @@ body {
 .sb-bg {
   min-height: 100dvh;
   background:
-    radial-gradient(1100px 680px at 18% 12%, rgba(37, 99, 235, 0.20), transparent 62%),
-    radial-gradient(980px 660px at 86% 10%, rgba(56, 189, 248, 0.18), transparent 58%),
-    radial-gradient(1200px 900px at 70% 86%, rgba(14, 165, 233, 0.14), transparent 55%),
+    radial-gradient(1000px 620px at 18% 12%, rgba(0, 0, 0, 0.06), transparent 62%),
+    radial-gradient(1100px 760px at 86% 10%, rgba(0, 0, 0, 0.045), transparent 58%),
+    radial-gradient(1200px 900px at 70% 86%, rgba(0, 0, 0, 0.04), transparent 55%),
     linear-gradient(180deg, var(--sb-bg0), var(--sb-bg1));
   position: relative;
   overflow-x: clip;
@@ -106,7 +106,7 @@ body {
 .sb-btn {
   border-radius: 999px;
   border: 1px solid var(--sb-card-border);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.28));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.24));
   box-shadow: 0 10px 24px rgba(18, 12, 34, 0.10);
   transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
 }
@@ -123,8 +123,8 @@ body {
 }
 
 .sb-btn-primary {
-  border-color: rgba(37, 99, 235, 0.22);
-  background: linear-gradient(180deg, rgba(37, 99, 235, 0.14), rgba(37, 99, 235, 0.06));
+  border-color: rgba(11, 11, 15, 0.14);
+  background: linear-gradient(180deg, rgba(11, 11, 15, 0.08), rgba(11, 11, 15, 0.03));
 }
 
 .sb-btn-primary:hover {
