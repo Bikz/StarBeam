@@ -10,13 +10,16 @@
 		183F81FFDB5672DC8EA6B029 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63E3F875F2F8632EAFEB33A6 /* AppModel.swift */; };
 		1984437B8E04342A0422055C /* AuthStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5435234FAAC6D23A6E58F5E2 /* AuthStore.swift */; };
 		1ABED13A77DD5CE45AC868A4 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4AC6F75573A9D86470EFE39 /* APIClient.swift */; };
+		B57DF5D3826A703705E61CEF /* SettingsSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AC1E0C63E12D9AC481FE21B /* SettingsSheetView.swift */; };
 		2D915F57A9F3E81D7D8C2B1A /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 9C4A2F1E0A9B4C7D8E3F1B2C /* Sparkle */; };
 		3536E90E1E179AD5C133D737 /* OverviewPreviewMocks.swift in Sources */ = {isa = PBXBuildFile; fileRef = F67C0AF3D7900D05249D3829 /* OverviewPreviewMocks.swift */; };
+		CE1A1E90B837469DB2621681 /* ErrorCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E565088EEC6201D2F15EDD8 /* ErrorCardView.swift */; };
 		569CF6E5CB71DC1394E546FC /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B52E95CE7BF04B2207A9C291 /* Cocoa.framework */; };
 		599C6BEE5F7F8B248ADF4F47 /* Overview.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4250514EF57A58CE4EE2CD1 /* Overview.swift */; };
 		5A398A9189679FC5939B59E7 /* StarbeamTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77B0E7000F2D1D40B1B3A3E6 /* StarbeamTheme.swift */; };
 		5B4C4613249366C87F89A3C5 /* StarbeamBackgroundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3270FA1FE2B9B19ECF10865D /* StarbeamBackgroundView.swift */; };
 		5C952D7E5CE7F036ED4519C3 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E8CCAD2B3D95AF3B2E49F36 /* ContentView.swift */; };
+		EE0190E4AE6CD3B899247203 /* CardIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60604C9EA9CA5D048427D6DB /* CardIcon.swift */; };
 		9F650C051AD4CD9BA09444F6 /* StarbeamApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3ED4D3D5A373434E8E8EECBA /* StarbeamApp.swift */; };
 		A63D9B9241B07FBCCD43E245 /* PopoverRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 872D286EE6956D2265E67CC2 /* PopoverRootView.swift */; };
 		C9CAE300E0AC142F178904B1 /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD48FED2DE3049FA548AB3CD /* SettingsStore.swift */; };
@@ -24,23 +27,32 @@
 		E31BC50841B87A746AEC5827 /* DeviceSignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0FAFC6988189D3777170BEB /* DeviceSignInView.swift */; };
 		E369E6BD2EDE76AC0E02CDBE /* OverviewCacheStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EF67241011AA0BCDB86E81F /* OverviewCacheStore.swift */; };
 		E5E11DF63D96805332F663CE /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42CD597CDD296463F48049F1 /* SettingsView.swift */; };
+		F1D4B256B9EB67455208C893 /* PulseSkeletonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66E27822CB59C5FFE27F134F /* PulseSkeletonView.swift */; };
+		F48094D3F79A7C794546F633 /* PulseCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EED07B4A08362D143A2CE85 /* PulseCardView.swift */; };
+		F76CABECEA7CCE21B5D66ED9 /* FocusAndCalendarViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CD36A21A8C4F7ADF5C9159A /* FocusAndCalendarViews.swift */; };
 		FA3F6D6CB5541B322825DF1F /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FFD0DF58CEE638C3AA2EE6C /* KeychainStore.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		1AC1E0C63E12D9AC481FE21B /* SettingsSheetView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SettingsSheetView.swift; path = UI/Popover/SettingsSheetView.swift; sourceTree = "<group>"; };
 		3270FA1FE2B9B19ECF10865D /* StarbeamBackgroundView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = StarbeamBackgroundView.swift; path = UI/StarbeamBackgroundView.swift; sourceTree = "<group>"; };
 		3D1598C3E6ACFF599BE47717 /* Starbeam.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = Starbeam.entitlements; sourceTree = "<group>"; };
 		3E8CCAD2B3D95AF3B2E49F36 /* ContentView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		3ED4D3D5A373434E8E8EECBA /* StarbeamApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StarbeamApp.swift; sourceTree = "<group>"; };
 		3FFD0DF58CEE638C3AA2EE6C /* KeychainStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = KeychainStore.swift; path = Services/KeychainStore.swift; sourceTree = "<group>"; };
 		42CD597CDD296463F48049F1 /* SettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		4E565088EEC6201D2F15EDD8 /* ErrorCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ErrorCardView.swift; path = UI/Popover/ErrorCardView.swift; sourceTree = "<group>"; };
 		5435234FAAC6D23A6E58F5E2 /* AuthStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AuthStore.swift; path = Services/AuthStore.swift; sourceTree = "<group>"; };
 		573AACCB3728A1F04D6D7E56 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		60604C9EA9CA5D048427D6DB /* CardIcon.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = CardIcon.swift; path = UI/Popover/CardIcon.swift; sourceTree = "<group>"; };
 		63E3F875F2F8632EAFEB33A6 /* AppModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		66E27822CB59C5FFE27F134F /* PulseSkeletonView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = PulseSkeletonView.swift; path = UI/Popover/PulseSkeletonView.swift; sourceTree = "<group>"; };
 		77B0E7000F2D1D40B1B3A3E6 /* StarbeamTheme.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = StarbeamTheme.swift; path = UI/StarbeamTheme.swift; sourceTree = "<group>"; };
+		8EED07B4A08362D143A2CE85 /* PulseCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = PulseCardView.swift; path = UI/Popover/PulseCardView.swift; sourceTree = "<group>"; };
 		872D286EE6956D2265E67CC2 /* PopoverRootView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = PopoverRootView.swift; path = UI/PopoverRootView.swift; sourceTree = "<group>"; };
 		9073FF5584F414AE7EE49431 /* Starbeam.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Starbeam.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		94DA605482F2F5BB8D088C23 /* NotificationScheduler.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = NotificationScheduler.swift; path = Services/NotificationScheduler.swift; sourceTree = "<group>"; };
+		9CD36A21A8C4F7ADF5C9159A /* FocusAndCalendarViews.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FocusAndCalendarViews.swift; path = UI/Popover/FocusAndCalendarViews.swift; sourceTree = "<group>"; };
 		9EF67241011AA0BCDB86E81F /* OverviewCacheStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = OverviewCacheStore.swift; path = Services/OverviewCacheStore.swift; sourceTree = "<group>"; };
 		B0FAFC6988189D3777170BEB /* DeviceSignInView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = DeviceSignInView.swift; path = UI/DeviceSignInView.swift; sourceTree = "<group>"; };
 		B52E95CE7BF04B2207A9C291 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.0.sdk/System/Library/Frameworks/Cocoa.framework; sourceTree = DEVELOPER_DIR; };
@@ -80,6 +92,12 @@
 				3ED4D3D5A373434E8E8EECBA /* StarbeamApp.swift */,
 				B0FAFC6988189D3777170BEB /* DeviceSignInView.swift */,
 				872D286EE6956D2265E67CC2 /* PopoverRootView.swift */,
+				9CD36A21A8C4F7ADF5C9159A /* FocusAndCalendarViews.swift */,
+				60604C9EA9CA5D048427D6DB /* CardIcon.swift */,
+				4E565088EEC6201D2F15EDD8 /* ErrorCardView.swift */,
+				8EED07B4A08362D143A2CE85 /* PulseCardView.swift */,
+				66E27822CB59C5FFE27F134F /* PulseSkeletonView.swift */,
+				1AC1E0C63E12D9AC481FE21B /* SettingsSheetView.swift */,
 				3270FA1FE2B9B19ECF10865D /* StarbeamBackgroundView.swift */,
 				77B0E7000F2D1D40B1B3A3E6 /* StarbeamTheme.swift */,
 				573AACCB3728A1F04D6D7E56 /* Info.plist */,
@@ -205,10 +223,16 @@
 				E12EC343676879A0B3322FF0 /* NotificationScheduler.swift in Sources */,
 				E369E6BD2EDE76AC0E02CDBE /* OverviewCacheStore.swift in Sources */,
 				C9CAE300E0AC142F178904B1 /* SettingsStore.swift in Sources */,
+				B57DF5D3826A703705E61CEF /* SettingsSheetView.swift in Sources */,
+				CE1A1E90B837469DB2621681 /* ErrorCardView.swift in Sources */,
 				E5E11DF63D96805332F663CE /* SettingsView.swift in Sources */,
 				9F650C051AD4CD9BA09444F6 /* StarbeamApp.swift in Sources */,
 				E31BC50841B87A746AEC5827 /* DeviceSignInView.swift in Sources */,
 				A63D9B9241B07FBCCD43E245 /* PopoverRootView.swift in Sources */,
+				EE0190E4AE6CD3B899247203 /* CardIcon.swift in Sources */,
+				F1D4B256B9EB67455208C893 /* PulseSkeletonView.swift in Sources */,
+				F48094D3F79A7C794546F633 /* PulseCardView.swift in Sources */,
+				F76CABECEA7CCE21B5D66ED9 /* FocusAndCalendarViews.swift in Sources */,
 				5B4C4613249366C87F89A3C5 /* StarbeamBackgroundView.swift in Sources */,
 				5A398A9189679FC5939B59E7 /* StarbeamTheme.swift in Sources */,
 			);
