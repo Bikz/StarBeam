@@ -38,8 +38,9 @@ export default async function GooglePage({
         <div className="sb-title text-xl">Google connection</div>
         <p className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
           Connect your Google account (read-only) so Starbeam can derive Today’s
-          Focus and your agenda. Tokens are stored encrypted and email/calendar
-          contents are not logged.
+          Focus, your agenda, and pull in Drive context. Tokens are stored
+          encrypted. Drive file snapshots are stored encrypted for processing,
+          and raw contents are not logged.
         </p>
 
         {sp.connected ? (
@@ -121,10 +122,10 @@ export default async function GooglePage({
         <div className="mt-3 grid gap-3 text-sm text-[color:var(--sb-muted)] leading-relaxed">
           <div>
             Read-only scopes only. No sending emails, no calendar writes, no
-            Drive.
+            Drive writes.
           </div>
           <div>
-            Managers cannot view employee raw Gmail/Calendar data. This
+            Managers cannot view employee raw Gmail/Calendar/Drive data. This
             connection is per-user.
           </div>
         </div>

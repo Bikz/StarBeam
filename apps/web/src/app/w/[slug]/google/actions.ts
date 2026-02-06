@@ -36,6 +36,7 @@ export async function startGoogleConnect(workspaceSlug: string) {
     "profile",
     "https://www.googleapis.com/auth/gmail.readonly",
     "https://www.googleapis.com/auth/calendar.readonly",
+    "https://www.googleapis.com/auth/drive.readonly",
   ];
 
   const state = mintSignedState({
@@ -85,4 +86,3 @@ export async function disconnectGoogleConnection(
   await prisma.googleConnection.delete({ where: { id: existing.id } });
   redirect(`/w/${workspaceSlug}/google?disconnected=1`);
 }
-
