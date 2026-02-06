@@ -105,7 +105,9 @@ export async function nightly_workspace_run(payload: unknown) {
       where: {
         workspaceId,
         ownerUserId: { in: memberUserIds },
-        status: "CONNECTED",
+        // If a sync failed due to an unrelated transient issue (e.g. missing tables during deploy),
+        // allow the next run to retry without forcing the user through OAuth again.
+        status: { in: ["CONNECTED", "ERROR"] },
       },
       select: { id: true, ownerUserId: true, googleAccountEmail: true },
       orderBy: { createdAt: "desc" },
@@ -201,6 +203,10 @@ export async function nightly_workspace_run(payload: unknown) {
             userId,
             connectionId: c.id,
           });
+          // Successful sync means the connection is viable again.
+          await prisma.googleConnection
+            .update({ where: { id: c.id }, data: { status: "CONNECTED" } })
+            .catch(() => undefined);
         } catch (err) {
           partial = true;
           const msg = err instanceof Error ? err.message : String(err);
