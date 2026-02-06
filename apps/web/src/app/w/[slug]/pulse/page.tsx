@@ -66,7 +66,7 @@ export default async function PulsePage({
             href={`/w/${membership.workspace.slug}/jobs`}
             className="sb-btn h-11 px-5 text-sm font-extrabold"
           >
-            Run nightly job
+            Run overnight now
           </Link>
           <Link
             href={`/w/${membership.workspace.slug}`}

@@ -125,12 +125,17 @@ body {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  opacity: 0.55;
+  /* Light mode: keep the background quiet. Dark mode can carry a touch more texture. */
+  opacity: 0.38;
   mix-blend-mode: soft-light;
   background-image:
     radial-gradient(circle at 1px 1px, var(--sb-bg-dot) 1px, transparent 0);
   background-size: 16px 16px;
   mask-image: radial-gradient(1200px 740px at 40% 10%, black, transparent 72%);
+}
+
+html.dark .sb-bg::before {
+  opacity: 0.55;
 }
 
 .sb-card {

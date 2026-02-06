@@ -4,8 +4,21 @@ import { getServerSession } from "next-auth";
 import { prisma } from "@starbeam/db";
 
 import { createOrgWorkspace } from "@/app/dashboard/actions";
+import CopyPill from "@/components/copy-pill";
 import ThemeToggle from "@/components/theme-toggle";
 import { authOptions } from "@/lib/auth";
+
+function isProfileUseful(profile: {
+  websiteUrl: string | null;
+  description: string | null;
+  competitorDomains: string[];
+} | null): boolean {
+  if (!profile) return false;
+  if (profile.websiteUrl && profile.websiteUrl.trim()) return true;
+  if (profile.description && profile.description.trim()) return true;
+  if (Array.isArray(profile.competitorDomains) && profile.competitorDomains.length > 0) return true;
+  return false;
+}
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -32,6 +45,39 @@ export default async function DashboardPage() {
     include: { workspace: true },
     orderBy: { createdAt: "asc" },
   });
+
+  const workspaceIds = memberships.map((m) => m.workspaceId);
+
+  const [activeGoals, connections, editions, profiles] = await Promise.all([
+    prisma.goal.groupBy({
+      by: ["workspaceId"],
+      where: { workspaceId: { in: workspaceIds }, active: true },
+      _count: { _all: true },
+    }),
+    prisma.googleConnection.groupBy({
+      by: ["workspaceId"],
+      where: {
+        workspaceId: { in: workspaceIds },
+        ownerUserId: session.user.id,
+        status: "CONNECTED",
+      },
+      _count: { _all: true },
+    }),
+    prisma.pulseEdition.findMany({
+      where: { workspaceId: { in: workspaceIds }, userId: session.user.id },
+      select: { workspaceId: true },
+      distinct: ["workspaceId"],
+    }),
+    prisma.workspaceProfile.findMany({
+      where: { workspaceId: { in: workspaceIds } },
+      select: { workspaceId: true, websiteUrl: true, description: true, competitorDomains: true },
+    }),
+  ]);
+
+  const goalsByWorkspace = new Map(activeGoals.map((g) => [g.workspaceId, g._count._all]));
+  const googleByWorkspace = new Map(connections.map((c) => [c.workspaceId, c._count._all]));
+  const hasEdition = new Set(editions.map((e) => e.workspaceId));
+  const profileByWorkspace = new Map(profiles.map((p) => [p.workspaceId, p]));
 
   const orgCount = memberships.filter((m) => m.workspace.type === "ORG").length;
   const personalCount = memberships.filter((m) => m.workspace.type !== "ORG").length;
@@ -139,11 +185,31 @@ export default async function DashboardPage() {
               </div>
             ) : (
               <div className="mt-6 grid gap-3">
-                {memberships.map((m) => (
-                  <div
-                    key={m.id}
-                    className="sb-card-inset p-5"
-                  >
+                {memberships.map((m) => {
+                  const goalCount = goalsByWorkspace.get(m.workspaceId) ?? 0;
+                  const googleCount = googleByWorkspace.get(m.workspaceId) ?? 0;
+                  const editionReady = hasEdition.has(m.workspaceId);
+                  const profile = profileByWorkspace.get(m.workspaceId) ?? null;
+
+                  const todo: Array<{ label: string; href: string }> = [];
+                  if (m.workspace.type === "ORG" && !isProfileUseful(profile)) {
+                    todo.push({ label: "Add profile", href: `/w/${m.workspace.slug}/profile` });
+                  }
+                  if (goalCount === 0) {
+                    todo.push({ label: "Add goals", href: `/w/${m.workspace.slug}/goals` });
+                  }
+                  if (googleCount === 0) {
+                    todo.push({ label: "Connect Google", href: `/w/${m.workspace.slug}/google` });
+                  }
+                  if (!editionReady) {
+                    todo.push({ label: "Run overnight", href: `/w/${m.workspace.slug}/jobs` });
+                  }
+
+                  return (
+                    <div
+                      key={m.id}
+                      className="sb-card-inset p-5"
+                    >
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div className="min-w-[220px]">
                         <div className="sb-title text-lg font-extrabold leading-tight">
@@ -158,17 +224,31 @@ export default async function DashboardPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span
-                          className="sb-kbd"
-                          title={`Workspace ID: ${m.workspace.slug}`}
-                        >
-                          id:{m.workspace.slug}
-                        </span>
+                        <CopyPill value={m.workspace.slug} label={`id:${m.workspace.slug}`} />
                         <span className="text-[11px] font-semibold tracking-wide uppercase text-[color:var(--sb-muted)]">
                           {m.workspace.type}
                         </span>
                       </div>
                     </div>
+
+                    {todo.length ? (
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                        <div className="text-[11px] font-semibold tracking-wide uppercase text-[color:var(--sb-muted)]">
+                          Next:
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          {todo.slice(0, 3).map((t) => (
+                            <Link
+                              key={t.label}
+                              href={t.href}
+                              className="rounded-full border border-black/10 dark:border-white/15 bg-white/40 dark:bg-white/10 px-3 py-1 text-[11px] font-semibold text-[color:var(--sb-muted)] hover:text-[color:var(--sb-fg)]"
+                            >
+                              {t.label}
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
                     <div className="mt-4 flex flex-wrap items-center gap-3">
                       <Link
                         href={`/w/${m.workspace.slug}`}
@@ -195,7 +275,8 @@ export default async function DashboardPage() {
                       </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </section>

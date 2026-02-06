@@ -183,7 +183,7 @@ export default async function WorkspaceSetupPage({
           </div>
           <div>
             <span className="font-semibold text-[color:var(--sb-fg)]">Runs</span>{" "}
-            contains Jobs and debugging surfaces.
+            contains runs and debugging surfaces.
           </div>
         </div>
       </div>
