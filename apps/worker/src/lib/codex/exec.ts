@@ -62,16 +62,16 @@ export async function runCodexExec(args: {
 
   try {
     const argv = [
+      // Non-interactive worker job: never ask for approvals.
+      "-a",
+      "never",
+      ...(args.enableWebSearch ? ["--search"] : []),
       "exec",
       "-C",
       args.cwd,
       "--skip-git-repo-check",
       "-s",
       "read-only",
-      // Non-interactive worker job: never ask for approvals.
-      "-a",
-      "never",
-      ...(args.enableWebSearch ? ["--search"] : []),
       "--output-schema",
       args.outputSchemaPath,
       "-o",
