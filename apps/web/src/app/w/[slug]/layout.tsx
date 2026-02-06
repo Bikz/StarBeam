@@ -6,6 +6,7 @@ import { prisma } from "@starbeam/db";
 
 import { authOptions } from "@/lib/auth";
 import ThemeToggle from "@/components/theme-toggle";
+import WorkspaceNav from "@/components/workspace-nav";
 
 export default async function WorkspaceLayout({
   children,
@@ -27,17 +28,24 @@ export default async function WorkspaceLayout({
 
   const base = `/w/${membership.workspace.slug}`;
 
-  const nav = [
-    // IA: make Pulse the home, keep "context levers" split, move Jobs under Advanced.
-    { href: base, label: "Setup" },
+  // IA: keep “Pulse” obvious, and treat the rest as grouped controls
+  // (context levers vs ops). Mobile collapses the tail into “More”.
+  const core = [
+    { href: base, label: "Setup", match: "exact" as const },
     { href: `${base}/pulse`, label: "Pulse" },
-    { href: `${base}/profile`, label: "Org Profile" },
+  ];
+
+  const context = [
+    { href: `${base}/profile`, label: "Profile" },
     { href: `${base}/goals`, label: "Goals" },
     { href: `${base}/announcements`, label: "Announcements" },
     { href: `${base}/departments`, label: "Tracks" },
+  ];
+
+  const ops = [
     { href: `${base}/members`, label: "People" },
     { href: `${base}/google`, label: "Integrations" },
-    { href: `${base}/jobs`, label: "Advanced" },
+    { href: `${base}/jobs`, label: "Runs" },
   ];
 
   return (
@@ -70,17 +78,7 @@ export default async function WorkspaceLayout({
           </div>
         </div>
 
-        <nav className="mt-7 flex flex-wrap gap-2">
-          {nav.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="sb-btn px-4 py-2 text-xs font-semibold"
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+        <WorkspaceNav core={core} context={context} ops={ops} />
 
         <div className="mt-8">{children}</div>
       </div>

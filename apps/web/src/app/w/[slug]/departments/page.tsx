@@ -45,14 +45,15 @@ export default async function DepartmentsPage({
     <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
       <div className="sb-card p-7">
         <div className="flex items-center justify-between gap-4">
-          <div className="sb-title text-xl">Departments</div>
+          <div className="sb-title text-xl">Tracks</div>
           <div className="text-xs text-[color:var(--sb-muted)]">
             {departments.length} configured
           </div>
         </div>
         <p className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
-          Nightly web research runs per-department. For the demo, start with a
-          Marketing department prompt focused on topics + competitors.
+          Tracks are department-specific prompts. Nightly web research runs per
+          track. For the demo, start with a Marketing track prompt focused on
+          topics + competitors.
         </p>
 
         {departments.length === 0 ? (
@@ -116,7 +117,7 @@ export default async function DepartmentsPage({
       </div>
 
       <div className="sb-card p-7">
-        <div className="sb-title text-xl">Create a department</div>
+        <div className="sb-title text-xl">Create a track</div>
         <p className="mt-2 text-sm text-[color:var(--sb-muted)]">
           v0 is minimal: template + fields. Member assignment defaults to
           &quot;all members&quot; when created.

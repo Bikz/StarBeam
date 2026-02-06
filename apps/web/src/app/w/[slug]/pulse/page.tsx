@@ -94,7 +94,7 @@ export default async function PulsePage({
             href={`/w/${membership.workspace.slug}/jobs`}
             className="sb-btn px-4 py-2 text-xs font-semibold"
           >
-            Jobs
+            Runs
           </Link>
         </div>
 

@@ -73,7 +73,7 @@ export default async function WorkspaceSetupPage({
       title: "Add org profile",
       desc: "Website, description, and competitors help scope web research.",
       href: `${base}/profile`,
-      cta: "Open Org Profile",
+      cta: "Open Profile",
     },
     {
       done: hasGoals,
@@ -94,7 +94,7 @@ export default async function WorkspaceSetupPage({
       title: "Generate the first pulse",
       desc: "Run the job once to produce the latest pulse cards.",
       href: `${base}/jobs`,
-      cta: "Open Advanced",
+      cta: "Open Runs",
     },
   ] as const;
 
@@ -175,14 +175,14 @@ export default async function WorkspaceSetupPage({
         <div className="mt-3 grid gap-3 text-sm text-[color:var(--sb-muted)] leading-relaxed">
           <div>
             <span className="font-semibold text-[color:var(--sb-fg)]">Context tabs</span>{" "}
-            (Org Profile, Goals, Announcements, Tracks) are the levers that tune what shows up in Pulse.
+            (Profile, Goals, Announcements, Tracks) are the levers that tune what shows up in Pulse.
           </div>
           <div>
             <span className="font-semibold text-[color:var(--sb-fg)]">Pulse</span>{" "}
             is the daily feed: pinned announcements, web research with citations, and focus items derived from integrations.
           </div>
           <div>
-            <span className="font-semibold text-[color:var(--sb-fg)]">Advanced</span>{" "}
+            <span className="font-semibold text-[color:var(--sb-fg)]">Runs</span>{" "}
             contains Jobs and debugging surfaces.
           </div>
         </div>
