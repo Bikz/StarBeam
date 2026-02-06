@@ -6,6 +6,7 @@ struct ContentView: View {
   }
 }
 
+#if DEBUG
 #Preview {
   let model = AppModel()
   model.auth.session = .init(
@@ -17,7 +18,8 @@ struct ContentView: View {
   )
   model.overview = OverviewPreviewMocks.overview
 
-  return ContentView()
+  ContentView()
     .environment(model)
     .frame(width: 460, height: 760)
 }
+#endif

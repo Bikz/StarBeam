@@ -611,6 +611,7 @@ private enum CalendarRowView {
   }
 }
 
+#if DEBUG
 #Preview {
   let model = AppModel()
   model.auth.session = .init(
@@ -622,7 +623,8 @@ private enum CalendarRowView {
   )
   model.overview = OverviewPreviewMocks.overview
 
-  return PopoverRootView()
+  PopoverRootView()
     .environment(model)
     .frame(width: 460, height: 760)
 }
+#endif
