@@ -37,7 +37,8 @@ put() {
   local key="$1"
   local file="$2"
   echo "Uploading: r2://$BUCKET/$key"
-  wrangler r2 object put "$BUCKET/$key" --file "$file" --content-type "$(file -b --mime-type "$file")"
+  # Default location is "local" (for dev/testing). For real releases we want the remote bucket.
+  wrangler r2 object put "$BUCKET/$key" --file "$file" --content-type "$(file -b --mime-type "$file")" --remote
 }
 
 put "$PREFIX/appcast.xml" "$OUT_DIR/appcast.xml"
