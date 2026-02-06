@@ -1,7 +1,13 @@
 import crypto from "node:crypto";
 
-import { S3Client, HeadBucketCommand, CreateBucketCommand, PutObjectCommand } from "@aws-sdk/client-s3";
-import { encryptBytes, parseAes256GcmKeyFromEnv } from "@starbeam/shared";
+import {
+  S3Client,
+  HeadBucketCommand,
+  CreateBucketCommand,
+  PutObjectCommand,
+  GetObjectCommand,
+} from "@aws-sdk/client-s3";
+import { decryptBytes, encryptBytes, parseAes256GcmKeyFromEnv } from "@starbeam/shared";
 
 type BlobStoreEnv = {
   endpoint: string;
@@ -121,4 +127,52 @@ export async function putEncryptedObject(args: {
     sha256,
     encryption: "AES_256_GCM_V1",
   };
+}
+
+async function s3BodyToBuffer(body: unknown): Promise<Buffer> {
+  if (!body) return Buffer.alloc(0);
+  if (Buffer.isBuffer(body)) return body;
+  if (body instanceof Uint8Array) return Buffer.from(body);
+
+  const anyBody = body as { transformToByteArray?: () => Promise<Uint8Array> };
+  if (typeof anyBody?.transformToByteArray === "function") {
+    const bytes = await anyBody.transformToByteArray();
+    return Buffer.from(bytes);
+  }
+
+  const asyncIt = (body as { [Symbol.asyncIterator]?: unknown })?.[Symbol.asyncIterator];
+  if (typeof asyncIt === "function") {
+    const chunks: Buffer[] = [];
+    for await (const chunk of body as AsyncIterable<unknown>) {
+      if (typeof chunk === "string") {
+        chunks.push(Buffer.from(chunk));
+      } else if (chunk instanceof Uint8Array) {
+        chunks.push(Buffer.from(chunk));
+      } else {
+        chunks.push(Buffer.from(String(chunk)));
+      }
+    }
+    return Buffer.concat(chunks);
+  }
+
+  throw new Error("Unsupported S3 response body type");
+}
+
+export async function getDecryptedObject(args: {
+  bucket?: string;
+  key: string;
+}): Promise<{ plaintext: Buffer }> {
+  const store = getBlobStore();
+  if (!store) throw new Error("S3 blob store not configured");
+
+  const bucket = args.bucket ?? store.env.bucket;
+  const resp = await store.client.send(
+    new GetObjectCommand({ Bucket: bucket, Key: args.key }),
+  );
+
+  const ciphertext = await s3BodyToBuffer(resp.Body);
+  const keyBytes = parseAes256GcmKeyFromEnv();
+  const plaintext = decryptBytes(ciphertext, keyBytes);
+
+  return { plaintext };
 }

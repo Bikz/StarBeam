@@ -3,6 +3,8 @@ import type { Prisma } from "@starbeam/db";
 import { z } from "zod";
 
 import { startOfDayUtc } from "../lib/dates";
+import { isCodexInstalled } from "../lib/codex/exec";
+import { generatePulseCardsWithCodexExec } from "../lib/codex/pulse";
 import { generateFocusTasks, syncGoogleConnection } from "../lib/google/sync";
 import { isAuthRevoked as isGitHubAuthRevoked, syncGitHubConnection } from "../lib/integrations/github";
 import { isAuthRevoked as isLinearAuthRevoked, syncLinearConnection } from "../lib/integrations/linear";
@@ -190,6 +192,20 @@ export async function nightly_workspace_run(payload: unknown) {
     const openaiApiKey = process.env.OPENAI_API_KEY ?? "";
     const openaiModel = process.env.OPENAI_MODEL_DEFAULT ?? "gpt-5";
 
+    const codexExecEnabled = ["1", "true", "yes"].includes(
+      (process.env.STARB_CODEX_EXEC_ENABLED ?? "").trim().toLowerCase(),
+    );
+    const codexModel = process.env.STARB_CODEX_MODEL_DEFAULT ?? "gpt-5.2-codex";
+    const codexAvailable =
+      codexExecEnabled && openaiApiKey ? await isCodexInstalled() : false;
+
+    if (codexExecEnabled && openaiApiKey && !codexAvailable) {
+      partial = true;
+      errorSummary =
+        (errorSummary ? `${errorSummary}\n` : "") +
+        "codex binary not found; Codex pulse generation skipped.";
+    }
+
     if (!openaiApiKey) {
       partial = true;
       errorSummary =
@@ -342,6 +358,30 @@ export async function nightly_workspace_run(payload: unknown) {
         }
       }
 
+      let codexPulse:
+        | Awaited<ReturnType<typeof generatePulseCardsWithCodexExec>>
+        | null = null;
+
+      if (codexAvailable) {
+        try {
+          codexPulse = await generatePulseCardsWithCodexExec({
+            workspace,
+            profile,
+            goals,
+            departments,
+            userId,
+            model: codexModel,
+            includeWebResearch: false,
+          });
+        } catch (err) {
+          partial = true;
+          const msg = err instanceof Error ? err.message : String(err);
+          errorSummary =
+            (errorSummary ? `${errorSummary}\n` : "") +
+            `Codex pulse generation failed: ${msg}`;
+        }
+      }
+
       const edition = await prisma.pulseEdition.upsert({
         where: {
           workspaceId_userId_editionDate: {
@@ -422,6 +462,39 @@ export async function nightly_workspace_run(payload: unknown) {
             sources: wc.sources,
             priority: wc.priority,
           });
+        }
+      }
+
+      if (codexPulse?.output.cards.length) {
+        const memberDeptIds = new Set(
+          departments
+            .filter((d) => d.memberships.some((m) => m.userId === userId))
+            .map((d) => d.id),
+        );
+
+        let internalIdx = 0;
+        for (const c of codexPulse.output.cards) {
+          if (c.kind !== "INTERNAL") continue;
+
+          const mapped =
+            c.department && codexPulse.departmentNameToId.has(c.department)
+              ? codexPulse.departmentNameToId.get(c.department) ?? null
+              : null;
+          const departmentId = mapped && memberDeptIds.has(mapped) ? mapped : null;
+
+          cards.push({
+            editionId: edition.id,
+            kind: "INTERNAL",
+            departmentId,
+            title: c.title,
+            body: c.body,
+            why: c.why,
+            action: c.action,
+            sources: c.citations.length ? toJsonCitations(c.citations) : undefined,
+            priority: 650 - internalIdx,
+          });
+
+          internalIdx += 1;
         }
       }
 
