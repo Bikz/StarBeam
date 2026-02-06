@@ -113,3 +113,4 @@ Otherwise: continue automatically.
 
 - Direct-download release process (Sparkle updates, signing/notarization): `apps/macos/Starbeam/RELEASING.md`
 - Private keys and notarization credentials must never be committed.
+- End-to-end local release helper: `scripts/macos/cut_release.sh` (bumps version, builds, uploads, verifies)

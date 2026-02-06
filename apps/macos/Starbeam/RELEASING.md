@@ -89,7 +89,7 @@ scripts/macos/release_direct.sh
 Outputs:
 
 - `dist/macos/Starbeam-<version>.dmg` (first install)
-- `dist/macos/Starbeam-<version>.zip` (Sparkle update payload)
+- `dist/macos/updates/Starbeam-<version>.zip` (Sparkle update payload)
 - `dist/macos/appcast.xml` (if Sparkle private key provided)
 
 ## Hosting

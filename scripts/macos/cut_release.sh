@@ -48,6 +48,11 @@ git -C "$ROOT" add "$PBXPROJ" "$ROOT/apps/macos/Starbeam/scripts/generate_xcodep
 # commit the version files even if other work is in progress locally.
 git -C "$ROOT" commit --no-verify -m "chore(release): bump macOS to $NEW_VERSION" || true
 
+# Optional: push the version bump commit(s).
+if [[ "${RELEASE_PUSH:-0}" == "1" ]]; then
+  git -C "$ROOT" push
+fi
+
 # Build + sign/notarize + generate appcast.
 "$ROOT/scripts/macos/release_direct.sh"
 
