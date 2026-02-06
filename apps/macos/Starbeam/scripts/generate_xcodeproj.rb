@@ -29,7 +29,7 @@ project = Xcodeproj::Project.new(PROJECT_PATH)
 starbeam_group = project.main_group.new_group('Starbeam', 'Starbeam')
 
 # Target
-app_target = project.new_target(:application, 'Starbeam', :osx, '14.0')
+app_target = project.new_target(:application, 'Starbeam', :osx, '15.0')
 
 # Files
 sources = Dir.glob(File.join(SRC_DIR, '**', '*.swift')).sort
@@ -51,7 +51,7 @@ app_target.add_file_references(sources_refs)
 app_target.build_configurations.each do |config|
   config.build_settings['PRODUCT_BUNDLE_IDENTIFIER'] = 'com.starbeam.macos'
   config.build_settings['INFOPLIST_FILE'] = 'Starbeam/Info.plist'
-  config.build_settings['MACOSX_DEPLOYMENT_TARGET'] = '14.0'
+  config.build_settings['MACOSX_DEPLOYMENT_TARGET'] = '15.0'
   config.build_settings['CURRENT_PROJECT_VERSION'] = '1'
   config.build_settings['MARKETING_VERSION'] = '0.1.0'
 
