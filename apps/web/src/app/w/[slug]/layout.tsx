@@ -40,8 +40,8 @@ export default async function WorkspaceLayout({
 
   return (
     <div className="sb-bg">
-      <div className="mx-auto max-w-5xl px-6 py-14">
-        <div className="flex flex-wrap items-end justify-between gap-4">
+      <div className="mx-auto max-w-6xl px-6 py-14">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <div className="sb-title text-3xl">{membership.workspace.name}</div>
             <div className="mt-1 text-sm text-[color:var(--sb-muted)]">
@@ -57,9 +57,11 @@ export default async function WorkspaceLayout({
           </div>
           <Link
             href="/dashboard"
-            className="text-sm text-[color:var(--sb-muted)] hover:text-[color:var(--sb-fg)] transition-colors"
+            className="sb-btn inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-[color:var(--sb-fg)]"
+            aria-label="Back to dashboard"
           >
-            &lt;- Dashboard
+            <span aria-hidden>←</span>
+            Dashboard
           </Link>
         </div>
 
