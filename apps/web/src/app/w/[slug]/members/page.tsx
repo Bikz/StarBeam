@@ -7,10 +7,7 @@ import { prisma } from "@starbeam/db";
 
 import { createInvite } from "@/app/w/[slug]/members/actions";
 import { authOptions } from "@/lib/auth";
-
-function origin(): string {
-  return process.env.NEXT_PUBLIC_WEB_ORIGIN || "http://localhost:3000";
-}
+import { webOrigin } from "@/lib/webOrigin";
 
 export default async function MembersPage({
   params,
@@ -46,7 +43,7 @@ export default async function MembersPage({
   ]);
 
   const inviteToken = sp.invite;
-  const inviteUrl = inviteToken ? `${origin()}/invite/${inviteToken}` : null;
+  const inviteUrl = inviteToken ? `${webOrigin()}/invite/${inviteToken}` : null;
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">

@@ -8,7 +8,8 @@ export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: buildProvidersFromEnv(process.env),
   pages: {
-    signIn: "/",
+    // Login is hosted on the app subdomain; marketing lives on the root domain.
+    signIn: "/login",
   },
   session: {
     strategy: "database",

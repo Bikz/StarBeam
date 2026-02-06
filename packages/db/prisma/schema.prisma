@@ -537,3 +537,19 @@ model ApiRefreshToken {
   @@index([expiresAt])
   @@index([revokedAt])
 }
+
+model WaitlistSignup {
+  id String @id @default(cuid())
+
+  email        String @unique
+  referralCode String @unique
+
+  referredById String?
+  referredBy   WaitlistSignup?  @relation("WaitlistReferrals", fields: [referredById], references: [id], onDelete: SetNull)
+  referrals    WaitlistSignup[] @relation("WaitlistReferrals")
+
+  createdAt DateTime @default(now())
+
+  @@index([referredById])
+  @@index([createdAt])
+}

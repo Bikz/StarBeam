@@ -28,15 +28,16 @@ export default async function WorkspaceLayout({
   const base = `/w/${membership.workspace.slug}`;
 
   const nav = [
-    { href: base, label: "Overview" },
-    { href: `${base}/profile`, label: "Profile" },
-    { href: `${base}/members`, label: "Members" },
-    { href: `${base}/google`, label: "Google" },
-    { href: `${base}/departments`, label: "Departments" },
+    // IA: make Pulse the home, keep "context levers" split, move Jobs under Advanced.
+    { href: base, label: "Setup" },
+    { href: `${base}/pulse`, label: "Pulse" },
+    { href: `${base}/profile`, label: "Org Profile" },
     { href: `${base}/goals`, label: "Goals" },
     { href: `${base}/announcements`, label: "Announcements" },
-    { href: `${base}/pulse`, label: "Pulse" },
-    { href: `${base}/jobs`, label: "Jobs" },
+    { href: `${base}/departments`, label: "Tracks" },
+    { href: `${base}/members`, label: "People" },
+    { href: `${base}/google`, label: "Integrations" },
+    { href: `${base}/jobs`, label: "Advanced" },
   ];
 
   return (

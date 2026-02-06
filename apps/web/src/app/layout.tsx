@@ -17,7 +17,7 @@ const body = M_PLUS_Rounded_1c({
 
 export const metadata: Metadata = {
   title: "Starbeam",
-  description: "Enterprise pulse for stronger shared context.",
+  description: "Daily pulse for startup teams and founders.",
 };
 
 export default function RootLayout({

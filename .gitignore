@@ -28,6 +28,9 @@ dist/
 # TypeScript
 *.tsbuildinfo
 
+# Cloudflare Wrangler
+.wrangler/
+
 # OS / Editor
 .DS_Store
 .idea/
