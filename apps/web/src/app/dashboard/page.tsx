@@ -35,6 +35,7 @@ export default async function DashboardPage() {
 
   const orgCount = memberships.filter((m) => m.workspace.type === "ORG").length;
   const personalCount = memberships.filter((m) => m.workspace.type !== "ORG").length;
+  const showNextSteps = memberships.length === 0 || orgCount === 0;
 
   return (
     <div className="sb-bg">
@@ -42,7 +43,7 @@ export default async function DashboardPage() {
         <header className="sb-card px-6 py-5 sm:px-7 sm:py-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="sb-card-inset grid h-11 w-11 place-items-center shadow-sm">
+              <div className="sb-card-inset grid h-11 w-11 place-items-center">
                 <span className="sb-title text-lg font-extrabold" aria-hidden>
                   *
                 </span>
@@ -67,14 +68,6 @@ export default async function DashboardPage() {
               <div className="h-8 w-px bg-[color:var(--sb-divider)] hidden sm:block" />
               <ThemeToggle />
               <Link
-                href="/"
-                className="sb-btn inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-[color:var(--sb-fg)]"
-                aria-label="Back to home"
-              >
-                <span aria-hidden>←</span>
-                Home
-              </Link>
-              <Link
                 href="/api/auth/signout?callbackUrl=/"
                 className="sb-btn inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-[color:var(--sb-fg)]"
               >
@@ -83,7 +76,7 @@ export default async function DashboardPage() {
             </div>
           </div>
 
-          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+          <div className={["mt-5 grid gap-3", showNextSteps ? "sm:grid-cols-3" : "sm:grid-cols-2"].join(" ")}>
             <div className="sb-card-inset px-4 py-3">
               <div className="text-[11px] font-semibold tracking-wide uppercase text-[color:var(--sb-muted)]">
                 Workspaces
@@ -103,14 +96,16 @@ export default async function DashboardPage() {
                 Personal: {personalCount}
               </div>
             </div>
-            <div className="sb-card-inset px-4 py-3">
-              <div className="text-[11px] font-semibold tracking-wide uppercase text-[color:var(--sb-muted)]">
-                Demo loop
+            {showNextSteps ? (
+              <div className="sb-card-inset px-4 py-3">
+                <div className="text-[11px] font-semibold tracking-wide uppercase text-[color:var(--sb-muted)]">
+                  Next steps
+                </div>
+                <div className="mt-1 text-sm font-semibold text-[color:var(--sb-fg)]">
+                  Create workspace → Connect Google → Add goals → Run overnight
+                </div>
               </div>
-              <div className="mt-1 text-sm font-semibold text-[color:var(--sb-fg)]">
-                Create org → Connect Google → Add goal → Nightly job
-              </div>
-            </div>
+            ) : null}
           </div>
         </header>
 
@@ -122,11 +117,8 @@ export default async function DashboardPage() {
                   Your workspaces
                 </div>
                 <div className="mt-1 text-sm text-[color:var(--sb-muted)]">
-                  Jump into an org to set goals, connect Google, and preview tomorrow’s pulse.
+                  Open a workspace to manage context and view your latest pulse.
                 </div>
-              </div>
-              <div className="text-xs text-[color:var(--sb-muted)]">
-                Invite-only org join (v0)
               </div>
             </div>
 
@@ -166,33 +158,41 @@ export default async function DashboardPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="sb-kbd" title={m.workspace.slug}>
-                          {m.workspace.slug}
+                        <span
+                          className="sb-kbd"
+                          title={`Workspace ID: ${m.workspace.slug}`}
+                        >
+                          id:{m.workspace.slug}
                         </span>
                         <span className="text-[11px] font-semibold tracking-wide uppercase text-[color:var(--sb-muted)]">
                           {m.workspace.type}
                         </span>
                       </div>
                     </div>
-                    <div className="mt-4 flex flex-wrap gap-2">
+                    <div className="mt-4 flex flex-wrap items-center gap-3">
                       <Link
                         href={`/w/${m.workspace.slug}`}
                         className="sb-btn sb-btn-primary px-4 py-2 text-xs font-semibold"
                       >
                         Open
                       </Link>
-                      <Link
-                        href={`/w/${m.workspace.slug}/members`}
-                        className="sb-btn px-4 py-2 text-xs font-semibold"
-                      >
-                        Members
-                      </Link>
-                      <Link
-                        href={`/w/${m.workspace.slug}/google`}
-                        className="sb-btn px-4 py-2 text-xs font-semibold"
-                      >
-                        Connect Google
-                      </Link>
+                      <div className="flex flex-wrap items-center gap-3 text-xs text-[color:var(--sb-muted)]">
+                        <Link
+                          href={`/w/${m.workspace.slug}/members`}
+                          className="hover:underline"
+                        >
+                          People
+                        </Link>
+                        <span aria-hidden className="opacity-70">
+                          ·
+                        </span>
+                        <Link
+                          href={`/w/${m.workspace.slug}/google`}
+                          className="hover:underline"
+                        >
+                          Integrations
+                        </Link>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -207,7 +207,7 @@ export default async function DashboardPage() {
                   Create org workspace
                 </div>
                 <div className="mt-1 text-sm text-[color:var(--sb-muted)]">
-                  CEO sets goals and context here. Employees receive a daily pulse in the menu bar app.
+                  Create a shared workspace for your team: goals, announcements, tracks, and integrations.
                 </div>
               </div>
             </div>

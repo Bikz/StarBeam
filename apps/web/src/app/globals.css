@@ -15,8 +15,9 @@
   --sb-accent-2: #0b0b0f;
   --sb-ring: rgba(11, 11, 15, 0.18);
 
-  --sb-shadow: 0 12px 38px rgba(18, 12, 34, 0.14);
-  --sb-shadow-soft: 0 10px 30px rgba(18, 12, 34, 0.10);
+  /* Light mode: keep glass crisp; avoid "floaty" heavy shadows. */
+  --sb-shadow: 0 10px 30px rgba(18, 12, 34, 0.10);
+  --sb-shadow-soft: 0 6px 18px rgba(18, 12, 34, 0.06);
 
   --sb-inset-bg: rgba(255, 255, 255, 0.34);
 
@@ -28,7 +29,7 @@
     rgba(255, 255, 255, 0.82),
     rgba(255, 255, 255, 0.24)
   );
-  --sb-btn-shadow: 0 10px 24px rgba(18, 12, 34, 0.10);
+  --sb-btn-shadow: 0 6px 14px rgba(18, 12, 34, 0.06);
 
   --sb-btn-primary-border: rgba(11, 11, 15, 0.14);
   --sb-btn-primary-bg: linear-gradient(
