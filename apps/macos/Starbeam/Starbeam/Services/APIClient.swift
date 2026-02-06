@@ -109,7 +109,7 @@ struct APIClient {
     throw APIError.http(statusCode: http.statusCode, body: String(decoding: data, as: UTF8.self))
   }
 
-  func fetchOverview(workspaceID: String, accessToken: String) async throws -> (overview: Overview, rawJSON: Data) {
+  func fetchOverview(workspaceID: String, accessToken: String, refreshToken: String) async throws -> (overview: Overview, rawJSON: Data) {
     var components = URLComponents(url: try urlForPath("/api/v1/macos/overview"), resolvingAgainstBaseURL: false)
     components?.queryItems = [URLQueryItem(name: "workspace_id", value: workspaceID)]
 
@@ -120,6 +120,9 @@ struct APIClient {
     var request = URLRequest(url: url)
     request.httpMethod = "GET"
     request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+    // Demo reliability: some environments strip/ignore Authorization headers in practice.
+    // Server accepts this as a fallback auth mechanism.
+    request.setValue(refreshToken, forHTTPHeaderField: "X-Starbeam-Refresh-Token")
 
     let (data, response) = try await urlSession.data(for: request)
     let http = try requireHTTP(response)

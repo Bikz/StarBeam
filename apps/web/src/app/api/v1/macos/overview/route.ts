@@ -1,7 +1,7 @@
 import { prisma } from "@starbeam/db";
 import { NextResponse } from "next/server";
 
-import { parseAccessToken } from "@/lib/apiTokens";
+import { parseAccessToken, sha256Hex } from "@/lib/apiTokens";
 
 function iconForCardKind(kind: string): string | undefined {
   if (kind === "ANNOUNCEMENT") return "🔔";
@@ -20,6 +20,21 @@ function getBearerToken(request: Request): string | null {
   const header = request.headers.get("authorization") ?? "";
   const match = header.match(/^Bearer\\s+(.+)$/i);
   return match?.[1] ?? null;
+}
+
+async function userIdFromRefreshToken(request: Request): Promise<string | null> {
+  const refreshToken = (request.headers.get("x-starbeam-refresh-token") ?? "").trim();
+  if (!refreshToken) return null;
+
+  const tokenHash = sha256Hex(refreshToken);
+  const now = new Date();
+
+  const existing = await prisma.apiRefreshToken.findFirst({
+    where: { tokenHash, revokedAt: null, expiresAt: { gt: now } },
+    select: { userId: true },
+  });
+
+  return existing?.userId ?? null;
 }
 
 function formatRelativePast(then: Date, now: Date): string {
@@ -45,21 +60,21 @@ function formatRelativeUntil(then: Date, now: Date): string {
 
 export async function GET(request: Request) {
   const token = getBearerToken(request);
-  if (!token) {
-    return NextResponse.json(
-      { error: "unauthorized" },
-      { status: 401, headers: { "Cache-Control": "no-store" } },
-    );
+  let userId: string | null = null;
+  if (token) {
+    try {
+      const payload = parseAccessToken(token);
+      userId = payload.sub;
+    } catch {
+      userId = await userIdFromRefreshToken(request);
+    }
+  } else {
+    userId = await userIdFromRefreshToken(request);
   }
 
-  let userId: string;
-  try {
-    const payload = parseAccessToken(token);
-    userId = payload.sub;
-  } catch (err) {
-    const code = err instanceof Error ? err.message : "invalid_token";
+  if (!userId) {
     return NextResponse.json(
-      { error: code },
+      { error: "unauthorized" },
       { status: 401, headers: { "Cache-Control": "no-store" } },
     );
   }

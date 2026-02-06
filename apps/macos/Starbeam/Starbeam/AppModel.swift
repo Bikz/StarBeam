@@ -198,7 +198,11 @@ final class AppModel {
 
     do {
       try await refreshIfNeeded()
-      let result = try await client.fetchOverview(workspaceID: workspaceID, accessToken: activeSession.accessToken)
+      let result = try await client.fetchOverview(
+        workspaceID: workspaceID,
+        accessToken: activeSession.accessToken,
+        refreshToken: activeSession.refreshToken
+      )
       overview = result.overview
       lastError = nil
 
@@ -220,7 +224,11 @@ final class AppModel {
       if case APIClient.APIError.http(let statusCode, _) = error, statusCode == 401 {
         do {
           try await refreshIfNeeded(skewSeconds: 0)
-          let retry = try await client.fetchOverview(workspaceID: workspaceID, accessToken: activeSession.accessToken)
+          let retry = try await client.fetchOverview(
+            workspaceID: workspaceID,
+            accessToken: activeSession.accessToken,
+            refreshToken: activeSession.refreshToken
+          )
           overview = retry.overview
           lastError = nil
 
