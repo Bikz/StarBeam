@@ -1,38 +1,23 @@
-import { prisma } from "@starbeam/db";
-import type { Prisma } from "@starbeam/db";
+import { Prisma, prisma } from "@starbeam/db";
 import { z } from "zod";
 
-import { startOfDayUtc } from "../lib/dates";
 import { isCodexInstalled } from "../lib/codex/exec";
-import { generatePulseCardsWithCodexExec } from "../lib/codex/pulse";
-import { generateFocusTasks, syncGoogleConnection } from "../lib/google/sync";
-import { isAuthRevoked as isGitHubAuthRevoked, syncGitHubConnection } from "../lib/integrations/github";
-import { isAuthRevoked as isLinearAuthRevoked, syncLinearConnection } from "../lib/integrations/linear";
-import { isAuthRevoked as isNotionAuthRevoked, syncNotionConnection } from "../lib/integrations/notion";
+import { startOfDayUtc } from "../lib/dates";
+
 import {
-  buildDepartmentWebResearchPrompt,
-  generateWebInsights,
-} from "../lib/webResearch";
+  generateLegacyDepartmentWebResearchCards,
+  priorityForGoal,
+  syncUserConnectorsAndMaybeCodex,
+  toJsonCitations,
+} from "./nightlyWorkspaceRunHelpers";
 
 const NightlyWorkspaceRunPayloadSchema = z.object({
   workspaceId: z.string().min(1),
   jobRunId: z.string().min(1),
 });
 
-function priorityForGoal(priority: string): number {
-  if (priority === "HIGH") return 880;
-  if (priority === "LOW") return 840;
-  return 860;
-}
-
-function toJsonCitations(
-  citations: Array<{ url: string; title?: string }>,
-): Prisma.InputJsonValue {
-  return {
-    citations: citations
-      .map((c) => (c.title ? { url: c.url, title: c.title } : { url: c.url }))
-      .slice(0, 6),
-  };
+function isTruthyEnv(value: string | undefined): boolean {
+  return ["1", "true", "yes"].includes((value ?? "").trim().toLowerCase());
 }
 
 export async function nightly_workspace_run(payload: unknown) {
@@ -53,6 +38,11 @@ export async function nightly_workspace_run(payload: unknown) {
 
   let partial = false;
   let errorSummary: string | null = null;
+
+  const onPartialError = (msg: string) => {
+    partial = true;
+    errorSummary = (errorSummary ? `${errorSummary}\n` : "") + msg;
+  };
 
   try {
     const editionDate = startOfDayUtc(new Date());
@@ -100,9 +90,7 @@ export async function nightly_workspace_run(payload: unknown) {
         }),
       ]);
 
-    if (!workspace) {
-      throw new Error("Workspace not found");
-    }
+    if (!workspace) throw new Error("Workspace not found");
 
     const memberUserIds = memberships.map((m) => m.userId);
 
@@ -112,8 +100,6 @@ export async function nightly_workspace_run(payload: unknown) {
           where: {
             workspaceId,
             ownerUserId: { in: memberUserIds },
-            // If a sync failed due to an unrelated transient issue (e.g. missing tables during deploy),
-            // allow the next run to retry without forcing the user through OAuth again.
             status: { in: ["CONNECTED", "ERROR"] },
           },
           select: { id: true, ownerUserId: true, googleAccountEmail: true },
@@ -176,220 +162,56 @@ export async function nightly_workspace_run(payload: unknown) {
       notionConnectionsByUser.set(c.ownerUserId, list);
     }
 
-    const deptCardsByDeptId = new Map<
-      string,
-      Array<{
-        kind: "WEB_RESEARCH";
-        title: string;
-        body: string;
-        why: string;
-        action: string;
-        sources: Prisma.InputJsonValue;
-        priority: number;
-      }>
-    >();
-
     const openaiApiKey = process.env.OPENAI_API_KEY ?? "";
     const openaiModel = process.env.OPENAI_MODEL_DEFAULT ?? "gpt-5";
 
-    const codexExecEnabled = ["1", "true", "yes"].includes(
-      (process.env.STARB_CODEX_EXEC_ENABLED ?? "").trim().toLowerCase(),
-    );
+    const codexExecEnabled = isTruthyEnv(process.env.STARB_CODEX_EXEC_ENABLED);
     const codexModel = process.env.STARB_CODEX_MODEL_DEFAULT ?? "gpt-5.2-codex";
     const codexAvailable =
       codexExecEnabled && openaiApiKey ? await isCodexInstalled() : false;
 
     if (codexExecEnabled && openaiApiKey && !codexAvailable) {
-      partial = true;
-      errorSummary =
-        (errorSummary ? `${errorSummary}\n` : "") +
-        "codex binary not found; Codex pulse generation skipped.";
+      onPartialError("codex binary not found; Codex pulse generation skipped.");
     }
 
-    const legacyDeptWebResearchEnabled = ["1", "true", "yes"].includes(
-      (
-        process.env.STARB_LEGACY_DEPT_WEB_RESEARCH_ENABLED ??
-        (codexAvailable ? "0" : "1")
-      )
-        .trim()
-        .toLowerCase(),
-    );
+    const legacyOverride = (process.env.STARB_LEGACY_DEPT_WEB_RESEARCH_ENABLED ?? "")
+      .trim()
+      .toLowerCase();
+    const legacyDeptWebResearchEnabled = legacyOverride
+      ? isTruthyEnv(legacyOverride)
+      : !codexAvailable;
 
     if (!openaiApiKey) {
-      partial = true;
-      errorSummary =
-        (errorSummary ? `${errorSummary}\n` : "") +
-        "OPENAI_API_KEY missing; web research skipped.";
-    } else if (legacyDeptWebResearchEnabled) {
-      for (const dept of departments) {
-        const deptMemberIds = dept.memberships.map((m) => m.userId);
-        if (deptMemberIds.length === 0) continue;
-
-        const deptGoals = goals.filter(
-          (g) => g.departmentId === dept.id || !g.departmentId,
-        );
-
-        const prompt = buildDepartmentWebResearchPrompt({
-          workspaceName: workspace.name,
-          websiteUrl: profile?.websiteUrl,
-          description: profile?.description,
-          competitorDomains: profile?.competitorDomains ?? [],
-          departmentName: dept.name,
-          departmentPromptTemplate: dept.promptTemplate,
-          goals: deptGoals.map((g) => ({
-            title: g.title,
-            body: g.body ?? "",
-            priority: g.priority,
-          })),
-        });
-
-        try {
-          const { cards } = await generateWebInsights({
-            openaiApiKey,
-            model: openaiModel,
-            input: prompt,
-          });
-
-          const stored = cards.map((c, idx) => ({
-            kind: "WEB_RESEARCH" as const,
-            title: c.title,
-            body: c.body,
-            why: c.why,
-            action: c.action,
-            sources: toJsonCitations(c.citations),
-            priority: 700 - idx,
-          }));
-
-          if (stored.length) {
-            deptCardsByDeptId.set(dept.id, stored);
-          }
-        } catch (err) {
-          partial = true;
-          const msg = err instanceof Error ? err.message : String(err);
-          errorSummary =
-            (errorSummary ? `${errorSummary}\n` : "") +
-            `Web research failed for department ${dept.name}: ${msg}`;
-        }
-      }
+      onPartialError("OPENAI_API_KEY missing; web research skipped.");
     }
 
+    const deptCardsByDeptId = await generateLegacyDepartmentWebResearchCards({
+      enabled: Boolean(openaiApiKey) && legacyDeptWebResearchEnabled,
+      openaiApiKey,
+      model: openaiModel,
+      workspace,
+      profile,
+      goals,
+      departments,
+      onPartialError,
+    });
+
     for (const userId of memberUserIds) {
-      const googleConns = googleConnectionsByUser.get(userId) ?? [];
-      for (const c of googleConns) {
-        try {
-          await syncGoogleConnection({
-            workspaceId,
-            userId,
-            connectionId: c.id,
-          });
-          // Successful sync means the connection is viable again.
-          await prisma.googleConnection
-            .update({ where: { id: c.id }, data: { status: "CONNECTED" } })
-            .catch(() => undefined);
-        } catch (err) {
-          partial = true;
-          const msg = err instanceof Error ? err.message : String(err);
-          errorSummary =
-            (errorSummary ? `${errorSummary}\n` : "") +
-            `Google sync failed for ${c.email}: ${msg}`;
-          // Mark the connection as ERROR so the UI can prompt reconnect.
-          await prisma.googleConnection
-            .update({ where: { id: c.id }, data: { status: "ERROR" } })
-            .catch(() => undefined);
-        }
-      }
-
-      const githubConns = githubConnectionsByUser.get(userId) ?? [];
-      for (const c of githubConns) {
-        try {
-          await syncGitHubConnection({ workspaceId, userId, connectionId: c.id });
-        } catch (err) {
-          partial = true;
-          const msg = err instanceof Error ? err.message : String(err);
-          errorSummary =
-            (errorSummary ? `${errorSummary}\n` : "") +
-            `GitHub sync failed for ${c.login}: ${msg}`;
-
-          const status = isGitHubAuthRevoked(err) ? "REVOKED" : "ERROR";
-          await prisma.gitHubConnection
-            .update({ where: { id: c.id }, data: { status } })
-            .catch(() => undefined);
-        }
-      }
-
-      const linearConns = linearConnectionsByUser.get(userId) ?? [];
-      for (const c of linearConns) {
-        try {
-          await syncLinearConnection({ workspaceId, userId, connectionId: c.id });
-        } catch (err) {
-          partial = true;
-          const msg = err instanceof Error ? err.message : String(err);
-          const label = c.email ? c.email : "viewer";
-          errorSummary =
-            (errorSummary ? `${errorSummary}\n` : "") +
-            `Linear sync failed for ${label}: ${msg}`;
-
-          const status = isLinearAuthRevoked(err) ? "REVOKED" : "ERROR";
-          await prisma.linearConnection
-            .update({ where: { id: c.id }, data: { status } })
-            .catch(() => undefined);
-        }
-      }
-
-      const notionConns = notionConnectionsByUser.get(userId) ?? [];
-      for (const c of notionConns) {
-        try {
-          await syncNotionConnection({ workspaceId, userId, connectionId: c.id });
-        } catch (err) {
-          partial = true;
-          const msg = err instanceof Error ? err.message : String(err);
-          const label = c.workspaceName ? c.workspaceName : "workspace";
-          errorSummary =
-            (errorSummary ? `${errorSummary}\n` : "") +
-            `Notion sync failed for ${label}: ${msg}`;
-
-          const status = isNotionAuthRevoked(err) ? "REVOKED" : "ERROR";
-          await prisma.notionConnection
-            .update({ where: { id: c.id }, data: { status } })
-            .catch(() => undefined);
-        }
-      }
-
-      if (googleConns.length) {
-        try {
-          await generateFocusTasks({ workspaceId, userId });
-        } catch (err) {
-          partial = true;
-          const msg = err instanceof Error ? err.message : String(err);
-          errorSummary =
-            (errorSummary ? `${errorSummary}\n` : "") +
-            `Focus task generation failed: ${msg}`;
-        }
-      }
-
-      let codexPulse:
-        | Awaited<ReturnType<typeof generatePulseCardsWithCodexExec>>
-        | null = null;
-
-      if (codexAvailable) {
-        try {
-          codexPulse = await generatePulseCardsWithCodexExec({
-            workspace,
-            profile,
-            goals,
-            departments,
-            userId,
-            model: codexModel,
-            includeWebResearch: true,
-          });
-        } catch (err) {
-          partial = true;
-          const msg = err instanceof Error ? err.message : String(err);
-          errorSummary =
-            (errorSummary ? `${errorSummary}\n` : "") +
-            `Codex pulse generation failed: ${msg}`;
-        }
-      }
+      const codexPulse = await syncUserConnectorsAndMaybeCodex({
+        workspaceId,
+        workspace,
+        profile,
+        goals,
+        departments,
+        userId,
+        googleConnections: googleConnectionsByUser.get(userId) ?? [],
+        githubConnections: githubConnectionsByUser.get(userId) ?? [],
+        linearConnections: linearConnectionsByUser.get(userId) ?? [],
+        notionConnections: notionConnectionsByUser.get(userId) ?? [],
+        codexAvailable,
+        codexModel,
+        onPartialError,
+      });
 
       const edition = await prisma.pulseEdition.upsert({
         where: {
@@ -413,7 +235,6 @@ export async function nightly_workspace_run(payload: unknown) {
       await prisma.pulseCard.deleteMany({ where: { editionId: edition.id } });
 
       type CardKind = "ANNOUNCEMENT" | "GOAL" | "WEB_RESEARCH" | "INTERNAL";
-
       const cards: Array<{
         editionId: string;
         kind: CardKind;
