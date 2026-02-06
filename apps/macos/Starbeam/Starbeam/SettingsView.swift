@@ -47,7 +47,7 @@ struct SettingsView: View {
           TextField("Base URL", text: $settings.serverBaseURL)
             .textFieldStyle(.roundedBorder)
 
-          Text("Used for device sign-in and API requests. Default: https://starbeam-web.onrender.com")
+          Text("Used for device sign-in and API requests. Default: https://app.starbeamhq.com")
             .font(.footnote)
             .foregroundStyle(.secondary)
 

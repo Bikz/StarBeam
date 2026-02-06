@@ -16,11 +16,7 @@ final class SettingsStore {
   private let defaults: UserDefaults
 
   private static var defaultWebOrigin: String {
-#if DEBUG
-    return "http://localhost:3000"
-#else
-    return "https://starbeam-web.onrender.com"
-#endif
+    return "https://app.starbeamhq.com"
   }
 
   var serverBaseURL: String {
@@ -61,6 +57,32 @@ final class SettingsStore {
     notificationTimeMinutes = defaults.object(forKey: Keys.notificationTimeMinutes) as? Int ?? defaultMinutes
 
     submitIdeaURL = defaults.string(forKey: Keys.submitIdeaURL) ?? Self.defaultWebOrigin
+
+    // Demo guardrail: migrate old/stale origins to the current hosted origin.
+    // This prevents accidental cross-project sync when the user has other local servers running.
+    migrateLegacyOriginsIfNeeded()
+  }
+
+  private func migrateLegacyOriginsIfNeeded() {
+    let prod = Self.defaultWebOrigin
+
+    func shouldMigrate(_ s: String) -> Bool {
+      let t = s.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+      return t.hasPrefix("http://localhost") || t.hasPrefix("https://localhost") ||
+        t.hasPrefix("http://127.0.0.1") || t.hasPrefix("https://127.0.0.1") ||
+        t.hasPrefix("https://starbeam-web.onrender.com") || t.hasPrefix("http://starbeam-web.onrender.com") ||
+        t.hasPrefix("https://starbeam-web") || t.hasPrefix("http://starbeam-web")
+    }
+
+    if shouldMigrate(serverBaseURL) {
+      serverBaseURL = prod
+    }
+    if shouldMigrate(dashboardBaseURL) {
+      dashboardBaseURL = prod
+    }
+    if shouldMigrate(submitIdeaURL) {
+      submitIdeaURL = prod
+    }
   }
 
   func notificationTimeComponents() -> DateComponents {
