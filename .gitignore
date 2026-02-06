@@ -1,37 +1,42 @@
-# Internal (never publish)
+## Internal (never publish)
 docs/
 
-# Accidental / local-only workspace artifacts
+## Accidental / local-only workspace artifacts
 apps/apps/
 
-# Node / JS
+## Node / JS
 node_modules/
 npm-debug.log*
 pnpm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Env
+## Env
 .env
 .env.*.local
 
-# Next.js
+## Next.js
 .next/
 out/
 
-# Turborepo
+## Turborepo
 .turbo/
 
-# Build outputs
+## Build outputs
 dist/
 
-# TypeScript
+## TypeScript
 *.tsbuildinfo
 
-# Cloudflare Wrangler
+## Cloudflare Wrangler
 .wrangler/
 
-# OS / Editor
+## Python / imagegen workspace
+.venv/
+output/
+tmp/
+
+## OS / Editor
 .DS_Store
 .idea/
 .vscode/
