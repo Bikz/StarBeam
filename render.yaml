@@ -51,6 +51,13 @@ services:
         value: low
       - key: STARB_CODEX_MODEL_DEFAULT
         value: gpt-5.2-codex
+      # Phase 1 incremental sync: poll connectors to keep signals fresh.
+      - key: STARB_CONNECTOR_POLL_ENABLED
+        value: "1"
+      - key: STARB_CONNECTOR_POLL_INTERVAL_MINS
+        value: "15"
+      - key: STARB_CONNECTOR_POLL_BATCH
+        value: "20"
       - key: S3_ENDPOINT
         sync: false
       - key: S3_REGION
