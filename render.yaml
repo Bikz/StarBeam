@@ -50,7 +50,7 @@ services:
       - key: STARB_CODEX_REASONING_EFFORT
         value: low
       - key: STARB_CODEX_MODEL_DEFAULT
-        value: gpt-5-codex
+        value: gpt-5.2-codex
       - key: S3_ENDPOINT
         sync: false
       - key: S3_REGION
