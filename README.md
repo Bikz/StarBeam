@@ -10,7 +10,16 @@ This repository is being built from scratch. The internal planning docs live und
 
 - **macOS menu bar app (SwiftUI)**: daily pulse bump, Today’s Focus, Today’s Calendar, notifications, and quick actions.
 - **Web dashboard (Next.js)**: auth, onboarding, workspace/org settings, goals/announcements, Google connections, pulse history/search, job status and “Run now”.
+- **Marketing site (Next.js)**: landing pages + waitlist + legal pages (separately deployed from the dashboard).
 - **Worker (Node + Postgres queue)**: hourly sync + nightly ingestion + pulse generation jobs.
+
+## Repo Structure
+
+- `apps/web`: authenticated dashboard + API (Render)
+- `apps/site`: marketing site + waitlist + legal pages (Vercel)
+- `apps/worker`: background jobs
+- `packages/db`: Prisma schema + client
+- `packages/shared`: shared schemas/utilities
 
 ## Local Development
 
@@ -35,6 +44,9 @@ pnpm --filter @starbeam/db prisma:migrate
 # Web dashboard (http://localhost:3000)
 pnpm --filter @starbeam/web dev
 
+# Marketing site (http://localhost:3001)
+pnpm --filter @starbeam/site dev -- -p 3001
+
 # Worker (validates env and boots)
 pnpm --filter @starbeam/worker dev
 ```
@@ -48,7 +60,15 @@ pnpm test
 pnpm build
 ```
 
-## Production Deploy (Render + Neon)
+## Production Deploy
+
+Recommended split:
+
+- Dashboard/API (`apps/web`) on Render
+- Marketing site (`apps/site`) on Vercel
+- Postgres on Neon
+
+### Dashboard + Worker (Render + Neon)
 
 This repo includes a Render Blueprint at `render.yaml` for deploying:
 
@@ -109,6 +129,24 @@ Minimum required env vars:
 
 - Open the deployed web URL, sign in, create an org workspace, and trigger “Run now”.
 - Confirm `starbeam-worker` is running and connected to the same `DATABASE_URL`.
+
+### Marketing Site (Vercel)
+
+Create a separate Vercel project pointing at this repo with:
+
+- Root Directory: `apps/site`
+- Build Command: `pnpm install --frozen-lockfile && pnpm --filter @starbeam/site build`
+- Output: default (Next.js)
+
+Required env vars for the marketing site:
+
+- `NEXT_PUBLIC_SITE_ORIGIN` (e.g. `https://starbeamhq.com`)
+- `NEXT_PUBLIC_WEB_ORIGIN` (e.g. `https://app.starbeamhq.com`)
+- `NEXT_PUBLIC_SUPPORT_EMAIL` (optional)
+
+If you want the waitlist to write to Postgres from the marketing site, also set:
+
+- `DATABASE_URL`
 
 ### Optional: Codex Exec (Nightly Pulse Synthesis)
 
