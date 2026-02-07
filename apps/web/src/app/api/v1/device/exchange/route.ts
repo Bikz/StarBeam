@@ -2,6 +2,7 @@ import { prisma } from "@starbeam/db";
 import { NextResponse } from "next/server";
 
 import { mintAccessToken, mintRefreshToken, sha256Hex } from "@/lib/apiTokens";
+import { consumeRateLimit } from "@/lib/rateLimit";
 
 type ErrorPayload = { error: string; errorDescription?: string };
 
@@ -12,7 +13,22 @@ function jsonError(payload: ErrorPayload, status = 400) {
   });
 }
 
+function clientIp(req: Request): string {
+  const xff = req.headers.get("x-forwarded-for");
+  if (xff) return xff.split(",")[0]?.trim() || "unknown";
+  const xrip = req.headers.get("x-real-ip");
+  if (xrip) return xrip.trim();
+  return "unknown";
+}
+
 export async function POST(request: Request) {
+  const ipHash = sha256Hex(clientIp(request));
+  await consumeRateLimit({
+    key: `device_exchange:${ipHash}`,
+    windowSec: 5 * 60,
+    limit: Number(process.env.STARB_DEVICE_EXCHANGE_LIMIT_5M ?? "120") || 120,
+  });
+
   let body: unknown;
   try {
     body = await request.json();
@@ -120,4 +136,3 @@ export async function POST(request: Request) {
     { headers: { "Cache-Control": "no-store" } },
   );
 }
-

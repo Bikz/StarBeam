@@ -688,6 +688,22 @@ model ApiRefreshToken {
   @@index([revokedAt])
 }
 
+// DB-backed rate limiting buckets (works across multiple web instances).
+model RateLimitBucket {
+  id          String   @id @default(cuid())
+  key         String
+  windowStart DateTime
+  windowSec   Int
+  count       Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([key, windowStart])
+  @@index([key])
+  @@index([windowStart])
+}
+
 model WaitlistSignup {
   id String @id @default(cuid())
 

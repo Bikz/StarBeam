@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 
 import { authOptions } from "@/lib/auth";
 import { enqueueAutoFirstNightlyWorkspaceRun, enqueueWorkspaceBootstrap } from "@/lib/nightlyRunQueue";
+import { consumeRateLimit } from "@/lib/rateLimit";
 
 function canManage(role: string): boolean {
   return role === "ADMIN" || role === "MANAGER";
@@ -22,6 +23,23 @@ export async function runNightlyNow(workspaceSlug: string) {
   });
   if (!membership) throw new Error("Not a member");
   if (!canManage(membership.role)) throw new Error("Managers/Admins only");
+
+  // Basic abuse/cost controls (DB-backed, works across multiple instances).
+  await consumeRateLimit({
+    key: `run_now:user:${session.user.id}`,
+    windowSec: 60,
+    limit: Number(process.env.STARB_RUN_NOW_USER_LIMIT_1M ?? "3") || 3,
+  });
+  await consumeRateLimit({
+    key: `run_now:workspace:${membership.workspace.id}`,
+    windowSec: 60,
+    limit: Number(process.env.STARB_RUN_NOW_WORKSPACE_LIMIT_1M ?? "5") || 5,
+  });
+  await consumeRateLimit({
+    key: `run_day:workspace:${membership.workspace.id}`,
+    windowSec: 24 * 60 * 60,
+    limit: Number(process.env.STARB_RUN_WORKSPACE_LIMIT_1D ?? "20") || 20,
+  });
 
   const existingPulse = await prisma.pulseEdition.findFirst({
     where: { workspaceId: membership.workspace.id, userId: session.user.id },
