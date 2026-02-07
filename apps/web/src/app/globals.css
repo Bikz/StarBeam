@@ -291,12 +291,3 @@ html.dark .sb-orbit {
 .sb-float {
   animation: sb-float 7.5s ease-in-out infinite;
 }
-
-/* Landing-only helpers (keep generic so we can reuse on site pages). */
-.sb-hero-fade {
-  mask-image: radial-gradient(1200px 780px at 18% 40%, black, transparent 70%);
-}
-
-.sb-img-soft {
-  filter: saturate(1.02) contrast(1.02);
-}
