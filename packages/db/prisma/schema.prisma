@@ -609,6 +609,7 @@ model PulseCard {
 
 enum JobKind {
   NIGHTLY_WORKSPACE_RUN
+  WORKSPACE_BOOTSTRAP
 }
 
 enum JobStatus {
