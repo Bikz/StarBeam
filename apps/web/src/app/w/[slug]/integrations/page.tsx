@@ -12,6 +12,7 @@ import {
   disconnectLinearConnection,
   disconnectNotionConnection,
   startGoogleConnect,
+  updateGitHubRepoSelection,
 } from "@/app/w/[slug]/integrations/actions";
 import { authOptions } from "@/lib/auth";
 
@@ -198,6 +199,49 @@ export default async function IntegrationsPage({
                       {statusPill(c.status)}
                     </div>
                     <div className="mt-3 flex gap-2">
+                      <form
+                        action={updateGitHubRepoSelection.bind(
+                          null,
+                          membership.workspace.slug,
+                          c.id,
+                        )}
+                        className="grid w-full gap-2"
+                      >
+                        <div className="grid gap-1">
+                          <div className="text-[11px] font-extrabold sb-title">Repo scope</div>
+                          <select
+                            name="mode"
+                            defaultValue={c.repoSelectionMode}
+                            className="h-10 w-full rounded-2xl border border-black/10 dark:border-white/15 bg-white/45 dark:bg-white/10 px-3 text-[13px] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]"
+                          >
+                            <option value="ALL">All accessible repos</option>
+                            <option value="SELECTED">Selected repos only</option>
+                          </select>
+                        </div>
+
+                        <div className="grid gap-1">
+                          <div className="text-[11px] font-extrabold sb-title">Selected repos</div>
+                          <textarea
+                            name="repos"
+                            defaultValue={(c.selectedRepoFullNames ?? []).join("\n")}
+                            rows={3}
+                            className="min-h-[72px] w-full rounded-2xl border border-black/10 dark:border-white/15 bg-white/45 dark:bg-white/10 px-3 py-2 text-[13px] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]"
+                            placeholder={"owner/repo\nowner/another-repo"}
+                          />
+                          <div className="text-[11px] text-[color:var(--sb-muted)]">
+                            Used only when repo scope is set to Selected.
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2">
+                          <button
+                            type="submit"
+                            className="sb-btn px-4 py-2 text-xs font-semibold"
+                          >
+                            Save scope
+                          </button>
+                        </div>
+                      </form>
                       <form
                         action={disconnectGitHubConnection.bind(
                           null,

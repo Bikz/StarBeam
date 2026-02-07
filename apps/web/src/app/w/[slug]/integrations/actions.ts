@@ -234,6 +234,51 @@ export async function disconnectGitHubConnection(
   redirect(`/w/${workspaceSlug}/integrations?disconnected=github`);
 }
 
+function normalizeRepoFullNames(value: unknown): string[] {
+  const raw = typeof value === "string" ? value : "";
+  const parts = raw
+    .split(/[\n,]+/g)
+    .map((p) => p.trim())
+    .filter(Boolean);
+
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const p of parts) {
+    // Basic GitHub "owner/name" validation. Keep it permissive.
+    if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(p)) continue;
+    if (seen.has(p)) continue;
+    seen.add(p);
+    out.push(p);
+    if (out.length >= 50) break;
+  }
+  return out;
+}
+
+export async function updateGitHubRepoSelection(
+  workspaceSlug: string,
+  connectionId: string,
+  formData: FormData,
+) {
+  const { userId, workspace } = await requireMembership(workspaceSlug);
+
+  const existing = await prisma.gitHubConnection.findFirst({
+    where: { id: connectionId, workspaceId: workspace.id, ownerUserId: userId },
+    select: { id: true },
+  });
+  if (!existing) throw new Error("Connection not found");
+
+  const modeRaw = typeof formData.get("mode") === "string" ? String(formData.get("mode")) : "";
+  const mode = modeRaw === "SELECTED" ? "SELECTED" : "ALL";
+  const selectedRepoFullNames = mode === "SELECTED" ? normalizeRepoFullNames(formData.get("repos")) : [];
+
+  await prisma.gitHubConnection.update({
+    where: { id: existing.id },
+    data: { repoSelectionMode: mode, selectedRepoFullNames },
+  });
+
+  redirect(`/w/${workspaceSlug}/integrations?connected=github`);
+}
+
 export async function connectLinear(workspaceSlug: string, formData: FormData) {
   const { userId, workspace } = await requireMembership(workspaceSlug);
   const token = normalizeSecret(formData.get("token"));
@@ -333,4 +378,3 @@ export async function disconnectNotionConnection(
   await prisma.notionConnection.delete({ where: { id: existing.id } });
   redirect(`/w/${workspaceSlug}/integrations?disconnected=notion`);
 }
-

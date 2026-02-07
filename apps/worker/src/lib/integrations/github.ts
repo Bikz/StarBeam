@@ -269,12 +269,22 @@ export async function syncGitHubConnection(args: {
   }
 
   // Recent commits (what changed) across the user's most recently-updated repos.
-  const repos = await listRepos({ token, perPage: 20 });
-  const candidateRepos = repos
-    .filter((r) => !r.archived && !r.disabled && !r.fork)
-    .map((r) => r.full_name?.trim() ?? "")
-    .filter(Boolean)
-    .slice(0, 10);
+  let candidateRepos: string[] = [];
+  if (connection.repoSelectionMode === "SELECTED") {
+    candidateRepos = (connection.selectedRepoFullNames ?? [])
+      .map((r) => r.trim())
+      .filter(Boolean)
+      .slice(0, 10);
+  }
+
+  if (candidateRepos.length === 0) {
+    const repos = await listRepos({ token, perPage: 20 });
+    candidateRepos = repos
+      .filter((r) => !r.archived && !r.disabled && !r.fork)
+      .map((r) => r.full_name?.trim() ?? "")
+      .filter(Boolean)
+      .slice(0, 10);
+  }
 
   for (const repoFullName of candidateRepos) {
     try {
