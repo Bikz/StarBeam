@@ -2,6 +2,8 @@
 
 import { useMemo, useSyncExternalStore } from "react";
 
+import { IconMonitor, IconMoon, IconSun } from "@/components/sb-icons";
+
 type ThemePref = "system" | "light" | "dark";
 
 function readPref(): ThemePref {
@@ -30,7 +32,13 @@ function applyPref(pref: ThemePref) {
   window.dispatchEvent(new Event("sb-theme-change"));
 }
 
-export default function ThemeToggle() {
+export default function ThemeToggle(
+  {
+    variant = "full",
+  }: {
+    variant?: "full" | "compact";
+  } = {},
+) {
   const pref = useSyncExternalStore(
     (onStoreChange) => {
       if (typeof window === "undefined") return () => {};
@@ -61,6 +69,25 @@ export default function ThemeToggle() {
       ] satisfies Array<{ id: ThemePref; label: string }>,
     [],
   );
+
+  if (variant === "compact") {
+    const label = pref === "system" ? "System" : pref === "light" ? "Light" : "Dark";
+    const next: ThemePref = pref === "system" ? "light" : pref === "light" ? "dark" : "system";
+
+    const Icon = pref === "system" ? IconMonitor : pref === "light" ? IconSun : IconMoon;
+
+    return (
+      <button
+        type="button"
+        onClick={() => applyPref(next)}
+        className="sb-btn inline-flex h-10 w-10 items-center justify-center"
+        aria-label={`Theme: ${label}`}
+        title={`Theme: ${label}`}
+      >
+        <Icon className="h-5 w-5" />
+      </button>
+    );
+  }
 
   return (
     <fieldset

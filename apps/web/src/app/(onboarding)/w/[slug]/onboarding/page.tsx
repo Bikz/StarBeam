@@ -4,7 +4,7 @@ import { getServerSession } from "next-auth";
 
 import { prisma } from "@starbeam/db";
 
-import { runNightlyNow } from "@/app/(portal)/w/[slug]/jobs/actions";
+import { runNightlyNow } from "@/actions/run-nightly-now";
 import ThemeToggle from "@/components/theme-toggle";
 import { authOptions } from "@/lib/auth";
 import { siteOrigin } from "@/lib/siteOrigin";
@@ -215,9 +215,7 @@ export default async function OnboardingPage({
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <div className="rounded-full border border-black/10 dark:border-white/15 bg-white/40 dark:bg-white/10 px-3 py-1 text-[11px] font-semibold text-[color:var(--sb-muted)]">
-          {progress}
-        </div>
+        <div className="sb-pill">{progress}</div>
         <ThemeToggle />
         <Link
           href="/dashboard"

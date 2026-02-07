@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 
 import { prisma } from "@starbeam/db";
 
-import { runNightlyNow } from "@/app/(portal)/w/[slug]/jobs/actions";
+import { runNightlyNow } from "@/actions/run-nightly-now";
 import { authOptions } from "@/lib/auth";
 
 function canManage(role: string): boolean {

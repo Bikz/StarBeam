@@ -110,3 +110,4 @@ export async function runNightlyNow(workspaceSlug: string) {
 
   redirect(`/w/${workspaceSlug}/jobs?queued=1`);
 }
+
