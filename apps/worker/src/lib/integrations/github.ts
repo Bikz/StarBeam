@@ -170,6 +170,18 @@ export async function syncGitHubConnection(args: {
     throw new Error("GitHub connection workspace/user mismatch");
   }
 
+  const repoSelectionMode = connection.repoSelectionMode;
+  const selectedRepos = (connection.selectedRepoFullNames ?? [])
+    .map((r) => r.trim())
+    .filter(Boolean);
+  const selectedRepoSet = new Set(selectedRepos);
+
+  // In "Selected repos" mode, do not ingest anything until the user has
+  // explicitly scoped the workspace context.
+  if (repoSelectionMode === "SELECTED" && selectedRepoSet.size === 0) {
+    return { ingested: 0 };
+  }
+
   const token = decryptToken(connection.tokenEnc);
   const since = connection.lastSyncedAt ?? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   const sinceIso = since.toISOString();
@@ -189,7 +201,12 @@ export async function syncGitHubConnection(args: {
     }
   }
 
-  const items = Array.from(byId.values());
+  const items = Array.from(byId.values()).filter((it) => {
+    if (repoSelectionMode !== "SELECTED") return true;
+    const repo = it.repository?.full_name?.trim() ?? "";
+    if (!repo) return false;
+    return selectedRepoSet.has(repo);
+  });
 
   let ingested = 0;
   for (const it of items) {
@@ -269,21 +286,19 @@ export async function syncGitHubConnection(args: {
   }
 
   // Recent commits (what changed) across the user's most recently-updated repos.
-  let candidateRepos: string[] = [];
-  if (connection.repoSelectionMode === "SELECTED") {
-    candidateRepos = (connection.selectedRepoFullNames ?? [])
-      .map((r) => r.trim())
-      .filter(Boolean)
-      .slice(0, 10);
-  }
+  const candidateRepos: string[] =
+    repoSelectionMode === "SELECTED"
+      ? selectedRepos.slice(0, 10)
+      : [];
 
-  if (candidateRepos.length === 0) {
+  if (repoSelectionMode === "ALL" && candidateRepos.length === 0) {
     const repos = await listRepos({ token, perPage: 20 });
-    candidateRepos = repos
+    const recentRepos = repos
       .filter((r) => !r.archived && !r.disabled && !r.fork)
       .map((r) => r.full_name?.trim() ?? "")
       .filter(Boolean)
       .slice(0, 10);
+    candidateRepos.push(...recentRepos);
   }
 
   for (const repoFullName of candidateRepos) {

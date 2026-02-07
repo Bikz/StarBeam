@@ -172,6 +172,32 @@ export default async function IntegrationsPage({
                 placeholder="ghp_…"
               />
             </label>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="grid gap-2">
+                <div className="text-xs font-extrabold sb-title">Repo scope</div>
+                <select
+                  name="mode"
+                  defaultValue="SELECTED"
+                  className="h-11 w-full rounded-2xl border border-black/10 dark:border-white/15 bg-white/45 dark:bg-white/10 px-4 text-[15px] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]"
+                >
+                  <option value="SELECTED">Selected repos only (recommended)</option>
+                  <option value="ALL">All accessible repos</option>
+                </select>
+              </label>
+              <label className="grid gap-2">
+                <div className="text-xs font-extrabold sb-title">Selected repos</div>
+                <textarea
+                  name="repos"
+                  rows={3}
+                  className="min-h-[72px] w-full rounded-2xl border border-black/10 dark:border-white/15 bg-white/45 dark:bg-white/10 px-4 py-2 text-[15px] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]"
+                  placeholder={"owner/repo\nowner/another-repo"}
+                />
+              </label>
+            </div>
+            <div className="text-[11px] text-[color:var(--sb-muted)] leading-relaxed">
+              Tip: keep workspace context scoped. If you choose Selected, Starbeam won’t ingest
+              GitHub until you list one or more repos.
+            </div>
             <div>
               <button type="submit" className="sb-btn h-11 px-5 text-sm font-extrabold">
                 Connect GitHub
@@ -231,6 +257,12 @@ export default async function IntegrationsPage({
                           <div className="text-[11px] text-[color:var(--sb-muted)]">
                             Used only when repo scope is set to Selected.
                           </div>
+                          {c.repoSelectionMode === "SELECTED" &&
+                          (c.selectedRepoFullNames ?? []).length === 0 ? (
+                            <div className="text-[11px] text-[color:var(--sb-muted)]">
+                              No repos selected yet, so GitHub sync will be skipped.
+                            </div>
+                          ) : null}
                         </div>
 
                         <div className="flex gap-2">

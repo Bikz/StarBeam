@@ -6,6 +6,7 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 
 import { authOptions } from "@/lib/auth";
+import { enqueueAutoFirstNightlyWorkspaceRun } from "@/lib/nightlyRunQueue";
 
 function canManage(role: string): boolean {
   return role === "ADMIN" || role === "MANAGER";
@@ -21,6 +22,26 @@ export async function runNightlyNow(workspaceSlug: string) {
   });
   if (!membership) throw new Error("Not a member");
   if (!canManage(membership.role)) throw new Error("Managers/Admins only");
+
+  const existingPulse = await prisma.pulseEdition.findFirst({
+    where: { workspaceId: membership.workspace.id, userId: session.user.id },
+    select: { id: true },
+  });
+  const isFirstPulse = !existingPulse;
+
+  if (isFirstPulse) {
+    // If the user already has an auto-first run queued (e.g. from connecting
+    // integrations), reschedule it to "now" rather than enqueueing duplicates.
+    await enqueueAutoFirstNightlyWorkspaceRun({
+      workspaceId: membership.workspace.id,
+      triggeredByUserId: session.user.id,
+      source: "web",
+      runAt: new Date(),
+      jobKeyMode: "replace",
+    });
+
+    redirect(`/w/${workspaceSlug}/jobs?queued=1`);
+  }
 
   const jobRun = await prisma.jobRun.create({
     data: {

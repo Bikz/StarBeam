@@ -4,7 +4,9 @@ import { getServerSession } from "next-auth";
 
 import { prisma } from "@starbeam/db";
 
+import { runNightlyNow } from "@/app/w/[slug]/jobs/actions";
 import { authOptions } from "@/lib/auth";
+import { siteOrigin } from "@/lib/siteOrigin";
 
 function isProfileUseful(profile: {
   websiteUrl: string | null;
@@ -16,6 +18,10 @@ function isProfileUseful(profile: {
   if (profile.description && profile.description.trim()) return true;
   if (Array.isArray(profile.competitorDomains) && profile.competitorDomains.length > 0) return true;
   return false;
+}
+
+function canManage(role: string): boolean {
+  return role === "ADMIN" || role === "MANAGER";
 }
 
 export default async function WorkspaceSetupPage({
@@ -34,7 +40,10 @@ export default async function WorkspaceSetupPage({
   });
   if (!membership) notFound();
 
-  const [profile, activeGoals, googleConnections, pulseEdition] = await Promise.all([
+  const manageable = canManage(membership.role);
+
+  const [profile, activeGoals, googleConnections, githubConnections, linearConnections, notionConnections, deviceTokens, pulseEdition, autoFirstJobRun] =
+    await Promise.all([
     prisma.workspaceProfile.findUnique({
       where: { workspaceId: membership.workspace.id },
       select: { websiteUrl: true, description: true, competitorDomains: true },
@@ -49,19 +58,52 @@ export default async function WorkspaceSetupPage({
         status: "CONNECTED",
       },
     }),
+    prisma.gitHubConnection.count({
+      where: {
+        workspaceId: membership.workspace.id,
+        ownerUserId: session.user.id,
+        status: "CONNECTED",
+      },
+    }),
+    prisma.linearConnection.count({
+      where: {
+        workspaceId: membership.workspace.id,
+        ownerUserId: session.user.id,
+        status: "CONNECTED",
+      },
+    }),
+    prisma.notionConnection.count({
+      where: {
+        workspaceId: membership.workspace.id,
+        ownerUserId: session.user.id,
+        status: "CONNECTED",
+      },
+    }),
+    prisma.apiRefreshToken.count({
+      where: {
+        userId: session.user.id,
+        revokedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+    }),
     prisma.pulseEdition.findFirst({
       where: { workspaceId: membership.workspace.id, userId: session.user.id },
       select: { id: true },
+    }),
+    prisma.jobRun.findUnique({
+      where: { id: `auto-first:${membership.workspace.id}` },
+      select: { status: true, errorSummary: true, createdAt: true, startedAt: true, finishedAt: true },
     }),
   ]);
 
   const hasProfile = isProfileUseful(profile);
   const hasGoals = activeGoals > 0;
-  const hasGoogle = googleConnections > 0;
   const hasPulse = Boolean(pulseEdition);
+  const hasTools = googleConnections + githubConnections + linearConnections + notionConnections > 0;
+  const hasMacApp = deviceTokens > 0;
 
-  // Definition of "done": enough context + an actual pulse generated.
-  if (hasProfile && hasGoals && hasGoogle && hasPulse) {
+  // Once the first pulse exists, default to Pulse.
+  if (hasPulse) {
     redirect(`/w/${membership.workspace.slug}/pulse`);
   }
 
@@ -69,32 +111,32 @@ export default async function WorkspaceSetupPage({
 
   const steps = [
     {
-      done: hasProfile,
-      title: "Add org profile",
-      desc: "Website, description, and competitors help scope web research.",
-      href: `${base}/profile`,
-      cta: "Open Profile",
-    },
-    {
-      done: hasGoals,
-      title: "Set 1–3 goals",
-      desc: "Goals are the strongest driver for what gets researched and ranked.",
-      href: `${base}/goals`,
-      cta: "Open Goals",
-    },
-    {
-      done: hasGoogle,
-      title: "Connect Google (read-only)",
-      desc: "Used to derive Today’s Focus and your agenda for the pulse.",
-      href: `${base}/google`,
+      done: hasTools,
+      title: "Connect tools",
+      desc: "Connect at least one source (Google, GitHub, Linear, Notion) to ground the pulse in real context.",
+      href: `${base}/integrations`,
       cta: "Open Integrations",
+    },
+    {
+      done: hasMacApp,
+      title: "Install macOS app",
+      desc: "Sign in on macOS so Starbeam can deliver your pulse in the menu bar.",
+      href: `${siteOrigin()}/download`,
+      cta: "Download",
+    },
+    {
+      done: hasProfile || hasGoals,
+      title: "Tune context (optional)",
+      desc: "Add a profile + a few goals to steer what gets researched and ranked.",
+      href: `${base}/profile`,
+      cta: "Open Settings",
     },
     {
       done: hasPulse,
       title: "Generate the first pulse",
-      desc: "Run the job once to produce the latest pulse cards.",
+      desc: "Click Generate, or wait: Starbeam will auto-run within ~10 minutes after your first connector is connected.",
       href: `${base}/jobs`,
-      cta: "Open Runs",
+      cta: "View Runs",
     },
   ] as const;
 
@@ -143,16 +185,54 @@ export default async function WorkspaceSetupPage({
                     {s.desc}
                   </div>
                 </div>
-                <Link
-                  href={s.href}
-                  className="sb-btn px-4 py-2 text-xs font-semibold text-[color:var(--sb-fg)]"
-                >
-                  {s.cta}
-                </Link>
+                {s.title === "Generate the first pulse" ? (
+                  <div className="flex flex-wrap gap-2">
+                    <form action={runNightlyNow.bind(null, membership.workspace.slug)}>
+                      <button
+                        type="submit"
+                        className="sb-btn sb-btn-primary px-4 py-2 text-xs font-extrabold text-[color:var(--sb-fg)]"
+                        disabled={!manageable}
+                        title={!manageable ? "Managers/Admins only" : undefined}
+                      >
+                        Generate now
+                      </button>
+                    </form>
+                    <Link
+                      href={s.href}
+                      className="sb-btn px-4 py-2 text-xs font-semibold text-[color:var(--sb-fg)]"
+                    >
+                      {s.cta}
+                    </Link>
+                  </div>
+                ) : (
+                  <Link
+                    href={s.href}
+                    className="sb-btn px-4 py-2 text-xs font-semibold text-[color:var(--sb-fg)]"
+                  >
+                    {s.cta}
+                  </Link>
+                )}
               </div>
             </div>
           ))}
         </div>
+
+        {autoFirstJobRun && autoFirstJobRun.status !== "SUCCEEDED" ? (
+          <div className="mt-6 rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-5 text-sm text-[color:var(--sb-muted)] leading-relaxed">
+            <div className="sb-title text-sm text-[color:var(--sb-fg)]">First pulse run status</div>
+            <div className="mt-1">
+              Status:{" "}
+              <span className="font-semibold text-[color:var(--sb-fg)]">
+                {autoFirstJobRun.status.toLowerCase()}
+              </span>
+            </div>
+            {autoFirstJobRun.errorSummary ? (
+              <div className="mt-2 text-xs text-[color:var(--sb-muted)]">
+                Error: {autoFirstJobRun.errorSummary}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
 
         <div className="mt-6 flex flex-wrap gap-2">
           <Link

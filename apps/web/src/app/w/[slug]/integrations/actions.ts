@@ -8,6 +8,7 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 
 import { authOptions } from "@/lib/auth";
+import { enqueueAutoFirstNightlyWorkspaceRun } from "@/lib/nightlyRunQueue";
 import { mintSignedState } from "@/lib/signedState";
 import { webOrigin } from "@/lib/webOrigin";
 
@@ -19,6 +20,7 @@ function requireGoogleEnv(): { clientId: string } {
 
 async function requireMembership(workspaceSlug: string): Promise<{
   userId: string;
+  role: string;
   workspace: { id: string; slug: string };
 }> {
   const session = await getServerSession(authOptions);
@@ -32,6 +34,7 @@ async function requireMembership(workspaceSlug: string): Promise<{
 
   return {
     userId: session.user.id,
+    role: membership.role,
     workspace: { id: membership.workspace.id, slug: membership.workspace.slug },
   };
 }
@@ -42,6 +45,37 @@ function encKey(): Buffer {
 
 function normalizeSecret(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function canManage(role: string): boolean {
+  return role === "ADMIN" || role === "MANAGER";
+}
+
+async function scheduleAutoFirstPulseIfNeeded(args: {
+  workspaceId: string;
+  workspaceSlug: string;
+  userId: string;
+  role: string;
+}) {
+  if (!canManage(args.role)) return;
+
+  const existingPulse = await prisma.pulseEdition.findFirst({
+    where: { workspaceId: args.workspaceId, userId: args.userId },
+    select: { id: true },
+  });
+  if (existingPulse) return;
+
+  try {
+    await enqueueAutoFirstNightlyWorkspaceRun({
+      workspaceId: args.workspaceId,
+      triggeredByUserId: args.userId,
+      source: "auto-first",
+      runAt: new Date(Date.now() + 10 * 60 * 1000),
+      jobKeyMode: "preserve_run_at",
+    });
+  } catch {
+    // Don't block the integration connect flow on the job queue.
+  }
 }
 
 async function fetchGitHubViewer(token: string): Promise<{ login: string }> {
@@ -190,12 +224,16 @@ export async function disconnectGoogleConnection(
 }
 
 export async function connectGitHub(workspaceSlug: string, formData: FormData) {
-  const { userId, workspace } = await requireMembership(workspaceSlug);
+  const { userId, role, workspace } = await requireMembership(workspaceSlug);
   const token = normalizeSecret(formData.get("token"));
   if (!token) throw new Error("Missing token");
 
   const viewer = await fetchGitHubViewer(token);
   const tokenEnc = encryptString(token, encKey());
+
+  const modeRaw = typeof formData.get("mode") === "string" ? String(formData.get("mode")) : "";
+  const mode = modeRaw === "ALL" ? "ALL" : "SELECTED";
+  const selectedRepoFullNames = mode === "SELECTED" ? normalizeRepoFullNames(formData.get("repos")) : [];
 
   await prisma.gitHubConnection.upsert({
     where: {
@@ -205,15 +243,31 @@ export async function connectGitHub(workspaceSlug: string, formData: FormData) {
         githubLogin: viewer.login,
       },
     },
-    update: { tokenEnc, status: "CONNECTED" },
+    update: {
+      tokenEnc,
+      status: "CONNECTED",
+      repoSelectionMode: mode,
+      selectedRepoFullNames,
+    },
     create: {
       workspaceId: workspace.id,
       ownerUserId: userId,
       githubLogin: viewer.login,
       tokenEnc,
       status: "CONNECTED",
+      repoSelectionMode: mode,
+      selectedRepoFullNames,
     },
   });
+
+  if (mode === "ALL" || selectedRepoFullNames.length > 0) {
+    await scheduleAutoFirstPulseIfNeeded({
+      workspaceId: workspace.id,
+      workspaceSlug: workspace.slug,
+      userId,
+      role,
+    });
+  }
 
   redirect(`/w/${workspaceSlug}/integrations?connected=github`);
 }
@@ -259,7 +313,7 @@ export async function updateGitHubRepoSelection(
   connectionId: string,
   formData: FormData,
 ) {
-  const { userId, workspace } = await requireMembership(workspaceSlug);
+  const { userId, role, workspace } = await requireMembership(workspaceSlug);
 
   const existing = await prisma.gitHubConnection.findFirst({
     where: { id: connectionId, workspaceId: workspace.id, ownerUserId: userId },
@@ -276,11 +330,20 @@ export async function updateGitHubRepoSelection(
     data: { repoSelectionMode: mode, selectedRepoFullNames },
   });
 
+  if (mode === "ALL" || selectedRepoFullNames.length > 0) {
+    await scheduleAutoFirstPulseIfNeeded({
+      workspaceId: workspace.id,
+      workspaceSlug: workspace.slug,
+      userId,
+      role,
+    });
+  }
+
   redirect(`/w/${workspaceSlug}/integrations?connected=github`);
 }
 
 export async function connectLinear(workspaceSlug: string, formData: FormData) {
-  const { userId, workspace } = await requireMembership(workspaceSlug);
+  const { userId, role, workspace } = await requireMembership(workspaceSlug);
   const token = normalizeSecret(formData.get("token"));
   if (!token) throw new Error("Missing token");
 
@@ -310,6 +373,13 @@ export async function connectLinear(workspaceSlug: string, formData: FormData) {
     },
   });
 
+  await scheduleAutoFirstPulseIfNeeded({
+    workspaceId: workspace.id,
+    workspaceSlug: workspace.slug,
+    userId,
+    role,
+  });
+
   redirect(`/w/${workspaceSlug}/integrations?connected=linear`);
 }
 
@@ -330,7 +400,7 @@ export async function disconnectLinearConnection(
 }
 
 export async function connectNotion(workspaceSlug: string, formData: FormData) {
-  const { userId, workspace } = await requireMembership(workspaceSlug);
+  const { userId, role, workspace } = await requireMembership(workspaceSlug);
   const token = normalizeSecret(formData.get("token"));
   if (!token) throw new Error("Missing token");
 
@@ -358,6 +428,13 @@ export async function connectNotion(workspaceSlug: string, formData: FormData) {
       tokenEnc,
       status: "CONNECTED",
     },
+  });
+
+  await scheduleAutoFirstPulseIfNeeded({
+    workspaceId: workspace.id,
+    workspaceSlug: workspace.slug,
+    userId,
+    role,
   });
 
   redirect(`/w/${workspaceSlug}/integrations?connected=notion`);

@@ -2,6 +2,7 @@ import { prisma } from "@starbeam/db";
 import { encryptString, parseAes256GcmKeyFromEnv } from "@starbeam/shared";
 import { NextResponse } from "next/server";
 
+import { enqueueAutoFirstNightlyWorkspaceRun } from "@/lib/nightlyRunQueue";
 import { parseSignedState } from "@/lib/signedState";
 import { webOrigin } from "@/lib/webOrigin";
 
@@ -66,6 +67,10 @@ async function fetchUserEmail(accessToken: string): Promise<string> {
   const email = typeof parsed.email === "string" ? parsed.email : "";
   if (!email) throw new Error("Google userinfo missing email");
   return email.toLowerCase();
+}
+
+function canManage(role: string): boolean {
+  return role === "ADMIN" || role === "MANAGER";
 }
 
 export async function GET(request: Request) {
@@ -146,6 +151,32 @@ export async function GET(request: Request) {
         });
       }
     });
+
+    try {
+      const membership = await prisma.membership.findFirst({
+        where: { userId: parsedState.userId, workspaceId: parsedState.workspaceId },
+        select: { role: true },
+      });
+
+      if (membership && canManage(membership.role)) {
+        const existingPulse = await prisma.pulseEdition.findFirst({
+          where: { workspaceId: parsedState.workspaceId, userId: parsedState.userId },
+          select: { id: true },
+        });
+
+        if (!existingPulse) {
+          await enqueueAutoFirstNightlyWorkspaceRun({
+            workspaceId: parsedState.workspaceId,
+            triggeredByUserId: parsedState.userId,
+            source: "auto-first",
+            runAt: new Date(Date.now() + 10 * 60 * 1000),
+            jobKeyMode: "preserve_run_at",
+          });
+        }
+      }
+    } catch {
+      // Don't block Google connect on queue availability.
+    }
 
     return NextResponse.redirect(
       `${webOrigin()}/w/${parsedState.workspaceSlug}/integrations?connected=google`,
