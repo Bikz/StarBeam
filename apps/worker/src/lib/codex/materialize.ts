@@ -29,6 +29,12 @@ type DepartmentSummary = {
   memberships: Array<{ userId: string }>;
 };
 
+function extractDateFromKey(key: string): string | null {
+  const base = key.split("/").pop() ?? "";
+  const m = base.match(/^(\d{4}-\d{2}-\d{2})\./);
+  return m?.[1] ?? null;
+}
+
 function sanitizeFilename(value: string): string {
   const cleaned = value
     .trim()
@@ -94,7 +100,64 @@ export async function materializeWorkspaceContextForCodex(args: {
     ),
   ]);
 
-  const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  // Codex memory (optional): keep a durable, append-only journal of daily summaries
+  // so we can send only deltas after the first run.
+  const memoryDir = path.join(dir, "memory");
+  await fs.mkdir(path.join(memoryDir, "base"), { recursive: true });
+  await fs.mkdir(path.join(memoryDir, "daily"), { recursive: true });
+
+  const memoryPrefix = `workspaces/${args.workspace.id}/users/${args.userId}/codex-memory/`;
+  const basePrefix = `${memoryPrefix}base/`;
+  const dailyPrefix = `${memoryPrefix}daily/`;
+
+  const [baseBlob, dailyBlobs] = await Promise.all([
+    prisma.blob.findFirst({
+      where: {
+        workspaceId: args.workspace.id,
+        ownerUserId: args.userId,
+        key: { startsWith: basePrefix },
+        deletedAt: null,
+      },
+      orderBy: { key: "desc" },
+      select: { bucket: true, key: true },
+    }),
+    prisma.blob.findMany({
+      where: {
+        workspaceId: args.workspace.id,
+        ownerUserId: args.userId,
+        key: { startsWith: dailyPrefix },
+        deletedAt: null,
+      },
+      orderBy: { key: "desc" },
+      take: 14,
+      select: { bucket: true, key: true },
+    }),
+  ]);
+
+  if (baseBlob) {
+    try {
+      const { plaintext } = await getDecryptedObject({ bucket: baseBlob.bucket, key: baseBlob.key });
+      const date = extractDateFromKey(baseBlob.key) ?? "latest";
+      await fs.writeFile(path.join(memoryDir, "base", `${date}.md`), plaintext);
+    } catch {
+      // If blob store isn't configured (or the object is missing), proceed without memory.
+    }
+  }
+
+  for (const b of dailyBlobs) {
+    try {
+      const { plaintext } = await getDecryptedObject({ bucket: b.bucket, key: b.key });
+      const date = extractDateFromKey(b.key);
+      if (!date) continue;
+      await fs.writeFile(path.join(memoryDir, "daily", `${date}.md`), plaintext);
+    } catch {
+      // Ignore missing/unreadable memory blobs.
+    }
+  }
+
+  const cutoff = baseBlob
+    ? new Date(Date.now() - 24 * 60 * 60 * 1000)
+    : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   const sourceItems = await prisma.sourceItem.findMany({
     where: {
       workspaceId: args.workspace.id,
@@ -185,8 +248,9 @@ export async function materializeWorkspaceContextForCodex(args: {
       "- `profile.json`",
       "- `departments.json` (only departments the user belongs to)",
       "- `goals.json`",
-      "- `source-items.jsonl` (recent signals, last 7 days)",
+      "- `source-items.jsonl` (recent signals; last 24h after memory is established, otherwise last 7 days)",
       "- `blobs/` (optional decrypted file snapshots, if blob store is configured)",
+      "- `memory/` (optional; durable journal + base summary from previous days)",
       "",
     ].join("\n"),
     "utf8",
@@ -194,4 +258,3 @@ export async function materializeWorkspaceContextForCodex(args: {
 
   return { dir, cleanup, departmentNameToId };
 }
-

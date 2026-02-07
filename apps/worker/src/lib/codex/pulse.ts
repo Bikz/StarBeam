@@ -35,7 +35,13 @@ export const CodexPulseCardSchema = z.discriminatedUnion("kind", [
   InternalCardSchema,
 ]);
 
+export const CodexPulseMemorySchema = z.object({
+  baseMarkdown: z.string().min(1).max(25_000),
+  dailyMarkdown: z.string().min(1).max(25_000),
+});
+
 export const CodexPulseOutputSchema = z.object({
+  memory: CodexPulseMemorySchema,
   cards: z.array(CodexPulseCardSchema).max(7),
 });
 
@@ -89,8 +95,17 @@ function pulseOutputJsonSchema(args: { includeWebResearch: boolean }): unknown {
   return {
     type: "object",
     additionalProperties: false,
-    required: ["cards"],
+    required: ["memory", "cards"],
     properties: {
+      memory: {
+        type: "object",
+        additionalProperties: false,
+        required: ["baseMarkdown", "dailyMarkdown"],
+        properties: {
+          baseMarkdown: { type: "string" },
+          dailyMarkdown: { type: "string" },
+        },
+      },
       cards: {
         type: "array",
         maxItems: 7,
@@ -116,6 +131,7 @@ function buildPulsePrompt(args: {
     "- goals.json",
     "- source-items.jsonl",
     "- blobs/ (optional; contains decrypted file snapshots)",
+    "- memory/ (optional; contains prior-day base and daily journal summaries)",
     "",
     "Task: Generate today's pulse cards.",
     "",
@@ -127,6 +143,12 @@ function buildPulsePrompt(args: {
           "Do not include numbers unless a citation explicitly supports them.",
         ].join("\n")
       : "Do NOT use web research. Only generate INTERNAL cards from the provided context.",
+    "",
+    "Memory task (required): Update Starbeam memory.",
+    "- baseMarkdown: a compact evergreen summary of the user's workstreams/projects, goals, key decisions, and ongoing threads.",
+    "- dailyMarkdown: an additive daily journal entry for today including what changed + what pulse items you delivered today.",
+    "- Keep baseMarkdown <= 2000 words; keep dailyMarkdown <= 1200 words.",
+    "- Do not delete history; treat memory as append-only journaling.",
     "",
     "Use the internal source items (email/calendar/drive/github/linear/notion) to create INTERNAL cards that help the user prioritize.",
     "Use departments.json (including promptTemplate) + goals.json to keep the pulse aligned with goals and tracks.",

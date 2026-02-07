@@ -1,6 +1,7 @@
 import type { Prisma } from "@starbeam/db";
 import { prisma } from "@starbeam/db";
 
+import { persistCodexMemory } from "../lib/codex/memory";
 import { generatePulseCardsWithCodexExec } from "../lib/codex/pulse";
 import { generateFocusTasks, syncGoogleConnection } from "../lib/google/sync";
 import { isAuthRevoked as isGitHubAuthRevoked, syncGitHubConnection } from "../lib/integrations/github";
@@ -128,6 +129,7 @@ export async function syncUserConnectorsAndMaybeCodex(args: {
   codexModel: string;
   codexReasoningEffort: "minimal" | "low" | "medium" | "high" | "xhigh";
   codexWebSearchEnabled: boolean;
+  editionDate: Date;
   onPartialError: (message: string) => void;
 }): Promise<
   | Awaited<ReturnType<typeof generatePulseCardsWithCodexExec>>
@@ -199,7 +201,7 @@ export async function syncUserConnectorsAndMaybeCodex(args: {
   if (!args.codexAvailable) return null;
 
   try {
-    return await generatePulseCardsWithCodexExec({
+    const res = await generatePulseCardsWithCodexExec({
       workspace: args.workspace,
       profile: args.profile,
       goals: args.goals,
@@ -209,6 +211,21 @@ export async function syncUserConnectorsAndMaybeCodex(args: {
       reasoningEffort: args.codexReasoningEffort,
       includeWebResearch: args.codexWebSearchEnabled,
     });
+
+    try {
+      await persistCodexMemory({
+        workspaceId: args.workspaceId,
+        userId: args.userId,
+        editionDate: args.editionDate,
+        baseMarkdown: res.output.memory.baseMarkdown,
+        dailyMarkdown: res.output.memory.dailyMarkdown,
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      args.onPartialError(`Codex memory persistence failed: ${msg}`);
+    }
+
+    return res;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     args.onPartialError(`Codex pulse generation failed: ${msg}`);

@@ -229,12 +229,13 @@ export async function nightly_workspace_run(payload: unknown) {
         githubConnections: githubConnectionsByUser.get(userId) ?? [],
         linearConnections: linearConnectionsByUser.get(userId) ?? [],
         notionConnections: notionConnectionsByUser.get(userId) ?? [],
-          codexAvailable,
-          codexModel,
-          codexReasoningEffort,
-          codexWebSearchEnabled,
-          onPartialError,
-        });
+        codexAvailable,
+        codexModel,
+        codexReasoningEffort,
+        codexWebSearchEnabled,
+        editionDate,
+        onPartialError,
+      });
 
       const edition = await prisma.pulseEdition.upsert({
         where: {
