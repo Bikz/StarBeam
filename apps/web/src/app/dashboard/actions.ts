@@ -50,6 +50,16 @@ export async function createOrgWorkspace(formData: FormData) {
       type: "ORG",
       createdById: session.user.id,
       memberships: { create: { userId: session.user.id, role: "ADMIN" } },
+      // Tracks: keep v0 simple. Create a single default department ("General")
+      // so goals/pulse can be scoped without requiring manual setup.
+      departments: {
+        create: {
+          name: "General",
+          promptTemplate: "",
+          enabled: true,
+          memberships: { create: { userId: session.user.id } },
+        },
+      },
     },
   });
 
