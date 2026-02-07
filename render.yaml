@@ -47,8 +47,10 @@ services:
         value: "1"
       - key: STARB_CODEX_WEB_SEARCH_ENABLED
         value: "1"
+      - key: STARB_CODEX_REASONING_EFFORT
+        value: low
       - key: STARB_CODEX_MODEL_DEFAULT
-        value: gpt-5.2-codex
+        value: gpt-5-codex
       - key: S3_ENDPOINT
         sync: false
       - key: S3_REGION

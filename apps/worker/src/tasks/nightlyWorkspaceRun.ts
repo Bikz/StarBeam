@@ -174,6 +174,16 @@ export async function nightly_workspace_run(payload: unknown) {
 
     const codexExecEnabled = isTruthyEnv(process.env.STARB_CODEX_EXEC_ENABLED);
     const codexModel = process.env.STARB_CODEX_MODEL_DEFAULT ?? "gpt-5.2-codex";
+    const codexReasoningEffortRaw = (process.env.STARB_CODEX_REASONING_EFFORT ?? "medium")
+      .trim()
+      .toLowerCase();
+    const codexReasoningEffort: "minimal" | "low" | "medium" | "high" | "xhigh" =
+      codexReasoningEffortRaw === "minimal" ||
+      codexReasoningEffortRaw === "low" ||
+      codexReasoningEffortRaw === "high" ||
+      codexReasoningEffortRaw === "xhigh"
+        ? codexReasoningEffortRaw
+        : "medium";
     const codexWebSearchEnabled =
       process.env.STARB_CODEX_WEB_SEARCH_ENABLED === undefined
         ? true
@@ -221,6 +231,7 @@ export async function nightly_workspace_run(payload: unknown) {
         notionConnections: notionConnectionsByUser.get(userId) ?? [],
           codexAvailable,
           codexModel,
+          codexReasoningEffort,
           codexWebSearchEnabled,
           onPartialError,
         });

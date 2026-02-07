@@ -155,6 +155,7 @@ export async function generatePulseCardsWithCodexExec(args: {
   departments: Array<{ id: string; name: string; promptTemplate: string; memberships: Array<{ userId: string }> }>;
   userId: string;
   model?: string;
+  reasoningEffort?: "minimal" | "low" | "medium" | "high" | "xhigh";
   includeWebResearch?: boolean;
 }): Promise<{
   output: CodexPulseOutput;
@@ -195,6 +196,7 @@ export async function generatePulseCardsWithCodexExec(args: {
         cwd: dir,
         prompt,
         model: args.model,
+        reasoningEffort: args.reasoningEffort,
         enableWebSearch: includeWebResearch,
         outputSchemaPath: schemaPath,
         outputLastMessagePath: outputPath,

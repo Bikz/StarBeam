@@ -53,6 +53,7 @@ export async function runCodexExec(args: {
   cwd: string;
   prompt: string;
   model?: string;
+  reasoningEffort?: "minimal" | "low" | "medium" | "high" | "xhigh";
   enableWebSearch?: boolean;
   outputSchemaPath: string;
   outputLastMessagePath: string;
@@ -65,6 +66,7 @@ export async function runCodexExec(args: {
       // Non-interactive worker job: never ask for approvals.
       "-a",
       "never",
+      ...(args.reasoningEffort ? ["-c", `model_reasoning_effort=${args.reasoningEffort}`] : []),
       ...(args.enableWebSearch ? ["--search"] : []),
       "exec",
       "-C",

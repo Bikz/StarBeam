@@ -126,6 +126,7 @@ export async function syncUserConnectorsAndMaybeCodex(args: {
   notionConnections: Array<{ id: string; workspaceName?: string | null }>;
   codexAvailable: boolean;
   codexModel: string;
+  codexReasoningEffort: "minimal" | "low" | "medium" | "high" | "xhigh";
   codexWebSearchEnabled: boolean;
   onPartialError: (message: string) => void;
 }): Promise<
@@ -205,6 +206,7 @@ export async function syncUserConnectorsAndMaybeCodex(args: {
       departments: args.departments,
       userId: args.userId,
       model: args.codexModel,
+      reasoningEffort: args.codexReasoningEffort,
       includeWebResearch: args.codexWebSearchEnabled,
     });
   } catch (err) {
