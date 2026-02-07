@@ -46,9 +46,7 @@ export default async function MembersPage({
   const inviteUrl = inviteToken ? `${webOrigin()}/invite/${inviteToken}` : null;
 
   return (
-    <>
-      <h1 className="sr-only">People</h1>
-      <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+    <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
         <div className="sb-card p-7">
           <div className="flex items-center justify-between gap-4">
             <h2 className="sb-title text-xl font-extrabold">Current members</h2>
@@ -169,7 +167,6 @@ export default async function MembersPage({
           )}
         </div>
         </div>
-      </div>
-    </>
+    </div>
   );
 }

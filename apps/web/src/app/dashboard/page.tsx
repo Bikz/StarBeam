@@ -107,7 +107,7 @@ export default async function DashboardPage() {
     >
       <div className="grid gap-6">
         <section className="sb-card p-6 sm:p-7">
-          <h1 className="sb-title text-2xl font-extrabold">Dashboard</h1>
+          <h2 className="sb-title text-2xl font-extrabold">Overview</h2>
           <p className="mt-2 text-sm text-[color:var(--sb-muted)]">
             Open a workspace to manage context and view your latest pulse.
           </p>
@@ -209,7 +209,7 @@ export default async function DashboardPage() {
                               <Link
                                 key={t.label}
                                 href={t.href}
-                                className="rounded-full border border-black/10 dark:border-white/15 bg-white/40 dark:bg-white/10 px-3 py-1 text-[11px] font-semibold text-[color:var(--sb-muted)] hover:text-[color:var(--sb-fg)]"
+                                className="sb-pill hover:text-[color:var(--sb-fg)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]"
                               >
                                 {t.label}
                               </Link>
@@ -265,7 +265,7 @@ export default async function DashboardPage() {
                   name="name"
                   placeholder="Acme SaaS…"
                   autoComplete="organization"
-                  className="h-11 rounded-xl border border-black/10 dark:border-white/15 bg-white/45 dark:bg-white/10 px-4 text-[15px] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]"
+                  className="sb-input"
                   required
                   minLength={2}
                   maxLength={64}

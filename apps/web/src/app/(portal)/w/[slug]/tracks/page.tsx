@@ -70,7 +70,7 @@ export default async function TracksPage({
   if (departments.length === 0) {
     return (
       <div className="sb-card p-7">
-        <h1 className="sb-title text-xl font-extrabold">Tracks and goals</h1>
+        <h2 className="sb-title text-xl font-extrabold">Tracks and goals</h2>
         <p className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
           Tracks (departments) are the container for goals. Every goal belongs to a track.
         </p>
@@ -100,9 +100,7 @@ export default async function TracksPage({
   }
 
   return (
-    <>
-      <h1 className="sr-only">Tracks</h1>
-      <div className="grid gap-6 lg:grid-cols-[0.42fr_0.58fr]">
+    <div className="grid gap-6 lg:grid-cols-[0.42fr_0.58fr]">
         <div className="sb-card p-6">
           <div className="flex items-center justify-between gap-3">
             <div>
@@ -332,7 +330,6 @@ export default async function TracksPage({
           ) : null}
         </div>
         </div>
-      </div>
-    </>
+    </div>
   );
 }

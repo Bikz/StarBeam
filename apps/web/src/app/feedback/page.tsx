@@ -64,7 +64,7 @@ export default async function FeedbackPage({
     >
       <div className="mx-auto max-w-2xl">
         <div className="sb-card p-7 sm:p-8">
-          <h1 className="sb-title text-2xl font-extrabold">Feedback</h1>
+          <h2 className="sb-title text-2xl font-extrabold">Send feedback</h2>
           <p className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
             This is an early beta. Send the good, the bad, and the ideas. If you include steps to
             reproduce, we can move much faster.

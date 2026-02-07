@@ -54,16 +54,16 @@ export default async function InvitePage({
           </p>
 
           {used ? (
-            <div className="mt-6 rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-4 text-sm text-[color:var(--sb-muted)]">
+            <div className="mt-6 sb-alert">
               This invite link was already used.
             </div>
           ) : expired ? (
-            <div className="mt-6 rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-4 text-sm text-[color:var(--sb-muted)]">
+            <div className="mt-6 sb-alert">
               This invite link expired.
             </div>
           ) : !session?.user?.id ? (
             <div className="mt-6">
-              <div className="rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-4 text-sm text-[color:var(--sb-muted)]">
+              <div className="sb-alert">
                 Sign in to accept this invite.
               </div>
               <div className="mt-4">
@@ -76,7 +76,7 @@ export default async function InvitePage({
               </div>
             </div>
           ) : emailMismatch ? (
-            <div className="mt-6 rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-4 text-sm text-[color:var(--sb-muted)]">
+            <div className="mt-6 sb-alert">
               This invite is for{" "}
               <span className="font-semibold text-[color:var(--sb-fg)]">
                 {invite.email}

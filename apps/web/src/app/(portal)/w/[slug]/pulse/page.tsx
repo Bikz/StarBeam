@@ -5,32 +5,7 @@ import { getServerSession } from "next-auth";
 import { prisma } from "@starbeam/db";
 
 import { authOptions } from "@/lib/auth";
-
-function kindLabel(kind: string): string {
-  if (kind === "ANNOUNCEMENT") return "Announcement";
-  if (kind === "GOAL") return "Goal";
-  if (kind === "WEB_RESEARCH") return "Web research";
-  return "Internal";
-}
-
-type Citation = { url: string; title?: string };
-
-function extractCitations(sources: unknown): Citation[] {
-  if (!sources || typeof sources !== "object") return [];
-  const obj = sources as Record<string, unknown>;
-  const citations = obj.citations;
-  if (!Array.isArray(citations)) return [];
-  return citations
-    .map((c) => {
-      if (!c || typeof c !== "object") return null;
-      const cc = c as Record<string, unknown>;
-      const url = typeof cc.url === "string" ? cc.url : "";
-      const title = typeof cc.title === "string" ? cc.title : undefined;
-      if (!url) return null;
-      return { url, ...(title ? { title } : {}) } satisfies Citation;
-    })
-    .filter((c): c is Citation => c !== null);
-}
+import PulseReader from "@/components/pulse-reader";
 
 export default async function PulsePage({
   params,
@@ -57,7 +32,7 @@ export default async function PulsePage({
   if (!edition) {
     return (
       <div className="sb-card p-7">
-        <h1 className="sb-title text-xl font-extrabold">Pulse</h1>
+        <h2 className="sb-title text-xl font-extrabold">No pulse yet</h2>
         <p className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
           No pulse editions yet for this workspace.
         </p>
@@ -80,112 +55,23 @@ export default async function PulsePage({
   }
 
   return (
-    <>
-      <h1 className="sr-only">Pulse</h1>
-      <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-        <div className="sb-card p-7">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <h2 className="sb-title text-xl font-extrabold">Latest pulse</h2>
-              <div className="mt-1 text-xs text-[color:var(--sb-muted)]">
-                Edition date: {edition.editionDate.toISOString()} | Status:{" "}
-                {edition.status.toLowerCase()}
-              </div>
-            </div>
-            <Link
-              href={`/w/${membership.workspace.slug}/jobs`}
-              className="sb-btn px-4 py-2 text-xs font-semibold"
-            >
-              Runs
-            </Link>
-          </div>
-
-          {edition.cards.length === 0 ? (
-            <div className="mt-6 sb-alert">This edition has no cards yet.</div>
-          ) : (
-            <div className="mt-6 grid gap-3">
-              {edition.cards.map((c) => {
-                const citations = extractCitations(c.sources);
-                return (
-                  <div key={c.id} className="sb-card-inset p-5">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <h3 className="sb-title text-lg leading-tight">
-                          {c.title}
-                        </h3>
-                        <div className="mt-1 text-xs text-[color:var(--sb-muted)]">
-                          {kindLabel(c.kind)} | priority {c.priority}
-                        </div>
-                      </div>
-                      <div className="sb-pill">{c.kind}</div>
-                    </div>
-
-                    {c.body ? (
-                      <div className="mt-3 text-sm text-[color:var(--sb-muted)] leading-relaxed whitespace-pre-wrap">
-                        {c.body}
-                      </div>
-                    ) : null}
-
-                    {c.why ? (
-                      <div className="mt-3 text-sm text-[color:var(--sb-muted)] leading-relaxed whitespace-pre-wrap">
-                        <span className="font-semibold text-[color:var(--sb-fg)]">
-                          Why:
-                        </span>{" "}
-                        {c.why}
-                      </div>
-                    ) : null}
-
-                    {c.action ? (
-                      <div className="mt-3 text-sm text-[color:var(--sb-muted)] leading-relaxed whitespace-pre-wrap">
-                        <span className="font-semibold text-[color:var(--sb-fg)]">
-                          Suggested action:
-                        </span>{" "}
-                        {c.action}
-                      </div>
-                    ) : null}
-
-                    {citations.length ? (
-                      <div className="mt-4 grid gap-1 text-sm">
-                        <div className="text-xs font-semibold text-[color:var(--sb-muted)]">
-                          Sources
-                        </div>
-                        <div className="grid gap-1">
-                          {citations.map((s) => (
-                            <a
-                              key={s.url}
-                              href={s.url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="truncate text-[color:var(--sb-fg)] hover:underline"
-                              title={s.url}
-                            >
-                              {s.title ? `${s.title} - ${s.url}` : s.url}
-                            </a>
-                          ))}
-                        </div>
-                      </div>
-                    ) : null}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        <div className="sb-card p-7">
-          <h2 className="sb-title text-xl font-extrabold">Notes</h2>
-          <div className="mt-3 grid gap-3 text-sm text-[color:var(--sb-muted)] leading-relaxed">
-            <div>
-              This page is a debugging surface for v0 while the macOS menu bar app
-              is under construction.
-            </div>
-            <div>
-              Next: tasks, calendar highlights, and per-card regenerate with
-              rate-limits.
-            </div>
-          </div>
-        </div>
-      </div>
-    </>
+    <PulseReader
+      workspaceSlug={membership.workspace.slug}
+      edition={{
+        editionDateIso: edition.editionDate.toISOString(),
+        status: edition.status,
+      }}
+      cards={edition.cards.map((c) => ({
+        id: c.id,
+        kind: c.kind,
+        title: c.title,
+        body: c.body,
+        why: c.why,
+        action: c.action,
+        priority: c.priority,
+        sources: c.sources,
+        createdAt: c.createdAt.toISOString(),
+      }))}
+    />
   );
 }
