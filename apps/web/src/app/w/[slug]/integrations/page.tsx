@@ -5,15 +5,21 @@ import { prisma } from "@starbeam/db";
 
 import {
   connectGitHub,
-  connectLinear,
-  connectNotion,
   disconnectGitHubConnection,
-  disconnectGoogleConnection,
-  disconnectLinearConnection,
-  disconnectNotionConnection,
-  startGoogleConnect,
   updateGitHubRepoSelection,
-} from "@/app/w/[slug]/integrations/actions";
+} from "@/app/w/[slug]/integrations/githubActions";
+import {
+  startGoogleConnect,
+  disconnectGoogleConnection,
+} from "@/app/w/[slug]/integrations/googleActions";
+import {
+  connectLinear,
+  disconnectLinearConnection,
+} from "@/app/w/[slug]/integrations/linearActions";
+import {
+  connectNotion,
+  disconnectNotionConnection,
+} from "@/app/w/[slug]/integrations/notionActions";
 import { authOptions } from "@/lib/auth";
 
 function statusPill(status: string) {
