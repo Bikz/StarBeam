@@ -38,8 +38,8 @@ export default function ThemeScript() {
     <Script
       id="sb-theme"
       strategy="beforeInteractive"
+      // biome-ignore lint/security/noDangerouslySetInnerHtml: required to run before hydration to prevent theme flash.
       dangerouslySetInnerHTML={{ __html: script }}
     />
   );
 }
-

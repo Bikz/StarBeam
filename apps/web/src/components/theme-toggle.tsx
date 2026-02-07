@@ -63,12 +63,11 @@ export default function ThemeToggle() {
   );
 
   return (
-    <div
+    <fieldset
       className="sb-card-inset inline-flex items-center gap-1 p-1"
-      role="group"
-      aria-label="Theme"
       suppressHydrationWarning
     >
+      <legend className="sr-only">Theme</legend>
       {options.map((o) => {
         const active = pref === o.id;
         return (
@@ -91,6 +90,6 @@ export default function ThemeToggle() {
           </button>
         );
       })}
-    </div>
+    </fieldset>
   );
 }

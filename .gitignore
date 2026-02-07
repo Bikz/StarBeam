@@ -35,6 +35,8 @@ dist/
 .venv/
 output/
 tmp/
+__pycache__/
+*.pyc
 
 ## OS / Editor
 .DS_Store
