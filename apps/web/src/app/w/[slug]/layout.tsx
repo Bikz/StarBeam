@@ -6,6 +6,7 @@ import { prisma } from "@starbeam/db";
 
 import { authOptions } from "@/lib/auth";
 import ThemeToggle from "@/components/theme-toggle";
+import TimezoneReporter from "@/components/timezone-reporter";
 import WorkspaceNav from "@/components/workspace-nav";
 
 export default async function WorkspaceLayout({
@@ -49,6 +50,7 @@ export default async function WorkspaceLayout({
 
   return (
     <div className="sb-bg">
+      <TimezoneReporter />
       <div className="mx-auto max-w-6xl px-6 py-14">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>

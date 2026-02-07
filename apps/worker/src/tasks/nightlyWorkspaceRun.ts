@@ -3,7 +3,7 @@ import { prisma } from "@starbeam/db";
 import { z } from "zod";
 
 import { isCodexInstalled } from "../lib/codex/exec";
-import { startOfDayUtc } from "../lib/dates";
+import { isValidIanaTimeZone, startOfDayKeyUtcForTimeZone } from "../lib/dates";
 import { bootstrapWorkspaceConfigIfNeeded } from "../lib/workspaceBootstrap";
 
 import {
@@ -16,6 +16,7 @@ import {
 const NightlyWorkspaceRunPayloadSchema = z.object({
   workspaceId: z.string().min(1),
   jobRunId: z.string().min(1),
+  userId: z.string().min(1).optional(),
 });
 
 function isTruthyEnv(value: string | undefined): boolean {
@@ -27,6 +28,7 @@ export async function nightly_workspace_run(payload: unknown) {
   if (!parsed.success) throw new Error("Invalid nightly job payload");
 
   const { workspaceId, jobRunId } = parsed.data;
+  const targetUserId = parsed.data.userId ?? null;
 
   const jobRun = await prisma.jobRun.findFirst({
     where: { id: jobRunId, workspaceId, kind: "NIGHTLY_WORKSPACE_RUN" },
@@ -47,7 +49,7 @@ export async function nightly_workspace_run(payload: unknown) {
   };
 
   try {
-    const editionDate = startOfDayUtc(new Date());
+    const runAt = new Date();
 
     const [workspace, initialProfile, memberships, initialGoals, announcements, departments] =
       await Promise.all([
@@ -61,7 +63,7 @@ export async function nightly_workspace_run(payload: unknown) {
         }),
         prisma.membership.findMany({
           where: { workspaceId },
-          select: { userId: true },
+          select: { userId: true, user: { select: { timezone: true } } },
         }),
         prisma.goal.findMany({
           where: { workspaceId, active: true },
@@ -97,7 +99,14 @@ export async function nightly_workspace_run(payload: unknown) {
     let profile = initialProfile;
     let goals = initialGoals;
 
-    const memberUserIds = memberships.map((m) => m.userId);
+    const membershipByUserId = new Map<string, { timezone: string }>();
+    for (const m of memberships) membershipByUserId.set(m.userId, { timezone: m.user.timezone });
+
+    const allMemberUserIds = memberships.map((m) => m.userId);
+    const memberUserIds = targetUserId ? [targetUserId] : allMemberUserIds;
+    if (targetUserId && !membershipByUserId.has(targetUserId)) {
+      throw new Error("Target user is not a workspace member");
+    }
 
     const [googleConnections, githubConnections, linearConnections, notionConnections] =
       await Promise.all([
@@ -280,6 +289,10 @@ export async function nightly_workspace_run(payload: unknown) {
     };
 
     for (const userId of memberUserIds) {
+      const tzRaw = (membershipByUserId.get(userId)?.timezone ?? "UTC").trim() || "UTC";
+      const timezone = isValidIanaTimeZone(tzRaw) ? tzRaw : "UTC";
+      const editionDate = startOfDayKeyUtcForTimeZone(runAt, timezone);
+
       const codexPulse = await syncUserConnectorsAndMaybeCodex({
         workspaceId,
         workspace,
@@ -316,12 +329,12 @@ export async function nightly_workspace_run(payload: unknown) {
             editionDate,
           },
         },
-        update: { status: "GENERATING" },
+        update: { status: "GENERATING", timezone },
         create: {
           workspaceId,
           userId,
           editionDate,
-          timezone: "UTC",
+          timezone,
           status: "GENERATING",
         },
         select: { id: true },
