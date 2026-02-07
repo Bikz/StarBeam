@@ -52,6 +52,7 @@ export async function runNightlyNow(workspaceSlug: string) {
     // integrations), reschedule it to "now" rather than enqueueing duplicates.
     await enqueueWorkspaceBootstrap({
       workspaceId: membership.workspace.id,
+      userId: session.user.id,
       triggeredByUserId: session.user.id,
       source: "web",
       runAt: new Date(),
@@ -60,6 +61,7 @@ export async function runNightlyNow(workspaceSlug: string) {
 
     await enqueueAutoFirstNightlyWorkspaceRun({
       workspaceId: membership.workspace.id,
+      userId: session.user.id,
       triggeredByUserId: session.user.id,
       source: "web",
       runAt: new Date(),

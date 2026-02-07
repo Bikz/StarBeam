@@ -69,9 +69,6 @@ async function fetchUserEmail(accessToken: string): Promise<string> {
   return email.toLowerCase();
 }
 
-function canManage(role: string): boolean {
-  return role === "ADMIN" || role === "MANAGER";
-}
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -158,7 +155,7 @@ export async function GET(request: Request) {
         select: { role: true },
       });
 
-      if (membership && canManage(membership.role)) {
+      if (membership) {
         const existingPulse = await prisma.pulseEdition.findFirst({
           where: { workspaceId: parsedState.workspaceId, userId: parsedState.userId },
           select: { id: true },
@@ -167,6 +164,7 @@ export async function GET(request: Request) {
         if (!existingPulse) {
           await enqueueWorkspaceBootstrap({
             workspaceId: parsedState.workspaceId,
+            userId: parsedState.userId,
             triggeredByUserId: parsedState.userId,
             source: "auto-first",
             runAt: new Date(),
@@ -175,6 +173,7 @@ export async function GET(request: Request) {
 
           await enqueueAutoFirstNightlyWorkspaceRun({
             workspaceId: parsedState.workspaceId,
+            userId: parsedState.userId,
             triggeredByUserId: parsedState.userId,
             source: "auto-first",
             runAt: new Date(Date.now() + 10 * 60 * 1000),

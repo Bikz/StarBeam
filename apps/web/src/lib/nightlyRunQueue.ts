@@ -7,31 +7,32 @@ function requireDatabaseUrl(): string {
   return connectionString;
 }
 
-function autoFirstNightlyJobKey(workspaceId: string): string {
-  return `nightly_workspace_run:auto-first:${workspaceId}`;
+function autoFirstNightlyJobKey(workspaceId: string, userId: string): string {
+  return `nightly_workspace_run:auto-first:${workspaceId}:${userId}`;
 }
 
-function autoFirstNightlyJobRunId(workspaceId: string): string {
-  return `auto-first:${workspaceId}`;
+function autoFirstNightlyJobRunId(workspaceId: string, userId: string): string {
+  return `auto-first:${workspaceId}:${userId}`;
 }
 
-function workspaceBootstrapJobKey(workspaceId: string): string {
-  return `workspace_bootstrap:${workspaceId}`;
+function workspaceBootstrapJobKey(workspaceId: string, userId: string): string {
+  return `workspace_bootstrap:auto-first:${workspaceId}:${userId}`;
 }
 
-function workspaceBootstrapJobRunId(workspaceId: string): string {
-  return `bootstrap:${workspaceId}`;
+function workspaceBootstrapJobRunId(workspaceId: string, userId: string): string {
+  return `bootstrap:${workspaceId}:${userId}`;
 }
 
 export async function enqueueAutoFirstNightlyWorkspaceRun(args: {
   workspaceId: string;
+  userId: string;
   triggeredByUserId: string;
   source: "auto-first" | "web";
   runAt: Date;
   jobKeyMode: "replace" | "preserve_run_at" | "unsafe_dedupe";
 }): Promise<void> {
-  const jobKey = autoFirstNightlyJobKey(args.workspaceId);
-  const jobRunId = autoFirstNightlyJobRunId(args.workspaceId);
+  const jobKey = autoFirstNightlyJobKey(args.workspaceId, args.userId);
+  const jobRunId = autoFirstNightlyJobRunId(args.workspaceId, args.userId);
 
   await prisma.jobRun.upsert({
     where: { id: jobRunId },
@@ -42,14 +43,24 @@ export async function enqueueAutoFirstNightlyWorkspaceRun(args: {
       startedAt: null,
       finishedAt: null,
       errorSummary: null,
-      meta: { triggeredByUserId: args.triggeredByUserId, source: args.source, jobKey },
+      meta: {
+        triggeredByUserId: args.triggeredByUserId,
+        userId: args.userId,
+        source: args.source,
+        jobKey,
+      },
     },
     create: {
       id: jobRunId,
       workspaceId: args.workspaceId,
       kind: "NIGHTLY_WORKSPACE_RUN",
       status: "QUEUED",
-      meta: { triggeredByUserId: args.triggeredByUserId, source: args.source, jobKey },
+      meta: {
+        triggeredByUserId: args.triggeredByUserId,
+        userId: args.userId,
+        source: args.source,
+        jobKey,
+      },
     },
   });
 
@@ -62,7 +73,7 @@ export async function enqueueAutoFirstNightlyWorkspaceRun(args: {
   try {
     await workerUtils.addJob(
       "nightly_workspace_run",
-      { workspaceId: args.workspaceId, jobRunId },
+      { workspaceId: args.workspaceId, userId: args.userId, jobRunId },
       { jobKey, jobKeyMode: args.jobKeyMode, runAt: args.runAt },
     );
   } finally {
@@ -72,13 +83,14 @@ export async function enqueueAutoFirstNightlyWorkspaceRun(args: {
 
 export async function enqueueWorkspaceBootstrap(args: {
   workspaceId: string;
+  userId: string;
   triggeredByUserId: string;
   source: "auto-first" | "web";
   runAt: Date;
   jobKeyMode: "replace" | "preserve_run_at" | "unsafe_dedupe";
 }): Promise<void> {
-  const jobKey = workspaceBootstrapJobKey(args.workspaceId);
-  const jobRunId = workspaceBootstrapJobRunId(args.workspaceId);
+  const jobKey = workspaceBootstrapJobKey(args.workspaceId, args.userId);
+  const jobRunId = workspaceBootstrapJobRunId(args.workspaceId, args.userId);
 
   await prisma.jobRun.upsert({
     where: { id: jobRunId },
@@ -89,14 +101,24 @@ export async function enqueueWorkspaceBootstrap(args: {
       startedAt: null,
       finishedAt: null,
       errorSummary: null,
-      meta: { triggeredByUserId: args.triggeredByUserId, source: args.source, jobKey },
+      meta: {
+        triggeredByUserId: args.triggeredByUserId,
+        userId: args.userId,
+        source: args.source,
+        jobKey,
+      },
     },
     create: {
       id: jobRunId,
       workspaceId: args.workspaceId,
       kind: "WORKSPACE_BOOTSTRAP",
       status: "QUEUED",
-      meta: { triggeredByUserId: args.triggeredByUserId, source: args.source, jobKey },
+      meta: {
+        triggeredByUserId: args.triggeredByUserId,
+        userId: args.userId,
+        source: args.source,
+        jobKey,
+      },
     },
   });
 

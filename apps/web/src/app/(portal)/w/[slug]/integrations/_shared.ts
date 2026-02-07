@@ -38,9 +38,6 @@ export function normalizeSecret(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
-function canManage(role: string): boolean {
-  return role === "ADMIN" || role === "MANAGER";
-}
 
 export async function scheduleAutoFirstPulseIfNeeded(args: {
   workspaceId: string;
@@ -48,8 +45,6 @@ export async function scheduleAutoFirstPulseIfNeeded(args: {
   userId: string;
   role: string;
 }): Promise<void> {
-  if (!canManage(args.role)) return;
-
   const existingPulse = await prisma.pulseEdition.findFirst({
     where: { workspaceId: args.workspaceId, userId: args.userId },
     select: { id: true },
@@ -59,6 +54,7 @@ export async function scheduleAutoFirstPulseIfNeeded(args: {
   try {
     await enqueueWorkspaceBootstrap({
       workspaceId: args.workspaceId,
+      userId: args.userId,
       triggeredByUserId: args.userId,
       source: "auto-first",
       runAt: new Date(),
@@ -67,6 +63,7 @@ export async function scheduleAutoFirstPulseIfNeeded(args: {
 
     await enqueueAutoFirstNightlyWorkspaceRun({
       workspaceId: args.workspaceId,
+      userId: args.userId,
       triggeredByUserId: args.userId,
       source: "auto-first",
       runAt: new Date(Date.now() + 10 * 60 * 1000),
