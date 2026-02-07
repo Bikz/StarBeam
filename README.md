@@ -125,7 +125,7 @@ Minimum required env vars:
 - `S3_REGION`
 - `S3_ACCESS_KEY_ID`
 - `S3_SECRET_ACCESS_KEY`
-- `S3_BUCKET` (used for encrypted Drive snapshots and attachments; prod bucket name convention: `starbeam-prod`)
+- `S3_BUCKET` (used for encrypted Drive snapshots and attachments; prod bucket name convention: `starbeam-prod-worker-r2`)
 
 ### R2 Blob Store Runbook (Worker)
 
@@ -134,8 +134,8 @@ use Cloudflare R2 and configure the **worker** with R/W/D permissions.
 
 Recommended: **separate buckets** per environment (simpler + safer than prefixes).
 
-- Prod bucket: `starbeam-prod`
-- Staging bucket: `starbeam-staging`
+- Prod bucket: `starbeam-prod-worker-r2`
+- Staging bucket: `starbeam-staging` (or `starbeam-staging-worker-r2`)
 
 Worker env vars:
 
@@ -143,7 +143,7 @@ Worker env vars:
 - `S3_REGION`: can be `auto` or `us-east-1`
 - `S3_ACCESS_KEY_ID`: R2 access key id
 - `S3_SECRET_ACCESS_KEY`: R2 secret
-- `S3_BUCKET`: `starbeam-prod` or `starbeam-staging`
+- `S3_BUCKET`: `starbeam-prod-worker-r2` or `starbeam-staging` (or `starbeam-staging-worker-r2`)
 
 Verification:
 
@@ -167,6 +167,22 @@ Additional recommended prod env vars:
 
 - Open the deployed web URL, sign in, create an org workspace, and trigger “Run now”.
 - Confirm `starbeam-worker` is running and connected to the same `DATABASE_URL`.
+
+### Onboarding + Pulse Scheduling (How It Works)
+
+- Connecting a tool (Google for v0) triggers two jobs:
+  - `workspace_bootstrap` (build initial workspace/user context)
+  - `nightly_workspace_run` with an **auto-first** key
+- Auto-first is **per-user** (org-scale safe):
+  - The auto-first `nightly_workspace_run` payload always includes `userId`, so the worker generates pulses for only the triggering user (no “fan out to every workspace member” surprise cost).
+  - Auto-first enqueue does not require manager/admin role; normal employees should still get “wow from day one”.
+  - Auto-first job run ids/keys are per-user: `...:<workspaceId>:<userId>` so one employee does not “claim” the workspace-wide first run.
+- Daily scheduling is coverage-safe:
+  - The worker’s `enqueue_due_daily_pulses` scans memberships using a DB cursor (`SchedulerState`) and a Postgres advisory lock so it eventually covers all org members (no “first N memberships forever” bug).
+  - By default the scheduling window is **soft**: once local time is >= `STARB_DAILY_PULSE_WINDOW_START_HOUR` the user remains eligible for that day until run (sequential coverage). If you want a strict window, set `STARB_DAILY_PULSE_STRICT_WINDOW=1` and keep `STARB_DAILY_PULSE_WINDOW_END_HOUR`.
+- “Instant” first pulse notification (no APNs, v1):
+  - If the macOS app is signed in and sees an empty pulse, it temporarily increases refresh frequency (bounded ~20 minutes).
+  - When the first pulse arrives, the app immediately schedules a local notification and stops the boost polling.
 
 ### Marketing Site (Vercel)
 
