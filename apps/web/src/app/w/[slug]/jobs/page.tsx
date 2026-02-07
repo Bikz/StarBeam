@@ -14,6 +14,41 @@ function formatStatus(status: string): string {
   return status.toLowerCase().replaceAll("_", " ");
 }
 
+function formatInt(n: number): string {
+  return new Intl.NumberFormat("en-US").format(n);
+}
+
+type CodexEstimates = {
+  runs: number;
+  approxInputTokens: number;
+  approxOutputTokens: number;
+  durationMs: number;
+};
+
+function readCodexEstimates(meta: unknown): CodexEstimates | null {
+  if (!meta || typeof meta !== "object") return null;
+  if (!("codex" in meta)) return null;
+
+  const codex = (meta as { codex?: unknown }).codex;
+  if (!codex || typeof codex !== "object") return null;
+  if (!("estimates" in codex)) return null;
+
+  const est = (codex as { estimates?: unknown }).estimates;
+  if (!est || typeof est !== "object") return null;
+
+  const runs = (est as { runs?: unknown }).runs;
+  const approxInputTokens = (est as { approxInputTokens?: unknown }).approxInputTokens;
+  const approxOutputTokens = (est as { approxOutputTokens?: unknown }).approxOutputTokens;
+  const durationMs = (est as { durationMs?: unknown }).durationMs;
+
+  if (typeof runs !== "number") return null;
+  if (typeof approxInputTokens !== "number") return null;
+  if (typeof approxOutputTokens !== "number") return null;
+  if (typeof durationMs !== "number") return null;
+
+  return { runs, approxInputTokens, approxOutputTokens, durationMs };
+}
+
 export default async function JobsPage({
   params,
   searchParams,
@@ -109,6 +144,17 @@ export default async function JobsPage({
                       Not started yet.
                     </div>
                   )}
+                  {(() => {
+                    const est = readCodexEstimates(jr.meta);
+                    if (!est || est.runs <= 0) return null;
+                    const durS = Math.round(est.durationMs / 1000);
+                    return (
+                      <div className="mt-2 text-xs text-[color:var(--sb-muted)]">
+                        Codex: {est.runs} runs | ~{formatInt(est.approxInputTokens)} in / ~
+                        {formatInt(est.approxOutputTokens)} out tokens | {durS}s
+                      </div>
+                    );
+                  })()}
                   {jr.errorSummary ? (
                     <div className="mt-2 text-xs text-[color:var(--sb-muted)]">
                       Error: {jr.errorSummary}
@@ -149,4 +195,3 @@ export default async function JobsPage({
     </div>
   );
 }
-
