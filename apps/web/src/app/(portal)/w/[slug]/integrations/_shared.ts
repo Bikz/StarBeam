@@ -1,5 +1,3 @@
-"use server";
-
 import { prisma } from "@starbeam/db";
 import { encryptString, parseAes256GcmKeyFromEnv } from "@starbeam/shared";
 import { getServerSession } from "next-auth";
