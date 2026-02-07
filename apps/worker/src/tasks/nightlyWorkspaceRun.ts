@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { isCodexInstalled } from "../lib/codex/exec";
 import { startOfDayUtc } from "../lib/dates";
+import { bootstrapWorkspaceConfigIfNeeded } from "../lib/workspaceBootstrap";
 
 import {
   generateLegacyDepartmentWebResearchCards,
@@ -48,7 +49,7 @@ export async function nightly_workspace_run(payload: unknown) {
   try {
     const editionDate = startOfDayUtc(new Date());
 
-    const [workspace, profile, memberships, goals, announcements, departments] =
+    const [workspace, initialProfile, memberships, initialGoals, announcements, departments] =
       await Promise.all([
         prisma.workspace.findUnique({
           where: { id: workspaceId },
@@ -92,6 +93,9 @@ export async function nightly_workspace_run(payload: unknown) {
       ]);
 
     if (!workspace) throw new Error("Workspace not found");
+
+    let profile = initialProfile;
+    let goals = initialGoals;
 
     const memberUserIds = memberships.map((m) => m.userId);
 
@@ -193,6 +197,55 @@ export async function nightly_workspace_run(payload: unknown) {
 
     if (codexExecEnabled && openaiApiKey && !codexAvailable) {
       onPartialError("codex binary not found; Codex pulse generation skipped.");
+    }
+
+    // "Wow from day one": when running the first pulse (auto-first or explicit run),
+    // try to auto-bootstrap a profile + starter goals to give Codex clearer direction.
+    try {
+      const meta = typeof jobRun.meta === "object" && jobRun.meta ? jobRun.meta : null;
+      const source =
+        meta && "source" in meta && typeof (meta as { source?: unknown }).source === "string"
+          ? String((meta as { source: string }).source)
+          : null;
+      const triggeredByUserId =
+        meta &&
+        "triggeredByUserId" in meta &&
+        typeof (meta as { triggeredByUserId?: unknown }).triggeredByUserId === "string"
+          ? String((meta as { triggeredByUserId: string }).triggeredByUserId)
+          : memberUserIds[0] ?? null;
+
+      const isFirstRunSource = source === "auto-first" || source === "web";
+      const needsBootstrap = !profile || goals.length === 0;
+
+      if (isFirstRunSource && needsBootstrap && triggeredByUserId) {
+        await bootstrapWorkspaceConfigIfNeeded({
+          workspaceId,
+          triggeredByUserId,
+          codex: {
+            available: codexAvailable,
+            model: codexModel,
+            reasoningEffort: codexReasoningEffort,
+            enableWebSearch: codexWebSearchEnabled,
+          },
+        });
+
+        // Refresh in-memory context for the remainder of this job.
+        [profile, goals] = await Promise.all([
+          prisma.workspaceProfile.findUnique({
+            where: { workspaceId },
+            select: { websiteUrl: true, description: true, competitorDomains: true },
+          }),
+          prisma.goal.findMany({
+            where: { workspaceId, active: true },
+            select: { id: true, title: true, body: true, priority: true, departmentId: true },
+            orderBy: [{ priority: "asc" }, { createdAt: "desc" }],
+            take: 10,
+          }),
+        ]);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      onPartialError(`Workspace bootstrap failed: ${msg}`);
     }
 
     const legacyOverride = (process.env.STARB_LEGACY_DEPT_WEB_RESEARCH_ENABLED ?? "")
