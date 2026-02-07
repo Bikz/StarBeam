@@ -79,6 +79,20 @@ sign_nested() {
 
   # 2) Nested .xpc/.app anywhere under Frameworks (deepest first)
   if [[ -d "$base/Contents/Frameworks" ]]; then
+    # Some frameworks (notably Sparkle.framework) embed standalone helper executables
+    # under Versions/* (e.g. Autoupdate) that are not bundles. These must be signed
+    # explicitly before the enclosing framework is signed, otherwise notarization
+    # fails due to ad-hoc signatures.
+    while IFS= read -r fw; do
+      [[ -z "$fw" ]] && continue
+      if [[ -d "$fw/Versions" ]]; then
+        while IFS= read -r bin; do
+          [[ -z "$bin" ]] && continue
+          sign_one "$bin"
+        done < <(find "$fw/Versions" -maxdepth 2 -type f -perm -111 -print 2>/dev/null || true)
+      fi
+    done < <(find "$base/Contents/Frameworks" -maxdepth 1 -type d -name "*.framework" -print)
+
     while IFS= read -r item; do
       [[ -z "$item" ]] && continue
       sign_one "$item"
