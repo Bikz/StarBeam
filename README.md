@@ -125,7 +125,20 @@ Minimum required env vars:
 - `S3_REGION`
 - `S3_ACCESS_KEY_ID`
 - `S3_SECRET_ACCESS_KEY`
-- `S3_BUCKET` (used for encrypted Drive snapshots and attachments)
+- `S3_BUCKET` (used for encrypted Drive snapshots and attachments; prod bucket name convention: `starbeam-prod`)
+
+Additional recommended prod env vars:
+
+- `STARB_DAILY_PULSE_ENABLED` (default: `1`)
+- `STARB_DAILY_PULSE_WINDOW_START_HOUR` (default: `2`)
+- `STARB_DAILY_PULSE_WINDOW_END_HOUR` (default: `5`)
+- `STARB_BLOB_GC_ENABLED` (default: `1`)
+- `STARB_BLOB_GC_GRACE_DAYS` (default: `14`)
+- `STARB_DEVICE_START_LIMIT_5M` (default: `20`)
+- `STARB_DEVICE_EXCHANGE_LIMIT_5M` (default: `120`)
+- `STARB_RUN_NOW_USER_LIMIT_1M` (default: `3`)
+- `STARB_RUN_NOW_WORKSPACE_LIMIT_1M` (default: `5`)
+- `STARB_RUN_WORKSPACE_LIMIT_1D` (default: `20`)
 
 ### 4) Verify
 

@@ -85,7 +85,7 @@ export default async function JobsPage({
             <div className="sb-title text-xl">Nightly runs</div>
             <p className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
               This is the “overnight research” engine. v0 will run it on demand,
-              then nightly (2–5am user-local) once scheduling lands.
+              and also auto-run daily (2–5am user-local).
             </p>
           </div>
           {queued ? (
