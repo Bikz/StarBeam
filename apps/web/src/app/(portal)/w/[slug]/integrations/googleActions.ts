@@ -5,7 +5,7 @@ import crypto from "node:crypto";
 import { prisma } from "@starbeam/db";
 import { redirect } from "next/navigation";
 
-import { requireMembership } from "@/app/w/[slug]/integrations/_shared";
+import { requireMembership } from "@/app/(portal)/w/[slug]/integrations/_shared";
 import { enqueueDeleteBlobs } from "@/lib/blobDeleteQueue";
 import { mintSignedState } from "@/lib/signedState";
 import { webOrigin } from "@/lib/webOrigin";
@@ -126,4 +126,3 @@ export async function disconnectGoogleConnection(
   await prisma.googleConnection.delete({ where: { id: existing.id } });
   redirect(`/w/${workspaceSlug}/integrations?disconnected=google`);
 }
-

@@ -9,7 +9,7 @@ import {
   normalizeSecret,
   requireMembership,
   scheduleAutoFirstPulseIfNeeded,
-} from "@/app/w/[slug]/integrations/_shared";
+} from "@/app/(portal)/w/[slug]/integrations/_shared";
 
 export async function connectNotion(workspaceSlug: string, formData: FormData) {
   const { userId, role, workspace } = await requireMembership(workspaceSlug);
@@ -76,4 +76,3 @@ export async function disconnectNotionConnection(
 
   redirect(`/w/${workspaceSlug}/integrations?disconnected=notion`);
 }
-

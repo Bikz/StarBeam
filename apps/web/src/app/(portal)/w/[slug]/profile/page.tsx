@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 
 import { prisma } from "@starbeam/db";
 
-import { upsertWorkspaceProfile } from "@/app/w/[slug]/profile/actions";
+import { upsertWorkspaceProfile } from "@/app/(portal)/w/[slug]/profile/actions";
 import { authOptions } from "@/lib/auth";
 
 function canManage(role: string): boolean {
@@ -144,4 +144,3 @@ export default async function WorkspaceProfilePage({
     </div>
   );
 }
-

@@ -32,7 +32,7 @@ export default async function WorkspaceLayout({
   // IA: keep “Pulse” obvious, and treat the rest as grouped controls
   // (context levers vs ops). Mobile collapses the tail into “More”.
   const core = [
-    { href: base, label: "Setup", match: "exact" as const },
+    { href: `${base}/onboarding`, label: "Setup" },
     { href: `${base}/pulse`, label: "Pulse" },
   ];
 

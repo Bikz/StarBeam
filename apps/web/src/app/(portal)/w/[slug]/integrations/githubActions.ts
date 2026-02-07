@@ -9,7 +9,7 @@ import {
   normalizeSecret,
   requireMembership,
   scheduleAutoFirstPulseIfNeeded,
-} from "@/app/w/[slug]/integrations/_shared";
+} from "@/app/(portal)/w/[slug]/integrations/_shared";
 
 function normalizeRepoFullNames(value: unknown): string[] {
   const raw = typeof value === "string" ? value : "";
@@ -139,4 +139,3 @@ export async function disconnectGitHubConnection(
 
   redirect(`/w/${workspaceSlug}/integrations?disconnected=github`);
 }
-

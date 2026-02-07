@@ -191,7 +191,7 @@ export default async function DashboardPage() {
                     todo.push({ label: "Connect Google", href: `/w/${m.workspace.slug}/google` });
                   }
                   if (!editionReady) {
-                    todo.push({ label: "Run overnight", href: `/w/${m.workspace.slug}/jobs` });
+                    todo.push({ label: "Finish setup", href: `/w/${m.workspace.slug}/onboarding` });
                   }
 
                   return (

@@ -4,8 +4,8 @@ import { getServerSession } from "next-auth";
 
 import { prisma } from "@starbeam/db";
 
-import { createDepartment, updateDepartment } from "@/app/w/[slug]/departments/actions";
-import { createGoal, deleteGoal, toggleGoalActive } from "@/app/w/[slug]/goals/actions";
+import { createDepartment, updateDepartment } from "@/app/(portal)/w/[slug]/departments/actions";
+import { createGoal, deleteGoal, toggleGoalActive } from "@/app/(portal)/w/[slug]/goals/actions";
 import { authOptions } from "@/lib/auth";
 
 function canManage(role: string): boolean {

@@ -9,7 +9,7 @@ import {
   normalizeSecret,
   requireMembership,
   scheduleAutoFirstPulseIfNeeded,
-} from "@/app/w/[slug]/integrations/_shared";
+} from "@/app/(portal)/w/[slug]/integrations/_shared";
 
 export async function connectLinear(workspaceSlug: string, formData: FormData) {
   const { userId, role, workspace } = await requireMembership(workspaceSlug);
@@ -76,4 +76,3 @@ export async function disconnectLinearConnection(
 
   redirect(`/w/${workspaceSlug}/integrations?disconnected=linear`);
 }
-

@@ -5,7 +5,7 @@ import { getServerSession } from "next-auth";
 
 import { prisma } from "@starbeam/db";
 
-import { createInvite } from "@/app/w/[slug]/members/actions";
+import { createInvite } from "@/app/(portal)/w/[slug]/members/actions";
 import { authOptions } from "@/lib/auth";
 import { webOrigin } from "@/lib/webOrigin";
 

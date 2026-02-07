@@ -7,19 +7,19 @@ import {
   connectGitHub,
   disconnectGitHubConnection,
   updateGitHubRepoSelection,
-} from "@/app/w/[slug]/integrations/githubActions";
+} from "@/app/(portal)/w/[slug]/integrations/githubActions";
 import {
   startGoogleConnect,
   disconnectGoogleConnection,
-} from "@/app/w/[slug]/integrations/googleActions";
+} from "@/app/(portal)/w/[slug]/integrations/googleActions";
 import {
   connectLinear,
   disconnectLinearConnection,
-} from "@/app/w/[slug]/integrations/linearActions";
+} from "@/app/(portal)/w/[slug]/integrations/linearActions";
 import {
   connectNotion,
   disconnectNotionConnection,
-} from "@/app/w/[slug]/integrations/notionActions";
+} from "@/app/(portal)/w/[slug]/integrations/notionActions";
 import { authOptions } from "@/lib/auth";
 
 function statusPill(status: string) {

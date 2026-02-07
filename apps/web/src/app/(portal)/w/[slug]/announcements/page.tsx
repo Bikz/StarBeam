@@ -8,7 +8,7 @@ import {
   createAnnouncement,
   dismissAnnouncement,
   toggleAnnouncementPinned,
-} from "@/app/w/[slug]/announcements/actions";
+} from "@/app/(portal)/w/[slug]/announcements/actions";
 
 function canManage(role: string): boolean {
   return role === "ADMIN" || role === "MANAGER";
