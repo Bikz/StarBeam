@@ -56,7 +56,7 @@ export async function bootstrapWorkspaceConfigIfNeeded(args: {
     throw new Error("Codex is not available for bootstrap (missing key/binary/disabled).");
   }
 
-  const bootstrap = await bootstrapWorkspaceWithCodexExec({
+  const { output: bootstrap } = await bootstrapWorkspaceWithCodexExec({
     workspace,
     profile: existingProfile
       ? {
@@ -119,4 +119,3 @@ export async function bootstrapWorkspaceConfigIfNeeded(args: {
 
   return { didBootstrap: true, wroteProfile, wroteGoals };
 }
-

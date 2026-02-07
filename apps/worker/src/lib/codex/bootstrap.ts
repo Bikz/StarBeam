@@ -103,7 +103,16 @@ export async function bootstrapWorkspaceWithCodexExec(args: {
   model?: string;
   reasoningEffort?: "minimal" | "low" | "medium" | "high" | "xhigh";
   enableWebSearch?: boolean;
-}): Promise<CodexWorkspaceBootstrapOutput> {
+}): Promise<{
+  output: CodexWorkspaceBootstrapOutput;
+  estimate: {
+    promptBytes: number;
+    contextBytes: number;
+    approxInputTokens: number;
+    approxOutputTokens: number;
+    durationMs: number;
+  };
+}> {
   const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "starbeam-codex-bootstrap-"));
   const schemaPath = path.join(tmp, "bootstrap.schema.json");
   const outputPath = path.join(tmp, "bootstrap.output.json");
@@ -130,6 +139,10 @@ export async function bootstrapWorkspaceWithCodexExec(args: {
         enableWebSearch,
       });
 
+      const promptBytes = Buffer.byteLength(prompt, "utf8");
+      const contextBytes = await directoryBytes(dir);
+
+      const started = Date.now();
       const res = await runCodexExec({
         cwd: dir,
         prompt,
@@ -140,6 +153,7 @@ export async function bootstrapWorkspaceWithCodexExec(args: {
         outputLastMessagePath: outputPath,
         timeoutMs: 3 * 60 * 1000,
       });
+      const durationMs = Date.now() - started;
 
       if (res.exitCode !== 0) {
         const hint = res.stderr.trim() || res.stdout.trim();
@@ -148,7 +162,10 @@ export async function bootstrapWorkspaceWithCodexExec(args: {
 
       const text = await fs.readFile(outputPath, "utf8");
       const parsedJson = JSON.parse(text) as unknown;
-      return CodexWorkspaceBootstrapOutputSchema.parse(parsedJson);
+      const output = CodexWorkspaceBootstrapOutputSchema.parse(parsedJson);
+      const approxInputTokens = Math.ceil((promptBytes + contextBytes) / 4);
+      const approxOutputTokens = Math.ceil(Buffer.byteLength(text, "utf8") / 4);
+      return { output, estimate: { promptBytes, contextBytes, approxInputTokens, approxOutputTokens, durationMs } };
     } finally {
       await cleanup();
     }
@@ -157,3 +174,24 @@ export async function bootstrapWorkspaceWithCodexExec(args: {
   }
 }
 
+async function directoryBytes(dir: string): Promise<number> {
+  const entries = await fs.readdir(dir, { withFileTypes: true });
+  let total = 0;
+
+  for (const e of entries) {
+    const p = path.join(dir, e.name);
+    if (e.isFile()) {
+      const s = await fs.stat(p);
+      total += s.size;
+    } else if (e.isDirectory() && e.name === "blobs") {
+      const blobs = await fs.readdir(p, { withFileTypes: true });
+      for (const b of blobs) {
+        if (!b.isFile()) continue;
+        const s = await fs.stat(path.join(p, b.name));
+        total += s.size;
+      }
+    }
+  }
+
+  return total;
+}

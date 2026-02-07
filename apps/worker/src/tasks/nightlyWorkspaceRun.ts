@@ -270,6 +270,15 @@ export async function nightly_workspace_run(payload: unknown) {
       onPartialError,
     });
 
+    const codexEstimates = {
+      runs: 0,
+      promptBytes: 0,
+      contextBytes: 0,
+      approxInputTokens: 0,
+      approxOutputTokens: 0,
+      durationMs: 0,
+    };
+
     for (const userId of memberUserIds) {
       const codexPulse = await syncUserConnectorsAndMaybeCodex({
         workspaceId,
@@ -289,6 +298,15 @@ export async function nightly_workspace_run(payload: unknown) {
         editionDate,
         onPartialError,
       });
+
+      if (codexPulse?.estimate) {
+        codexEstimates.runs += 1;
+        codexEstimates.promptBytes += codexPulse.estimate.promptBytes;
+        codexEstimates.contextBytes += codexPulse.estimate.contextBytes;
+        codexEstimates.approxInputTokens += codexPulse.estimate.approxInputTokens;
+        codexEstimates.approxOutputTokens += codexPulse.estimate.approxOutputTokens;
+        codexEstimates.durationMs += codexPulse.estimate.durationMs;
+      }
 
       const edition = await prisma.pulseEdition.upsert({
         where: {
@@ -434,6 +452,15 @@ export async function nightly_workspace_run(payload: unknown) {
         status: partial ? "PARTIAL" : "SUCCEEDED",
         finishedAt: new Date(),
         errorSummary,
+        meta: {
+          ...(typeof jobRun.meta === "object" && jobRun.meta ? (jobRun.meta as object) : {}),
+          codex: {
+            model: codexModel,
+            reasoningEffort: codexReasoningEffort,
+            webSearch: codexWebSearchEnabled,
+            estimates: codexEstimates,
+          },
+        },
       },
     });
   } catch (err) {

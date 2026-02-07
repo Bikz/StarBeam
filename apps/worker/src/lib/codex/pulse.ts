@@ -182,6 +182,13 @@ export async function generatePulseCardsWithCodexExec(args: {
 }): Promise<{
   output: CodexPulseOutput;
   departmentNameToId: Map<string, string>;
+  estimate: {
+    promptBytes: number;
+    contextBytes: number;
+    approxInputTokens: number;
+    approxOutputTokens: number;
+    durationMs: number;
+  };
 }> {
   const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "starbeam-codex-run-"));
   const schemaPath = path.join(tmp, "pulse.schema.json");
@@ -214,6 +221,10 @@ export async function generatePulseCardsWithCodexExec(args: {
         includeWebResearch,
       });
 
+      const promptBytes = Buffer.byteLength(prompt, "utf8");
+      const contextBytes = await directoryBytes(dir);
+
+      const started = Date.now();
       const res = await runCodexExec({
         cwd: dir,
         prompt,
@@ -223,6 +234,7 @@ export async function generatePulseCardsWithCodexExec(args: {
         outputSchemaPath: schemaPath,
         outputLastMessagePath: outputPath,
       });
+      const durationMs = Date.now() - started;
 
       if (res.exitCode !== 0) {
         const hint = res.stderr.trim() || res.stdout.trim();
@@ -233,11 +245,43 @@ export async function generatePulseCardsWithCodexExec(args: {
       const parsedJson = JSON.parse(text) as unknown;
       const output = CodexPulseOutputSchema.parse(parsedJson);
 
-      return { output, departmentNameToId };
+      const approxInputTokens = Math.ceil((promptBytes + contextBytes) / 4);
+      const approxOutputTokens = Math.ceil(Buffer.byteLength(text, "utf8") / 4);
+
+      return {
+        output,
+        departmentNameToId,
+        estimate: { promptBytes, contextBytes, approxInputTokens, approxOutputTokens, durationMs },
+      };
     } finally {
       await cleanup();
     }
   } finally {
     await fs.rm(tmp, { recursive: true, force: true }).catch(() => undefined);
   }
+}
+
+async function directoryBytes(dir: string): Promise<number> {
+  // Best-effort estimate of how much context Codex can access on disk.
+  // We don't attempt to model actual tokenization; bytes/4 is a rough proxy.
+  const entries = await fs.readdir(dir, { withFileTypes: true });
+  let total = 0;
+
+  for (const e of entries) {
+    // Only top-level files + blobs directory (bounded by materializer caps).
+    const p = path.join(dir, e.name);
+    if (e.isFile()) {
+      const s = await fs.stat(p);
+      total += s.size;
+    } else if (e.isDirectory() && e.name === "blobs") {
+      const blobs = await fs.readdir(p, { withFileTypes: true });
+      for (const b of blobs) {
+        if (!b.isFile()) continue;
+        const s = await fs.stat(path.join(p, b.name));
+        total += s.size;
+      }
+    }
+  }
+
+  return total;
 }
