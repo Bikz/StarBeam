@@ -45,7 +45,7 @@ async function withRetry<T>(fn: () => Promise<T>, maxAttempts = 3): Promise<T> {
     } catch (err) {
       attempt += 1;
       if (attempt >= maxAttempts || !isRetryableError(err)) throw err;
-      const delay = 500 * Math.pow(2, attempt - 1);
+      const delay = 500 * 2 ** (attempt - 1);
       await sleep(delay);
     }
   }

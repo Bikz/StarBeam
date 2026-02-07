@@ -1,5 +1,7 @@
 import crypto from "node:crypto";
 
+import { requireAuthSecret } from "@/lib/authSecret";
+
 type AccessTokenPayload = {
   v: 1;
   sub: string; // userId
@@ -23,12 +25,6 @@ function base64urlToBuffer(input: string): Buffer {
   return Buffer.from(withPad, "base64");
 }
 
-function requireSecret(): string {
-  const secret = process.env.AUTH_SECRET;
-  if (!secret) throw new Error("Missing AUTH_SECRET");
-  return secret;
-}
-
 function hmacSha256(secret: string, data: string): string {
   return base64url(crypto.createHmac("sha256", secret).update(data).digest());
 }
@@ -50,7 +46,7 @@ export function mintAccessToken(args: { userId: string; ttlSeconds: number }): {
   };
 
   const payloadB64 = base64url(JSON.stringify(payload));
-  const sig = hmacSha256(requireSecret(), payloadB64);
+  const sig = hmacSha256(requireAuthSecret(), payloadB64);
   return { token: `at1.${payloadB64}.${sig}`, expiresIn: args.ttlSeconds };
 }
 
@@ -64,7 +60,7 @@ export function parseAccessToken(token: string): AccessTokenPayload {
   const sig = parts[2] ?? "";
   if (!payloadB64 || !sig) throw new Error("invalid_token");
 
-  const expected = hmacSha256(requireSecret(), payloadB64);
+  const expected = hmacSha256(requireAuthSecret(), payloadB64);
   const a = Buffer.from(expected);
   const b = Buffer.from(sig);
   if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
@@ -91,4 +87,3 @@ export function mintRefreshToken(): { refreshToken: string; tokenHash: string } 
   const tokenHash = sha256Hex(refreshToken);
   return { refreshToken, tokenHash };
 }
-

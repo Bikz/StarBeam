@@ -44,6 +44,17 @@ export async function POST(request: Request) {
     );
   }
 
+  const access = await prisma.user.findUnique({
+    where: { id: existing.userId },
+    select: { betaAccessGrantedAt: true },
+  });
+  if (!access?.betaAccessGrantedAt) {
+    return jsonError(
+      { error: "access_denied", errorDescription: "Private beta access required" },
+      403,
+    );
+  }
+
   const rotated = mintRefreshToken();
   const refreshExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
@@ -71,4 +82,3 @@ export async function POST(request: Request) {
     { headers: { "Cache-Control": "no-store" } },
   );
 }
-

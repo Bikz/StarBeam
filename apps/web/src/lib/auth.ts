@@ -3,6 +3,7 @@ import { prisma } from "@starbeam/db";
 import type { NextAuthOptions } from "next-auth";
 
 import { buildProvidersFromEnv } from "./authProviders";
+import { provisionNewUser } from "./userProvisioning";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -25,27 +26,7 @@ export const authOptions: NextAuthOptions = {
   },
   events: {
     createUser: async ({ user }) => {
-      // Default: every account starts with a personal workspace.
-      // Slug is stable so the macOS app can depend on it later.
-      const slug = `personal-${user.id}`;
-      await prisma.workspace.create({
-        data: {
-          slug,
-          name: "Personal",
-          type: "PERSONAL",
-          createdById: user.id,
-          memberships: { create: { userId: user.id, role: "ADMIN" } },
-          // Always create a default track so goals can be scoped.
-          departments: {
-            create: {
-              name: "General",
-              promptTemplate: "",
-              enabled: true,
-              memberships: { create: { userId: user.id } },
-            },
-          },
-        },
-      });
+      await provisionNewUser(user.id);
     },
   },
 };

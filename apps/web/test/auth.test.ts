@@ -30,7 +30,8 @@ test("buildProvidersFromEnv returns no providers when env is missing", async () 
   const buildProvidersFromEnv = await importBuildProvidersFromEnv();
   const providers = buildProvidersFromEnv({ GOOGLE_CLIENT_ID: "", GOOGLE_CLIENT_SECRET: "" });
   assert.equal(Array.isArray(providers), true);
-  assert.equal(providers.length, 0);
+  assert.equal(providers.length, 1);
+  assert.equal((providers[0] as { id?: unknown })?.id, "credentials");
 });
 
 test("buildProvidersFromEnv returns Google provider when env is set", async () => {
@@ -40,5 +41,6 @@ test("buildProvidersFromEnv returns Google provider when env is set", async () =
     GOOGLE_CLIENT_SECRET: "test-client-secret",
   });
   assert.equal(Array.isArray(providers), true);
-  assert.equal(providers.length, 1);
+  assert.equal(providers.length, 2);
+  assert.equal((providers[0] as { id?: unknown })?.id, "credentials");
 });

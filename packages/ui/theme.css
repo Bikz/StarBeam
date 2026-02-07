@@ -1,0 +1,348 @@
+:root {
+  /* App (portal) baseline tokens. Marketing can layer texture/effects on top. */
+  --sb-bg0: #fbfbfa;
+  --sb-bg1: #f2f2ef;
+  --sb-fg: #101014;
+  --sb-muted: rgba(16, 16, 20, 0.62);
+
+  /* Default surfaces skew slightly "marketing glass". App overrides below. */
+  --sb-card: rgba(255, 255, 255, 0.72);
+  --sb-card-border: rgba(16, 16, 20, 0.08);
+  --sb-divider: rgba(16, 16, 20, 0.10);
+
+  --sb-ring: rgba(16, 16, 20, 0.18);
+
+  /* Light mode: crisp, low-drama elevation. */
+  --sb-shadow: 0 10px 28px rgba(18, 12, 34, 0.08);
+  --sb-shadow-soft: 0 5px 14px rgba(18, 12, 34, 0.045);
+
+  --sb-inset-bg: rgba(255, 255, 255, 0.34);
+
+  --sb-kbd-bg: rgba(255, 255, 255, 0.55);
+  --sb-kbd-border-bottom: rgba(20, 16, 34, 0.22);
+
+  --sb-btn-bg: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.82),
+    rgba(255, 255, 255, 0.24)
+  );
+  --sb-btn-shadow: 0 6px 14px rgba(18, 12, 34, 0.06);
+
+  --sb-btn-primary-border: rgba(16, 16, 20, 0.12);
+  --sb-btn-primary-bg: linear-gradient(
+    180deg,
+    rgba(16, 16, 20, 0.08),
+    rgba(16, 16, 20, 0.03)
+  );
+
+  --sb-bg-glow-a: rgba(0, 0, 0, 0.06);
+  --sb-bg-glow-b: rgba(0, 0, 0, 0.045);
+  --sb-bg-glow-c: rgba(0, 0, 0, 0.04);
+  --sb-bg-dot: rgba(255, 255, 255, 0.22);
+}
+
+html {
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+
+  --sb-bg0: #060607;
+  --sb-bg1: #0a0a0b;
+  --sb-fg: #f5f5f7;
+  --sb-muted: rgba(245, 245, 247, 0.66);
+
+  --sb-card: rgba(14, 14, 16, 0.70);
+  --sb-card-border: rgba(255, 255, 255, 0.10);
+  --sb-divider: rgba(255, 255, 255, 0.12);
+
+  --sb-ring: rgba(245, 245, 247, 0.16);
+
+  --sb-shadow: 0 16px 50px rgba(0, 0, 0, 0.35);
+  --sb-shadow-soft: 0 14px 44px rgba(0, 0, 0, 0.25);
+
+  --sb-inset-bg: rgba(255, 255, 255, 0.06);
+
+  --sb-kbd-bg: rgba(255, 255, 255, 0.08);
+  --sb-kbd-border-bottom: rgba(255, 255, 255, 0.22);
+
+  --sb-btn-bg: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.10),
+    rgba(255, 255, 255, 0.03)
+  );
+  --sb-btn-shadow: 0 12px 30px rgba(0, 0, 0, 0.24);
+
+  --sb-btn-primary-border: rgba(255, 255, 255, 0.12);
+  --sb-btn-primary-bg: linear-gradient(
+    180deg,
+    rgba(245, 245, 247, 0.10),
+    rgba(245, 245, 247, 0.04)
+  );
+
+  --sb-bg-glow-a: rgba(255, 255, 255, 0.08);
+  --sb-bg-glow-b: rgba(255, 255, 255, 0.06);
+  --sb-bg-glow-c: rgba(255, 255, 255, 0.05);
+  --sb-bg-dot: rgba(255, 255, 255, 0.12);
+}
+
+body {
+  color: var(--sb-fg);
+  font-family: var(--font-sb-body), ui-sans-serif, system-ui;
+}
+
+.sb-container {
+  max-width: 74rem;
+  margin-inline: auto;
+  padding-inline: 1.5rem;
+}
+
+.sb-bg {
+  min-height: 100dvh;
+  background:
+    radial-gradient(1000px 620px at 18% 12%, var(--sb-bg-glow-a), transparent 62%),
+    radial-gradient(1100px 760px at 86% 10%, var(--sb-bg-glow-b), transparent 58%),
+    radial-gradient(1200px 900px at 70% 86%, var(--sb-bg-glow-c), transparent 55%),
+    linear-gradient(180deg, var(--sb-bg0), var(--sb-bg1));
+  position: relative;
+  overflow-x: clip;
+}
+
+.sb-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.38;
+  mix-blend-mode: soft-light;
+  background-image:
+    radial-gradient(circle at 1px 1px, var(--sb-bg-dot) 1px, transparent 0);
+  background-size: 16px 16px;
+  mask-image: radial-gradient(1200px 740px at 40% 10%, black, transparent 72%);
+}
+
+html.dark .sb-bg::before {
+  opacity: 0.55;
+}
+
+.sb-card {
+  background: var(--sb-card);
+  border: 1px solid var(--sb-card-border);
+  border-radius: 16px;
+  backdrop-filter: blur(18px);
+  box-shadow: var(--sb-shadow-soft);
+}
+
+.sb-card-inset {
+  border-radius: 14px;
+  border: 1px solid var(--sb-divider);
+  background: var(--sb-inset-bg);
+}
+
+/* Typography: default to Manrope (portal). Marketing opts into display type via data attribute. */
+.sb-title {
+  font-family: var(--font-sb-body), ui-sans-serif, system-ui;
+  letter-spacing: -0.01em;
+}
+
+body[data-sb-surface="marketing"] .sb-title {
+  font-family: var(--font-sb-display), ui-sans-serif, system-ui;
+  letter-spacing: -0.02em;
+}
+
+.sb-btn {
+  border-radius: 999px;
+  border: 1px solid var(--sb-card-border);
+  background: var(--sb-btn-bg);
+  box-shadow: var(--sb-btn-shadow);
+  transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+}
+
+.sb-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--sb-shadow);
+  filter: saturate(1.05);
+}
+
+.sb-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px var(--sb-ring), var(--sb-shadow);
+}
+
+.sb-btn-primary {
+  border-color: var(--sb-btn-primary-border);
+  background: var(--sb-btn-primary-bg);
+}
+
+.sb-btn-primary:hover {
+  filter: saturate(1.08);
+}
+
+.sb-kbd {
+  border: 1px solid var(--sb-divider);
+  border-bottom-color: var(--sb-kbd-border-bottom);
+  background: var(--sb-kbd-bg);
+  border-radius: 10px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--sb-muted);
+}
+
+.sb-skip-link {
+  position: absolute;
+  left: 12px;
+  top: 10px;
+  z-index: 50;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--sb-card-border);
+  background: var(--sb-card);
+  color: var(--sb-fg);
+  transform: translateY(-160%);
+  transition: transform 160ms ease;
+}
+
+.sb-skip-link:focus {
+  transform: translateY(0);
+  outline: none;
+  box-shadow: 0 0 0 4px var(--sb-ring);
+}
+
+/* Marketing-only building blocks (used on / when host is the site surface). */
+@keyframes sb-float {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -10px, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes sb-scan {
+  0% {
+    transform: translate3d(-20%, -20%, 0) rotate(0deg);
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.55;
+  }
+  100% {
+    transform: translate3d(-20%, -20%, 0) rotate(360deg);
+    opacity: 0.35;
+  }
+}
+
+.sb-marketing-shell {
+  position: relative;
+}
+
+.sb-marketing-shell::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  opacity: 0.18;
+  mix-blend-mode: soft-light;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      rgba(0, 0, 0, 0.06),
+      rgba(0, 0, 0, 0.06) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+  mask-image: radial-gradient(900px 560px at 50% 0%, black, transparent 72%);
+}
+
+html.dark .sb-marketing-shell::after {
+  opacity: 0.16;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.08),
+      rgba(255, 255, 255, 0.08) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+}
+
+.sb-orbit {
+  position: absolute;
+  inset: -120px;
+  pointer-events: none;
+  opacity: 0.65;
+  filter: blur(0.2px);
+  background:
+    radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.10), transparent 55%),
+    conic-gradient(
+      from 180deg,
+      rgba(0, 0, 0, 0.0),
+      rgba(0, 0, 0, 0.14),
+      rgba(0, 0, 0, 0.0)
+    );
+  mask-image: radial-gradient(540px 540px at 50% 50%, black, transparent 64%);
+  animation: sb-scan 26s linear infinite;
+}
+
+html.dark .sb-orbit {
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.12), transparent 55%),
+    conic-gradient(
+      from 180deg,
+      rgba(255, 255, 255, 0.0),
+      rgba(255, 255, 255, 0.16),
+      rgba(255, 255, 255, 0.0)
+    );
+}
+
+.sb-float {
+  animation: sb-float 7.5s ease-in-out infinite;
+}
+
+/* App (portal) surface overrides: quieter background + stroke-first panels. */
+body[data-sb-surface="app"] {
+  --sb-card: #ffffff;
+  --sb-inset-bg: rgba(16, 16, 20, 0.03);
+  --sb-shadow: 0 14px 40px rgba(16, 16, 20, 0.06);
+  --sb-shadow-soft: 0 6px 16px rgba(16, 16, 20, 0.04);
+}
+
+html.dark body[data-sb-surface="app"] {
+  --sb-card: #0e0e10;
+  --sb-inset-bg: rgba(255, 255, 255, 0.05);
+  --sb-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
+  --sb-shadow-soft: 0 14px 44px rgba(0, 0, 0, 0.35);
+}
+
+body[data-sb-surface="app"] .sb-bg {
+  background: linear-gradient(180deg, var(--sb-bg0), var(--sb-bg1));
+}
+
+body[data-sb-surface="app"] .sb-bg::before {
+  display: none;
+}
+
+body[data-sb-surface="app"] .sb-card {
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sb-orbit,
+  .sb-float {
+    animation: none;
+  }
+
+  .sb-btn {
+    transition: none;
+  }
+
+  .sb-btn:hover {
+    transform: none;
+  }
+}

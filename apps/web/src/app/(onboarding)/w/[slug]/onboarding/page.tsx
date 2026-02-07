@@ -21,8 +21,8 @@ function isProfileUseful(profile: {
   competitorDomains: string[];
 } | null): boolean {
   if (!profile) return false;
-  if (profile.websiteUrl && profile.websiteUrl.trim()) return true;
-  if (profile.description && profile.description.trim()) return true;
+  if (profile.websiteUrl?.trim()) return true;
+  if (profile.description?.trim()) return true;
   if (Array.isArray(profile.competitorDomains) && profile.competitorDomains.length > 0) return true;
   return false;
 }
@@ -481,4 +481,3 @@ export default async function OnboardingPage({
     </div>
   );
 }
-

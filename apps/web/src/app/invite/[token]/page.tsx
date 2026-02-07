@@ -8,7 +8,6 @@ import { notFound } from "next/navigation";
 
 import { prisma } from "@starbeam/db";
 
-import SignInButton from "@/components/sign-in-button";
 import { acceptInvite } from "@/app/invite/[token]/actions";
 import { authOptions } from "@/lib/auth";
 
@@ -68,7 +67,12 @@ export default async function InvitePage({
                 Sign in to accept this invite.
               </div>
               <div className="mt-4">
-                <SignInButton />
+                <Link
+                  href={`/login?callbackUrl=${encodeURIComponent(`/invite/${token}`)}`}
+                  className="sb-btn sb-btn-primary inline-flex h-11 items-center px-6 text-sm font-extrabold"
+                >
+                  Sign in
+                </Link>
               </div>
             </div>
           ) : emailMismatch ? (

@@ -53,10 +53,10 @@ export async function createGoal(workspaceSlug: string, formData: FormData) {
   });
   if (!dept) throw new Error("Track not found");
 
-  const targetDate =
-    parsed.data.targetDate && parsed.data.targetDate.trim()
-      ? new Date(`${parsed.data.targetDate}T00:00:00.000Z`)
-      : null;
+  const targetDateText = parsed.data.targetDate?.trim() ?? "";
+  const targetDate = targetDateText
+    ? new Date(`${targetDateText}T00:00:00.000Z`)
+    : null;
 
   await prisma.goal.create({
     data: {

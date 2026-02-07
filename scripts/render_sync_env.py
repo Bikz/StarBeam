@@ -125,8 +125,14 @@ def main() -> int:
     host = os.environ.get("RENDER_API_HOST", cfg["host"])
     key = os.environ.get("RENDER_API_KEY", cfg["key"])
 
+    # Prefer .env.local for local overrides; fall back to .env for the rest.
     env_path = Path(".env")
+    env_local_path = Path(".env.local")
+
     kv = _parse_env_file(env_path)
+    kv_local = _parse_env_file(env_local_path)
+    for k, v in kv_local.items():
+        kv[k] = v
     if not kv.get("DATABASE_URL"):
         raise SystemExit("Missing DATABASE_URL in .env")
 
@@ -154,15 +160,37 @@ def main() -> int:
         )
 
     def get_env_vars(service_id: str) -> dict[str, str]:
-        items = _api(host, key, "GET", f"/services/{service_id}/env-vars") or []
         current: dict[str, str] = {}
-        for it in items:
-            if not isinstance(it, dict):
-                continue
-            k = it.get("key")
-            v = it.get("value")
-            if isinstance(k, str) and isinstance(v, str):
-                current[k] = v
+
+        # Render env vars are paginated. Items include a per-item cursor; request the
+        # next page by passing the last cursor.
+        cursor: str | None = None
+        last_cursor: str | None = None
+        while True:
+            path = f"/services/{service_id}/env-vars"
+            if cursor:
+                path = f"{path}?cursor={cursor}"
+
+            items = _api(host, key, "GET", path) or []
+            if not isinstance(items, list) or len(items) == 0:
+                break
+
+            for it in items:
+                if not isinstance(it, dict):
+                    continue
+                env_var = it.get("envVar")
+                if not isinstance(env_var, dict):
+                    continue
+                k = env_var.get("key")
+                v = env_var.get("value")
+                if isinstance(k, str) and isinstance(v, str):
+                    current[k] = v
+
+            cursor = items[-1].get("cursor") if isinstance(items[-1], dict) else None
+            if not isinstance(cursor, str) or not cursor or cursor == last_cursor:
+                break
+            last_cursor = cursor
+
         return current
 
     def put_env_vars(service_id: str, updates: dict[str, str]) -> None:
@@ -175,26 +203,52 @@ def main() -> int:
 
     common = {
         "NODE_ENV": "production",
-        "DATABASE_URL": kv.get("DATABASE_URL", ""),
         "STARB_TOKEN_ENC_KEY_B64": kv.get("STARB_TOKEN_ENC_KEY_B64", ""),
     }
 
     web_env = dict(common)
+    # Render web services can be finicky about certain key names. We keep the
+    # canonical DB URL in STARB_DATABASE_URL and export DATABASE_URL in the
+    # service startCommand.
+    web_env["STARB_DATABASE_URL"] = kv.get("DATABASE_URL", "")
     for k in [
-        "AUTH_SECRET",
-        "AUTH_URL",
         "NEXTAUTH_URL",
         "NEXTAUTH_SECRET",
         "NEXT_PUBLIC_WEB_ORIGIN",
+        "STARB_ADMIN_EMAILS",
+        "SMTP_HOST",
+        "SMTP_PORT",
+        "SMTP_SECURE",
+        "SMTP_USER",
+        "SMTP_PASS",
+        "EMAIL_FROM",
         "GOOGLE_CLIENT_ID",
         "GOOGLE_CLIENT_SECRET",
         "OPENAI_API_KEY",
+        "S3_ENDPOINT",
+        "S3_REGION",
+        "S3_ACCESS_KEY_ID",
+        "S3_SECRET_ACCESS_KEY",
+        "S3_BUCKET",
     ]:
         if kv.get(k):
             web_env[k] = kv[k]
+    # Redundant alias we can export into EMAIL_FROM at runtime if needed.
+    if kv.get("EMAIL_FROM"):
+        web_env["STARB_EMAIL_FROM"] = kv["EMAIL_FROM"]
 
     worker_env = dict(common)
-    for k in ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "OPENAI_API_KEY"]:
+    worker_env["DATABASE_URL"] = kv.get("DATABASE_URL", "")
+    for k in [
+        "GOOGLE_CLIENT_ID",
+        "GOOGLE_CLIENT_SECRET",
+        "OPENAI_API_KEY",
+        "S3_ENDPOINT",
+        "S3_REGION",
+        "S3_ACCESS_KEY_ID",
+        "S3_SECRET_ACCESS_KEY",
+        "S3_BUCKET",
+    ]:
         if kv.get(k):
             worker_env[k] = kv[k]
 

@@ -32,7 +32,9 @@ export default async function WaitlistPage({
               <input
                 name="email"
                 type="email"
-                placeholder="you@company.com"
+                placeholder="you@company.com…"
+                autoComplete="email"
+                spellCheck={false}
                 className="h-11 rounded-2xl border border-black/10 dark:border-white/15 bg-white/45 dark:bg-white/10 px-4 text-[15px] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]"
                 required
               />

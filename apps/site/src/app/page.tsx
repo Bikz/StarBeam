@@ -94,7 +94,9 @@ export default async function Home({
                       <input
                         name="email"
                         type="email"
-                        placeholder="you@company.com"
+                        placeholder="you@company.com…"
+                        autoComplete="email"
+                        spellCheck={false}
                         className="h-12 rounded-2xl border border-black/10 dark:border-white/15 bg-white/55 dark:bg-white/10 px-4 text-[15px] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]"
                         required
                       />

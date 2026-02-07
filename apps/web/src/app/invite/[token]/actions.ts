@@ -39,6 +39,12 @@ export async function acceptInvite(token: string) {
       create: { workspaceId: invite.workspaceId, userId: session.user.id, role: invite.role },
     });
 
+    // Treat a workspace invite as product access (private beta).
+    await tx.user.update({
+      where: { id: session.user.id },
+      data: { betaAccessGrantedAt: new Date() },
+    });
+
     // Default behavior: if the workspace has a "default" department, add the user
     // to it so they see department-scoped pulse content without extra setup.
     const defaultDept = await tx.department.findFirst({

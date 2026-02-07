@@ -6,6 +6,7 @@ import { prisma } from "@starbeam/db";
 import { approveDevice } from "@/app/device/actions";
 import { authOptions } from "@/lib/auth";
 import { sha256Hex } from "@/lib/apiTokens";
+import { requireBetaAccessOrRedirect } from "@/lib/betaAccess";
 
 export default async function DevicePage({
   searchParams,
@@ -20,9 +21,11 @@ export default async function DevicePage({
 
   if (!session?.user?.id) {
     redirect(
-      `/api/auth/signin?callbackUrl=${encodeURIComponent(`/device?code=${code}`)}`,
+      `/login?callbackUrl=${encodeURIComponent(`/device?code=${code}`)}`,
     );
   }
+
+  await requireBetaAccessOrRedirect(session.user.id);
 
   const deviceCodeHash = sha256Hex(code);
   const req = await prisma.deviceAuthRequest.findUnique({
@@ -131,4 +134,3 @@ export default async function DevicePage({
     </div>
   );
 }
-

@@ -56,7 +56,7 @@ final class SettingsStore {
     let defaultMinutes = (8 * 60) + 30
     notificationTimeMinutes = defaults.object(forKey: Keys.notificationTimeMinutes) as? Int ?? defaultMinutes
 
-    submitIdeaURL = defaults.string(forKey: Keys.submitIdeaURL) ?? Self.defaultWebOrigin
+    submitIdeaURL = defaults.string(forKey: Keys.submitIdeaURL) ?? "\(Self.defaultWebOrigin)/feedback?source=macos"
 
     // Demo guardrail: migrate old/stale origins to the current hosted origin.
     // This prevents accidental cross-project sync when the user has other local servers running.
@@ -65,6 +65,7 @@ final class SettingsStore {
 
   private func migrateLegacyOriginsIfNeeded() {
     let prod = Self.defaultWebOrigin
+    let prodSubmitIdea = "\(prod)/feedback?source=macos"
 
     func shouldMigrate(_ s: String) -> Bool {
       let t = s.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
@@ -81,7 +82,7 @@ final class SettingsStore {
       dashboardBaseURL = prod
     }
     if shouldMigrate(submitIdeaURL) {
-      submitIdeaURL = prod
+      submitIdeaURL = prodSubmitIdea
     }
   }
 

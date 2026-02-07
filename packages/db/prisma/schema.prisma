@@ -18,6 +18,13 @@ model User {
   image         String?
   timezone      String    @default("UTC")
 
+  // Launch gating + growth loop (private beta).
+  betaAccessGrantedAt DateTime?
+  referralCode        String?   @unique
+  referredByUserId    String?
+  referredByUser      User?     @relation("UserReferrals", fields: [referredByUserId], references: [id], onDelete: SetNull)
+  referrals           User[]    @relation("UserReferrals")
+
   accounts Account[]
   sessions Session[]
 
@@ -41,9 +48,15 @@ model User {
   sourceItems            SourceItem[]
   tasks                  Task[]
   blobs                  Blob[]               @relation("UserBlobs")
+  betaKeyRedemptions     BetaKeyRedemption[]
+  feedbackSubmissions    Feedback[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([betaAccessGrantedAt])
+  @@index([referralCode])
+  @@index([referredByUserId])
 }
 
 model Account {
@@ -80,6 +93,75 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+// Email login via short-lived 6-digit codes (not Auth.js verification tokens).
+model EmailLoginCode {
+  id       String @id @default(cuid())
+  email    String
+  codeHash String
+  expiresAt DateTime
+  consumedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([expiresAt])
+  @@index([consumedAt])
+  @@unique([email, codeHash])
+}
+
+// Private beta: multi-use keys that grant product access.
+model BetaKey {
+  id       String @id @default(cuid())
+  codeHash String @unique
+  label    String @default("")
+  maxUses  Int    @default(100)
+
+  expiresAt  DateTime?
+  disabledAt DateTime?
+
+  redemptions BetaKeyRedemption[]
+
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([expiresAt])
+  @@index([disabledAt])
+}
+
+model BetaKeyRedemption {
+  id        String @id @default(cuid())
+  betaKeyId String
+  userId    String
+
+  betaKey BetaKey @relation(fields: [betaKeyId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([betaKeyId, userId])
+  @@unique([userId])
+  @@index([betaKeyId])
+  @@index([createdAt])
+}
+
+model Feedback {
+  id     String @id @default(cuid())
+  userId String?
+  email  String?
+  message String
+  source  String @default("") // web | macos | etc.
+  path    String @default("")
+  userAgent String @default("")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([source])
 }
 
 enum WorkspaceType {

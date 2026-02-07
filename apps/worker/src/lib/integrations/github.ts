@@ -388,7 +388,6 @@ export async function syncGitHubConnection(args: {
     } catch (err) {
       // If a specific repo is empty or inaccessible, skip it without failing the whole sync.
       if (err instanceof HttpError && err.status === 409) continue;
-      continue;
     }
   }
 

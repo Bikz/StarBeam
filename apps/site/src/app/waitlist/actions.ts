@@ -38,13 +38,13 @@ export async function joinWaitlist(formData: FormData) {
     redirect(`/waitlist/thanks?code=${encodeURIComponent(existing.referralCode)}`);
   }
 
-  const referredBy =
-    parsed.data.ref && parsed.data.ref.trim()
-      ? await prisma.waitlistSignup.findUnique({
-          where: { referralCode: parsed.data.ref.trim() },
-          select: { id: true },
-        })
-      : null;
+  const referralCode = parsed.data.ref?.trim() ?? "";
+  const referredBy = referralCode
+    ? await prisma.waitlistSignup.findUnique({
+        where: { referralCode },
+        select: { id: true },
+      })
+    : null;
 
   for (let i = 0; i < 5; i++) {
     const code = makeReferralCode();
@@ -68,4 +68,3 @@ export async function joinWaitlist(formData: FormData) {
 
   throw new Error("Failed to create waitlist entry");
 }
-

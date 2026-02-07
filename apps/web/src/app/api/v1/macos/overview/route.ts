@@ -98,6 +98,17 @@ export async function GET(request: Request) {
     );
   }
 
+  const access = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { betaAccessGrantedAt: true },
+  });
+  if (!access?.betaAccessGrantedAt) {
+    return NextResponse.json(
+      { error: "access_denied" },
+      { status: 403, headers: { "Cache-Control": "no-store" } },
+    );
+  }
+
   const url = new URL(request.url);
   const workspaceId = url.searchParams.get("workspace_id") ?? "";
   if (!workspaceId) {

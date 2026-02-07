@@ -70,7 +70,7 @@ export default async function TracksPage({
   if (departments.length === 0) {
     return (
       <div className="sb-card p-7">
-        <div className="sb-title text-xl">Tracks and goals</div>
+        <h1 className="sb-title text-xl font-extrabold">Tracks and goals</h1>
         <p className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
           Tracks (departments) are the container for goals. Every goal belongs to a track.
         </p>
@@ -102,16 +102,18 @@ export default async function TracksPage({
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[0.42fr_0.58fr]">
-      <div className="sb-card p-6">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <div className="sb-title text-lg">Tracks</div>
-            <div className="mt-1 text-xs text-[color:var(--sb-muted)]">
-              {departments.length} total
+    <>
+      <h1 className="sr-only">Tracks</h1>
+      <div className="grid gap-6 lg:grid-cols-[0.42fr_0.58fr]">
+        <div className="sb-card p-6">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="sb-title text-lg font-extrabold">Tracks</h2>
+              <div className="mt-1 text-xs text-[color:var(--sb-muted)]">
+                {departments.length} total
+              </div>
             </div>
           </div>
-        </div>
 
         <div className="mt-4 grid gap-2">
           {departments.map((d) => {
@@ -170,16 +172,16 @@ export default async function TracksPage({
         )}
       </div>
 
-      <div className="sb-card p-7">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <div className="sb-title text-xl">{selected?.name ?? "Track"}</div>
-            <div className="mt-1 text-xs text-[color:var(--sb-muted)]">
-              {activeCount} active (max 5)
+        <div className="sb-card p-7">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h2 className="sb-title text-xl font-extrabold">{selected?.name ?? "Track"}</h2>
+              <div className="mt-1 text-xs text-[color:var(--sb-muted)]">
+                {activeCount} active (max 5)
+              </div>
             </div>
+            <div />
           </div>
-          <div />
-        </div>
 
         {selected ? (
           <form
@@ -339,7 +341,8 @@ export default async function TracksPage({
             </form>
           ) : null}
         </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

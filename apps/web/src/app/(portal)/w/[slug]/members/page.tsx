@@ -46,14 +46,16 @@ export default async function MembersPage({
   const inviteUrl = inviteToken ? `${webOrigin()}/invite/${inviteToken}` : null;
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-      <div className="sb-card p-7">
-        <div className="flex items-center justify-between gap-4">
-          <div className="sb-title text-xl">Current members</div>
-          <div className="text-xs text-[color:var(--sb-muted)]">
-            {members.length} total
+    <>
+      <h1 className="sr-only">People</h1>
+      <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+        <div className="sb-card p-7">
+          <div className="flex items-center justify-between gap-4">
+            <h2 className="sb-title text-xl font-extrabold">Current members</h2>
+            <div className="text-xs text-[color:var(--sb-muted)]">
+              {members.length} total
+            </div>
           </div>
-        </div>
 
         <div className="mt-5 grid gap-2">
           {members.map((m) => (
@@ -77,11 +79,11 @@ export default async function MembersPage({
         </div>
       </div>
 
-      <div className="sb-card p-7">
-        <div className="sb-title text-xl">Invite someone</div>
-        <p className="mt-2 text-sm text-[color:var(--sb-muted)]">
-          Create a link-based invite. Invites are tied to email and expire in 7 days.
-        </p>
+        <div className="sb-card p-7">
+          <h2 className="sb-title text-xl font-extrabold">Invite someone</h2>
+          <p className="mt-2 text-sm text-[color:var(--sb-muted)]">
+            Create a link-based invite. Invites are tied to email and expire in 7 days.
+          </p>
 
         {!isAdmin ? (
           <div className="mt-5 rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-4 text-sm text-[color:var(--sb-muted)]">
@@ -97,7 +99,9 @@ export default async function MembersPage({
               <input
                 name="email"
                 type="email"
-                placeholder="teammate@company.com"
+                placeholder="teammate@company.com…"
+                autoComplete="email"
+                spellCheck={false}
                 className="h-11 rounded-2xl border border-black/10 dark:border-white/15 bg-white/45 dark:bg-white/10 px-4 text-[15px] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]"
                 required
               />
@@ -168,7 +172,8 @@ export default async function MembersPage({
             </div>
           )}
         </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

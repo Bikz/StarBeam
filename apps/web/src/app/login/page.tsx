@@ -2,19 +2,31 @@ import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 
+import EmailCodeSignIn from "@/components/email-code-sign-in";
 import SignInButton from "@/components/sign-in-button";
 import { authOptions } from "@/lib/auth";
+import { ensureBetaEligibilityProcessed } from "@/lib/betaAccess";
 import { siteOrigin } from "@/lib/siteOrigin";
 
-export default async function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ callbackUrl?: string }>;
+}) {
   const session = await getServerSession(authOptions);
-  if (session?.user?.id) redirect("/dashboard");
+  if (session?.user?.id) {
+    const status = await ensureBetaEligibilityProcessed(session.user.id);
+    redirect(status.hasAccess ? "/dashboard" : "/beta");
+  }
 
   const hasGoogleAuth =
     typeof process.env.GOOGLE_CLIENT_ID === "string" &&
     process.env.GOOGLE_CLIENT_ID.length > 0 &&
     typeof process.env.GOOGLE_CLIENT_SECRET === "string" &&
     process.env.GOOGLE_CLIENT_SECRET.length > 0;
+
+  const sp = await searchParams;
+  const callbackUrl = (sp.callbackUrl ?? "/beta").trim() || "/beta";
 
   return (
     <div className="sb-bg">
@@ -26,15 +38,23 @@ export default async function LoginPage() {
           </p>
 
           <div className="mt-6">
-            {hasGoogleAuth ? (
-              <SignInButton />
-            ) : (
-              <div className="rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 px-5 py-3 text-sm text-[color:var(--sb-muted)]">
-                Configure Google OAuth (<code>GOOGLE_CLIENT_ID</code>,{" "}
-                <code>GOOGLE_CLIENT_SECRET</code>) to enable sign-in.
-              </div>
-            )}
+            <EmailCodeSignIn callbackUrl={callbackUrl} />
           </div>
+
+          {hasGoogleAuth ? (
+            <div className="mt-6">
+              <div className="text-[11px] font-semibold tracking-wide uppercase text-[color:var(--sb-muted)]">
+                Or
+              </div>
+              <div className="mt-3">
+                <SignInButton
+                  provider="google"
+                  label="Sign in with Google"
+                  callbackUrl={callbackUrl}
+                />
+              </div>
+            </div>
+          ) : null}
 
           <div className="mt-8 flex flex-wrap gap-3 text-sm">
             <a

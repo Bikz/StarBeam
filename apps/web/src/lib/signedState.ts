@@ -1,5 +1,7 @@
 import crypto from "node:crypto";
 
+import { requireAuthSecret } from "@/lib/authSecret";
+
 type SignedState = {
   v: 1;
   userId: string;
@@ -29,12 +31,6 @@ function hmacSha256(secret: string, data: string): string {
   return base64url(crypto.createHmac("sha256", secret).update(data).digest());
 }
 
-function requireSecret(): string {
-  const secret = process.env.AUTH_SECRET;
-  if (!secret) throw new Error("Missing AUTH_SECRET");
-  return secret;
-}
-
 export function mintSignedState(input: Omit<SignedState, "v" | "iat">): string {
   const payload: SignedState = {
     v: 1,
@@ -42,7 +38,7 @@ export function mintSignedState(input: Omit<SignedState, "v" | "iat">): string {
     ...input,
   };
   const payloadB64 = base64url(JSON.stringify(payload));
-  const sig = hmacSha256(requireSecret(), payloadB64);
+  const sig = hmacSha256(requireAuthSecret(), payloadB64);
   return `${payloadB64}.${sig}`;
 }
 
@@ -50,7 +46,7 @@ export function parseSignedState(token: string): SignedState {
   const [payloadB64, sig] = token.split(".");
   if (!payloadB64 || !sig) throw new Error("Invalid state");
 
-  const expected = hmacSha256(requireSecret(), payloadB64);
+  const expected = hmacSha256(requireAuthSecret(), payloadB64);
   // Constant-time compare.
   const a = Buffer.from(expected);
   const b = Buffer.from(sig);
@@ -73,4 +69,3 @@ export function parseSignedState(token: string): SignedState {
 
   return parsed;
 }
-

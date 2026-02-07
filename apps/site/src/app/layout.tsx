@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import ThemeScript from "./theme-script";
@@ -32,6 +32,13 @@ export const metadata: Metadata = {
   description: "Daily pulse for startup teams and founders.",
 };
 
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fbfbfa" },
+    { media: "(prefers-color-scheme: dark)", color: "#060607" },
+  ],
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -39,11 +46,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${display.variable} ${body.variable} antialiased`}>
+      <body
+        data-sb-surface="marketing"
+        className={`${display.variable} ${body.variable} antialiased`}
+      >
         <ThemeScript />
         {children}
       </body>
     </html>
   );
 }
-
