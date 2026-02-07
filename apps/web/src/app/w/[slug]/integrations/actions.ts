@@ -8,7 +8,7 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 
 import { authOptions } from "@/lib/auth";
-import { enqueueAutoFirstNightlyWorkspaceRun } from "@/lib/nightlyRunQueue";
+import { enqueueAutoFirstNightlyWorkspaceRun, enqueueWorkspaceBootstrap } from "@/lib/nightlyRunQueue";
 import { mintSignedState } from "@/lib/signedState";
 import { webOrigin } from "@/lib/webOrigin";
 
@@ -66,6 +66,14 @@ async function scheduleAutoFirstPulseIfNeeded(args: {
   if (existingPulse) return;
 
   try {
+    await enqueueWorkspaceBootstrap({
+      workspaceId: args.workspaceId,
+      triggeredByUserId: args.userId,
+      source: "auto-first",
+      runAt: new Date(),
+      jobKeyMode: "replace",
+    });
+
     await enqueueAutoFirstNightlyWorkspaceRun({
       workspaceId: args.workspaceId,
       triggeredByUserId: args.userId,

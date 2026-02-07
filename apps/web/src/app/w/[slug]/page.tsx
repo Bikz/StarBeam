@@ -42,7 +42,18 @@ export default async function WorkspaceSetupPage({
 
   const manageable = canManage(membership.role);
 
-  const [profile, activeGoals, googleConnections, githubConnections, linearConnections, notionConnections, deviceTokens, pulseEdition, autoFirstJobRun] =
+  const [
+    profile,
+    activeGoals,
+    googleConnections,
+    githubConnections,
+    linearConnections,
+    notionConnections,
+    deviceTokens,
+    pulseEdition,
+    bootstrapJobRun,
+    autoFirstJobRun,
+  ] =
     await Promise.all([
     prisma.workspaceProfile.findUnique({
       where: { workspaceId: membership.workspace.id },
@@ -89,6 +100,10 @@ export default async function WorkspaceSetupPage({
     prisma.pulseEdition.findFirst({
       where: { workspaceId: membership.workspace.id, userId: session.user.id },
       select: { id: true },
+    }),
+    prisma.jobRun.findUnique({
+      where: { id: `bootstrap:${membership.workspace.id}` },
+      select: { status: true, errorSummary: true, createdAt: true, startedAt: true, finishedAt: true },
     }),
     prisma.jobRun.findUnique({
       where: { id: `auto-first:${membership.workspace.id}` },
@@ -218,6 +233,23 @@ export default async function WorkspaceSetupPage({
             </div>
           ))}
         </div>
+
+        {bootstrapJobRun && bootstrapJobRun.status !== "SUCCEEDED" ? (
+          <div className="mt-6 rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-5 text-sm text-[color:var(--sb-muted)] leading-relaxed">
+            <div className="sb-title text-sm text-[color:var(--sb-fg)]">Context draft status</div>
+            <div className="mt-1">
+              Status:{" "}
+              <span className="font-semibold text-[color:var(--sb-fg)]">
+                {bootstrapJobRun.status.toLowerCase()}
+              </span>
+            </div>
+            {bootstrapJobRun.errorSummary ? (
+              <div className="mt-2 text-xs text-[color:var(--sb-muted)]">
+                Error: {bootstrapJobRun.errorSummary}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
 
         {autoFirstJobRun && autoFirstJobRun.status !== "SUCCEEDED" ? (
           <div className="mt-6 rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-5 text-sm text-[color:var(--sb-muted)] leading-relaxed">

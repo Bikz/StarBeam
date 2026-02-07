@@ -2,7 +2,7 @@ import { prisma } from "@starbeam/db";
 import { encryptString, parseAes256GcmKeyFromEnv } from "@starbeam/shared";
 import { NextResponse } from "next/server";
 
-import { enqueueAutoFirstNightlyWorkspaceRun } from "@/lib/nightlyRunQueue";
+import { enqueueAutoFirstNightlyWorkspaceRun, enqueueWorkspaceBootstrap } from "@/lib/nightlyRunQueue";
 import { parseSignedState } from "@/lib/signedState";
 import { webOrigin } from "@/lib/webOrigin";
 
@@ -165,6 +165,14 @@ export async function GET(request: Request) {
         });
 
         if (!existingPulse) {
+          await enqueueWorkspaceBootstrap({
+            workspaceId: parsedState.workspaceId,
+            triggeredByUserId: parsedState.userId,
+            source: "auto-first",
+            runAt: new Date(),
+            jobKeyMode: "replace",
+          });
+
           await enqueueAutoFirstNightlyWorkspaceRun({
             workspaceId: parsedState.workspaceId,
             triggeredByUserId: parsedState.userId,

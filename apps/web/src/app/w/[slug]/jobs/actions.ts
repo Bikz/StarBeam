@@ -6,7 +6,7 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 
 import { authOptions } from "@/lib/auth";
-import { enqueueAutoFirstNightlyWorkspaceRun } from "@/lib/nightlyRunQueue";
+import { enqueueAutoFirstNightlyWorkspaceRun, enqueueWorkspaceBootstrap } from "@/lib/nightlyRunQueue";
 
 function canManage(role: string): boolean {
   return role === "ADMIN" || role === "MANAGER";
@@ -32,6 +32,14 @@ export async function runNightlyNow(workspaceSlug: string) {
   if (isFirstPulse) {
     // If the user already has an auto-first run queued (e.g. from connecting
     // integrations), reschedule it to "now" rather than enqueueing duplicates.
+    await enqueueWorkspaceBootstrap({
+      workspaceId: membership.workspace.id,
+      triggeredByUserId: session.user.id,
+      source: "web",
+      runAt: new Date(),
+      jobKeyMode: "replace",
+    });
+
     await enqueueAutoFirstNightlyWorkspaceRun({
       workspaceId: membership.workspace.id,
       triggeredByUserId: session.user.id,

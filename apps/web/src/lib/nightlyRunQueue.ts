@@ -15,6 +15,14 @@ export function autoFirstNightlyJobRunId(workspaceId: string): string {
   return `auto-first:${workspaceId}`;
 }
 
+export function workspaceBootstrapJobKey(workspaceId: string): string {
+  return `workspace_bootstrap:${workspaceId}`;
+}
+
+export function workspaceBootstrapJobRunId(workspaceId: string): string {
+  return `bootstrap:${workspaceId}`;
+}
+
 export async function enqueueAutoFirstNightlyWorkspaceRun(args: {
   workspaceId: string;
   triggeredByUserId: string;
@@ -62,3 +70,48 @@ export async function enqueueAutoFirstNightlyWorkspaceRun(args: {
   }
 }
 
+export async function enqueueWorkspaceBootstrap(args: {
+  workspaceId: string;
+  triggeredByUserId: string;
+  source: "auto-first" | "web";
+  runAt: Date;
+  jobKeyMode: "replace" | "preserve_run_at" | "unsafe_dedupe";
+}): Promise<void> {
+  const jobKey = workspaceBootstrapJobKey(args.workspaceId);
+  const jobRunId = workspaceBootstrapJobRunId(args.workspaceId);
+
+  await prisma.jobRun.upsert({
+    where: { id: jobRunId },
+    update: {
+      workspaceId: args.workspaceId,
+      kind: "WORKSPACE_BOOTSTRAP",
+      status: "QUEUED",
+      startedAt: null,
+      finishedAt: null,
+      errorSummary: null,
+      meta: { triggeredByUserId: args.triggeredByUserId, source: args.source, jobKey },
+    },
+    create: {
+      id: jobRunId,
+      workspaceId: args.workspaceId,
+      kind: "WORKSPACE_BOOTSTRAP",
+      status: "QUEUED",
+      meta: { triggeredByUserId: args.triggeredByUserId, source: args.source, jobKey },
+    },
+  });
+
+  const connectionString = requireDatabaseUrl();
+
+  await runMigrations({ connectionString });
+
+  const workerUtils = await makeWorkerUtils({ connectionString });
+  try {
+    await workerUtils.addJob(
+      "workspace_bootstrap",
+      { workspaceId: args.workspaceId, jobRunId },
+      { jobKey, jobKeyMode: args.jobKeyMode, runAt: args.runAt },
+    );
+  } finally {
+    await workerUtils.release();
+  }
+}
