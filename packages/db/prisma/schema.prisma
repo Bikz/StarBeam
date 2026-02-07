@@ -232,6 +232,16 @@ model Membership {
   @@unique([workspaceId, userId])
 }
 
+// Small key/value state for background schedulers (cursor, last run, etc).
+model SchedulerState {
+  key String @id
+
+  cursor String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model Invite {
   id          String   @id @default(cuid())
   workspaceId String
