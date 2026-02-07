@@ -134,7 +134,9 @@ export default async function WorkspaceSetupPage({
     {
       done: hasPulse,
       title: "Generate the first pulse",
-      desc: "Click Generate, or wait: Starbeam will auto-run within ~10 minutes after your first connector is connected.",
+      desc: manageable
+        ? "Click Generate, or wait: Starbeam will auto-run within ~10 minutes after your first connector is connected."
+        : "Managers/admins trigger runs. Once a run completes, your pulse will appear here and in the macOS app.",
       href: `${base}/jobs`,
       cta: "View Runs",
     },
