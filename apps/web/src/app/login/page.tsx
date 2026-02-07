@@ -1,22 +1,12 @@
 import Link from "next/link";
-import { headers } from "next/headers";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 
 import SignInButton from "@/components/sign-in-button";
 import { authOptions } from "@/lib/auth";
-import { isAppHost } from "@/lib/hosts";
 import { siteOrigin } from "@/lib/siteOrigin";
-import { webOrigin } from "@/lib/webOrigin";
 
 export default async function LoginPage() {
-  const host = (await headers()).get("host");
-
-  // Keep auth flows on the app subdomain.
-  if (!isAppHost(host)) {
-    redirect(`${webOrigin()}/login`);
-  }
-
   const session = await getServerSession(authOptions);
   if (session?.user?.id) redirect("/dashboard");
 
