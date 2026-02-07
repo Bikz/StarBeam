@@ -154,7 +154,10 @@ Additional recommended prod env vars:
 
 - `STARB_DAILY_PULSE_ENABLED` (default: `1`)
 - `STARB_DAILY_PULSE_WINDOW_START_HOUR` (default: `2`)
-- `STARB_DAILY_PULSE_WINDOW_END_HOUR` (default: `5`)
+- `STARB_DAILY_PULSE_WINDOW_END_HOUR` (default: `5`, only used if strict window is enabled)
+- `STARB_DAILY_PULSE_STRICT_WINDOW` (default: unset/false). If `1`, enforce `START_HOUR..END_HOUR`; otherwise users become eligible once local time is >= `START_HOUR`.
+- `STARB_DAILY_PULSE_MAX_PAGES_PER_TICK` (default: `25`)
+- `STARB_DAILY_PULSE_MAX_RUNTIME_MS` (default: `25000`)
 - `STARB_BLOB_GC_ENABLED` (default: `1`)
 - `STARB_BLOB_GC_GRACE_DAYS` (default: `14`)
 - `STARB_DEVICE_START_LIMIT_5M` (default: `20`)
