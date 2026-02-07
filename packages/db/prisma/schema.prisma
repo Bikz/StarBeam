@@ -354,6 +354,11 @@ enum GitHubConnectionStatus {
   ERROR
 }
 
+enum GitHubRepoSelectionMode {
+  ALL
+  SELECTED
+}
+
 model GitHubConnection {
   id          String @id @default(cuid())
   workspaceId String
@@ -362,6 +367,9 @@ model GitHubConnection {
   githubLogin String
   tokenEnc    String
   status      GitHubConnectionStatus @default(CONNECTED)
+
+  repoSelectionMode GitHubRepoSelectionMode @default(ALL)
+  selectedRepoFullNames String[] @default([])
 
   lastSyncedAt DateTime?
   cursor       Json?
