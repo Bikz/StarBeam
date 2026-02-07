@@ -256,6 +256,18 @@ struct PopoverRootView: View {
         .font(.system(size: 12, weight: .medium, design: .rounded))
         .foregroundStyle(.secondary)
         .fixedSize(horizontal: false, vertical: true)
+
+      if model.auth.isSignedIn, !workspaceID.isEmpty, model.dashboardURL(kind: .dashboardHome) != nil {
+        Button {
+          openDashboard()
+        } label: {
+          Text("Finish setup in web")
+            .font(.system(size: 12, weight: .bold, design: .rounded))
+        }
+        .buttonStyle(.plain)
+        .padding(.top, 6)
+        .accessibilityLabel("Finish setup in web dashboard")
+      }
     }
     .padding(14)
     .starbeamCard()
