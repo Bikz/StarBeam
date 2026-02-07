@@ -35,6 +35,15 @@ export const authOptions: NextAuthOptions = {
           type: "PERSONAL",
           createdById: user.id,
           memberships: { create: { userId: user.id, role: "ADMIN" } },
+          // Always create a default track so goals can be scoped.
+          departments: {
+            create: {
+              name: "General",
+              promptTemplate: "",
+              enabled: true,
+              memberships: { create: { userId: user.id } },
+            },
+          },
         },
       });
     },

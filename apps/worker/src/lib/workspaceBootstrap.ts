@@ -20,7 +20,7 @@ export async function bootstrapWorkspaceConfigIfNeeded(args: {
   wroteProfile: boolean;
   wroteGoals: number;
 }> {
-  const [workspace, existingProfile, existingGoals, departments] = await Promise.all([
+  const [workspace, existingProfile, existingGoals] = await Promise.all([
     prisma.workspace.findUnique({
       where: { id: args.workspaceId },
       select: { id: true, name: true, slug: true },
@@ -35,14 +35,56 @@ export async function bootstrapWorkspaceConfigIfNeeded(args: {
       orderBy: { createdAt: "desc" },
       take: 10,
     }),
-    prisma.department.findMany({
-      where: { workspaceId: args.workspaceId, enabled: true },
-      select: { id: true, name: true, promptTemplate: true, memberships: { select: { userId: true } } },
-      orderBy: { createdAt: "asc" },
-    }),
   ]);
 
   if (!workspace) throw new Error("Workspace not found");
+
+  let departments = await prisma.department.findMany({
+    where: { workspaceId: args.workspaceId, enabled: true },
+    select: { id: true, name: true, promptTemplate: true, memberships: { select: { userId: true } } },
+    orderBy: { createdAt: "asc" },
+  });
+
+  if (departments.length === 0) {
+    // Ensure a default track exists so goals can always be scoped.
+    const dept = await prisma.$transaction(async (tx) => {
+      const created = await tx.department.create({
+        data: { workspaceId: args.workspaceId, name: "General", promptTemplate: "", enabled: true },
+      });
+
+      const members = await tx.membership.findMany({
+        where: { workspaceId: args.workspaceId },
+        select: { userId: true },
+      });
+
+      if (members.length) {
+        await tx.departmentMembership.createMany({
+          data: members.map((m) => ({ departmentId: created.id, userId: m.userId })),
+          skipDuplicates: true,
+        });
+      }
+
+      // Ensure the triggering user is in the default track.
+      await tx.departmentMembership.upsert({
+        where: {
+          departmentId_userId: { departmentId: created.id, userId: args.triggeredByUserId },
+        },
+        update: {},
+        create: { departmentId: created.id, userId: args.triggeredByUserId },
+      });
+
+      return created;
+    });
+
+    departments = [
+      {
+        id: dept.id,
+        name: dept.name,
+        promptTemplate: dept.promptTemplate,
+        memberships: [{ userId: args.triggeredByUserId }],
+      },
+    ];
+  }
 
   const needsProfile = !existingProfile || isBlank(existingProfile.description);
   const needsGoals = existingGoals.length === 0;
@@ -103,9 +145,13 @@ export async function bootstrapWorkspaceConfigIfNeeded(args: {
   if (existingGoals.length === 0) {
     const goals = bootstrap.goals.slice(0, 5);
     if (goals.length) {
+      const defaultDepartmentId = departments[0]?.id;
+      if (!defaultDepartmentId) throw new Error("No default track found for goal bootstrap");
+
       await prisma.goal.createMany({
         data: goals.map((g) => ({
           workspaceId: args.workspaceId,
+          departmentId: defaultDepartmentId,
           authorUserId: args.triggeredByUserId,
           title: g.title,
           body: g.body ?? "",

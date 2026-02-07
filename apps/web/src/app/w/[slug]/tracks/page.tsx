@@ -111,12 +111,6 @@ export default async function TracksPage({
               {departments.length} total
             </div>
           </div>
-          <Link
-            href={`${base}/departments`}
-            className="sb-btn px-3 py-2 text-xs font-semibold text-[color:var(--sb-fg)]"
-          >
-            Advanced
-          </Link>
         </div>
 
         <div className="mt-4 grid gap-2">
@@ -184,14 +178,7 @@ export default async function TracksPage({
               {activeCount} active (max 5)
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Link
-              href={`${base}/goals`}
-              className="sb-btn px-4 py-2 text-xs font-semibold text-[color:var(--sb-fg)]"
-            >
-              View all goals
-            </Link>
-          </div>
+          <div />
         </div>
 
         {selected ? (
@@ -356,4 +343,3 @@ export default async function TracksPage({
     </div>
   );
 }
-

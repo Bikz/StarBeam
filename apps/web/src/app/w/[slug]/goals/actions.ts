@@ -15,7 +15,7 @@ const CreateGoalSchema = z.object({
   title: z.string().min(3).max(90),
   body: z.string().max(4000).optional(),
   priority: z.enum(["HIGH", "MEDIUM", "LOW"]).optional(),
-  departmentId: z.string().min(1).optional(),
+  departmentId: z.string().min(1),
   targetDate: z.string().optional(),
 });
 
@@ -46,14 +46,12 @@ export async function createGoal(workspaceSlug: string, formData: FormData) {
     throw new Error("Too many active goals (max 5)");
   }
 
-  const departmentId = parsed.data.departmentId?.trim() || null;
-  if (departmentId) {
-    const dept = await prisma.department.findFirst({
-      where: { id: departmentId, workspaceId: membership.workspace.id },
-      select: { id: true },
-    });
-    if (!dept) throw new Error("Department not found");
-  }
+  const departmentId = parsed.data.departmentId.trim();
+  const dept = await prisma.department.findFirst({
+    where: { id: departmentId, workspaceId: membership.workspace.id },
+    select: { id: true },
+  });
+  if (!dept) throw new Error("Track not found");
 
   const targetDate =
     parsed.data.targetDate && parsed.data.targetDate.trim()
@@ -73,7 +71,7 @@ export async function createGoal(workspaceSlug: string, formData: FormData) {
     },
   });
 
-  redirect(`/w/${workspaceSlug}/goals`);
+  redirect(`/w/${workspaceSlug}/tracks?track=${encodeURIComponent(departmentId)}`);
 }
 
 export async function toggleGoalActive(workspaceSlug: string, goalId: string) {
@@ -106,7 +104,7 @@ export async function toggleGoalActive(workspaceSlug: string, goalId: string) {
     data: { active: !goal.active },
   });
 
-  redirect(`/w/${workspaceSlug}/goals`);
+  redirect(`/w/${workspaceSlug}/tracks?track=${encodeURIComponent(goal.departmentId ?? "")}`);
 }
 
 export async function deleteGoal(workspaceSlug: string, goalId: string) {
@@ -120,9 +118,13 @@ export async function deleteGoal(workspaceSlug: string, goalId: string) {
   if (!membership) throw new Error("Not a member");
   if (!canManage(membership.role)) throw new Error("Managers/Admins only");
 
-  await prisma.goal.deleteMany({
+  const goal = await prisma.goal.findFirst({
     where: { id: goalId, workspaceId: membership.workspace.id },
+    select: { id: true, departmentId: true },
   });
+  if (!goal) throw new Error("Goal not found");
 
-  redirect(`/w/${workspaceSlug}/goals`);
+  await prisma.goal.delete({ where: { id: goal.id } });
+
+  redirect(`/w/${workspaceSlug}/tracks?track=${encodeURIComponent(goal.departmentId ?? "")}`);
 }

@@ -40,7 +40,7 @@ export async function createDepartment(workspaceSlug: string, formData: FormData
 
   const promptTemplate = (parsed.data.promptTemplate ?? "").trim();
 
-  await prisma.$transaction(async (tx) => {
+  const deptId = await prisma.$transaction(async (tx) => {
     const dept = await tx.department.create({
       data: {
         workspaceId: membership.workspace.id,
@@ -60,9 +60,11 @@ export async function createDepartment(workspaceSlug: string, formData: FormData
         skipDuplicates: true,
       });
     }
+
+    return dept.id;
   });
 
-  redirect(`/w/${workspaceSlug}/departments`);
+  redirect(`/w/${workspaceSlug}/tracks?track=${encodeURIComponent(deptId)}`);
 }
 
 export async function updateDepartment(
@@ -94,5 +96,5 @@ export async function updateDepartment(
   });
   if (res.count === 0) throw new Error("Department not found");
 
-  redirect(`/w/${workspaceSlug}/departments`);
+  redirect(`/w/${workspaceSlug}/tracks?track=${encodeURIComponent(departmentId)}`);
 }
