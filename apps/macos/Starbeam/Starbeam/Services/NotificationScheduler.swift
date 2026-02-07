@@ -51,6 +51,41 @@ actor NotificationScheduler {
     defaults.removeObject(forKey: Keys.lastNotifiedDay)
   }
 
+  /// Fire an immediate "pulse ready" notification once per day.
+  /// Use this for onboarding / first pulse so users don't need to wait for the configured time.
+  func notifyPulseReadyNowIfNeeded(
+    signedIn: Bool,
+    enabled: Bool,
+    now: Date = Date(),
+    calendar: Calendar = .current
+  ) async {
+    guard signedIn, enabled else { return }
+    guard await requestAuthorizationIfNeeded() else { return }
+
+    let todayKey = dayKey(for: now, calendar: calendar)
+    let alreadyNotified = defaults.string(forKey: Keys.lastNotifiedDay) == todayKey
+    if alreadyNotified { return }
+
+    await cancelScheduledPulseNotification()
+
+    let requestID = "starbeam.pulse.\(todayKey)"
+
+    let content = UNMutableNotificationContent()
+    content.title = "Starbeam"
+    content.body = "Your pulse is ready. Open Starbeam to view it."
+    content.sound = .default
+
+    let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+
+    do {
+      try await center.add(UNNotificationRequest(identifier: requestID, content: content, trigger: trigger))
+      defaults.set(requestID, forKey: Keys.scheduledRequestID)
+      defaults.set(todayKey, forKey: Keys.lastNotifiedDay)
+    } catch {
+      defaults.removeObject(forKey: Keys.scheduledRequestID)
+    }
+  }
+
   /// Call whenever overview is refreshed, or when notification settings change.
   /// - Behavior:
   ///   - If pulse isn't ready or notifications are disabled: don't schedule.
@@ -126,4 +161,3 @@ actor NotificationScheduler {
     return .init(date: now, fireImmediately: true)
   }
 }
-
