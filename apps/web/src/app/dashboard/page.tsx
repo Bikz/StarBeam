@@ -81,7 +81,6 @@ export default async function DashboardPage() {
 
   const orgCount = memberships.filter((m) => m.workspace.type === "ORG").length;
   const personalCount = memberships.filter((m) => m.workspace.type !== "ORG").length;
-  const showNextSteps = memberships.length === 0 || orgCount === 0;
 
   return (
     <div className="sb-bg">
@@ -122,7 +121,7 @@ export default async function DashboardPage() {
             </div>
           </div>
 
-          <div className={["mt-5 grid gap-3", showNextSteps ? "sm:grid-cols-3" : "sm:grid-cols-2"].join(" ")}>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
             <div className="sb-card-inset px-4 py-3">
               <div className="text-[11px] font-semibold tracking-wide uppercase text-[color:var(--sb-muted)]">
                 Workspaces
@@ -142,16 +141,6 @@ export default async function DashboardPage() {
                 Personal: {personalCount}
               </div>
             </div>
-            {showNextSteps ? (
-              <div className="sb-card-inset px-4 py-3">
-                <div className="text-[11px] font-semibold tracking-wide uppercase text-[color:var(--sb-muted)]">
-                  Next steps
-                </div>
-                <div className="mt-1 text-sm font-semibold text-[color:var(--sb-fg)]">
-                  Create workspace → Connect Google → Add goals → Run overnight
-                </div>
-              </div>
-            ) : null}
           </div>
         </header>
 
@@ -288,7 +277,7 @@ export default async function DashboardPage() {
                   Create org workspace
                 </div>
                 <div className="mt-1 text-sm text-[color:var(--sb-muted)]">
-                  Create a shared workspace for your team: goals, announcements, tracks, and integrations.
+                  Create a shared workspace for a team or project. Add goals, connect Google, and run overnight pulses.
                 </div>
               </div>
             </div>

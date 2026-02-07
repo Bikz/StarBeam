@@ -80,7 +80,7 @@ export default async function MembersPage({
       <div className="sb-card p-7">
         <div className="sb-title text-xl">Invite someone</div>
         <p className="mt-2 text-sm text-[color:var(--sb-muted)]">
-          v0 is invite-only. Invites are tied to email and expire in 7 days.
+          Create a link-based invite. Invites are tied to email and expire in 7 days.
         </p>
 
         {!isAdmin ? (
