@@ -103,7 +103,8 @@ async function main() {
     blobStore: { verifyOnBoot: blobVerifyEnabled },
   });
 
-  if (env.WORKER_MODE === "check") return;
+  // In "check" mode, we still validate hosted invariants (R2/Codex checks) and
+  // exit before running migrations + the worker loop.
 
   // Hosted hardening: if we're going to run Codex exec (which relies on
   // materialized contexts and (often) encrypted blobs), fail fast if R2/S3
@@ -139,6 +140,8 @@ async function main() {
       console.warn(msg);
     }
   }
+
+  if (env.WORKER_MODE === "check") return;
 
   // Ensure Graphile Worker schema/tables exist. This is idempotent and safe to
   // run on startup.
