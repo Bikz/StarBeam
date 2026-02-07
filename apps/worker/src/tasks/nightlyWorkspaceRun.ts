@@ -174,6 +174,10 @@ export async function nightly_workspace_run(payload: unknown) {
 
     const codexExecEnabled = isTruthyEnv(process.env.STARB_CODEX_EXEC_ENABLED);
     const codexModel = process.env.STARB_CODEX_MODEL_DEFAULT ?? "gpt-5.2-codex";
+    const codexWebSearchEnabled =
+      process.env.STARB_CODEX_WEB_SEARCH_ENABLED === undefined
+        ? true
+        : isTruthyEnv(process.env.STARB_CODEX_WEB_SEARCH_ENABLED);
     const codexAvailable =
       codexExecEnabled && openaiApiKey ? await isCodexInstalled() : false;
 
@@ -215,10 +219,11 @@ export async function nightly_workspace_run(payload: unknown) {
         githubConnections: githubConnectionsByUser.get(userId) ?? [],
         linearConnections: linearConnectionsByUser.get(userId) ?? [],
         notionConnections: notionConnectionsByUser.get(userId) ?? [],
-        codexAvailable,
-        codexModel,
-        onPartialError,
-      });
+          codexAvailable,
+          codexModel,
+          codexWebSearchEnabled,
+          onPartialError,
+        });
 
       const edition = await prisma.pulseEdition.upsert({
         where: {

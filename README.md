@@ -118,6 +118,7 @@ Minimum required env vars:
 - `OPENAI_API_KEY` (used by the worker for web research)
 - `STARB_CODEX_EXEC_ENABLED` (optional: set `1` to run `codex exec` for INTERNAL pulse synthesis)
 - `STARB_CODEX_MODEL_DEFAULT` (optional: defaults to `gpt-5.2-codex`)
+- `STARB_CODEX_WEB_SEARCH_ENABLED` (optional: defaults to enabled; set `0` to disable Codex web search)
 - `STARB_LEGACY_DEPT_WEB_RESEARCH_ENABLED` (optional: force-enable/disable the legacy dept web research pipeline)
 - `S3_ENDPOINT` (S3-compatible endpoint; MinIO locally, R2 in hosted)
 - `S3_REGION`
@@ -159,6 +160,7 @@ When Codex is enabled and available, the legacy per-department web research pipe
 
 - `STARB_LEGACY_DEPT_WEB_RESEARCH_ENABLED=1` to force-enable legacy
 - `STARB_LEGACY_DEPT_WEB_RESEARCH_ENABLED=0` to force-disable legacy
+- `STARB_CODEX_WEB_SEARCH_ENABLED=0` to keep Codex on internal-only synthesis
 
 Install the Codex CLI and ensure `codex` is available on PATH for the worker runtime:
 

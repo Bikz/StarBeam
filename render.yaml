@@ -32,7 +32,7 @@ services:
     runtime: node
     plan: starter
     autoDeploy: true
-    buildCommand: pnpm install --frozen-lockfile && pnpm turbo run build --filter=@starbeam/worker...
+    buildCommand: npm i -g @openai/codex@latest && codex --version && pnpm install --frozen-lockfile && pnpm turbo run build --filter=@starbeam/worker...
     startCommand: pnpm --filter @starbeam/worker start
     envVars:
       - key: NODE_ENV
@@ -43,6 +43,12 @@ services:
         sync: false
       - key: OPENAI_API_KEY
         sync: false
+      - key: STARB_CODEX_EXEC_ENABLED
+        value: "1"
+      - key: STARB_CODEX_WEB_SEARCH_ENABLED
+        value: "1"
+      - key: STARB_CODEX_MODEL_DEFAULT
+        value: gpt-5.2-codex
       - key: S3_ENDPOINT
         sync: false
       - key: S3_REGION

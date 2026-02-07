@@ -122,6 +122,7 @@ function buildPulsePrompt(args: {
     args.includeWebResearch
       ? [
           "You may use web research to find credible signals from the last 72 hours.",
+          "Web research budget: use at most 3 web searches total (prefer 1-2).",
           "Only include claims that are supported by citations you provide.",
           "Do not include numbers unless a citation explicitly supports them.",
         ].join("\n")

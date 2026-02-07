@@ -126,6 +126,7 @@ export async function syncUserConnectorsAndMaybeCodex(args: {
   notionConnections: Array<{ id: string; workspaceName?: string | null }>;
   codexAvailable: boolean;
   codexModel: string;
+  codexWebSearchEnabled: boolean;
   onPartialError: (message: string) => void;
 }): Promise<
   | Awaited<ReturnType<typeof generatePulseCardsWithCodexExec>>
@@ -204,7 +205,7 @@ export async function syncUserConnectorsAndMaybeCodex(args: {
       departments: args.departments,
       userId: args.userId,
       model: args.codexModel,
-      includeWebResearch: true,
+      includeWebResearch: args.codexWebSearchEnabled,
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -212,4 +213,3 @@ export async function syncUserConnectorsAndMaybeCodex(args: {
     return null;
   }
 }
-
