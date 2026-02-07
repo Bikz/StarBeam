@@ -86,6 +86,16 @@ export async function bootstrapWorkspaceConfigIfNeeded(args: {
     ];
   }
 
+  const defaultDepartmentId = departments[0]?.id ?? null;
+  if (!defaultDepartmentId) throw new Error("No default track found");
+
+  // Data hygiene: older workspaces may have unscoped goals from earlier iterations.
+  // Normalize them to the default track so the UI/assumptions stay true.
+  await prisma.goal.updateMany({
+    where: { workspaceId: args.workspaceId, departmentId: null },
+    data: { departmentId: defaultDepartmentId },
+  });
+
   const needsProfile = !existingProfile || isBlank(existingProfile.description);
   const needsGoals = existingGoals.length === 0;
   const needsBootstrap = needsProfile || needsGoals;
@@ -145,9 +155,6 @@ export async function bootstrapWorkspaceConfigIfNeeded(args: {
   if (existingGoals.length === 0) {
     const goals = bootstrap.goals.slice(0, 5);
     if (goals.length) {
-      const defaultDepartmentId = departments[0]?.id;
-      if (!defaultDepartmentId) throw new Error("No default track found for goal bootstrap");
-
       await prisma.goal.createMany({
         data: goals.map((g) => ({
           workspaceId: args.workspaceId,

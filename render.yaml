@@ -5,7 +5,7 @@ services:
     plan: starter
     autoDeploy: true
     buildCommand: pnpm install --frozen-lockfile && pnpm turbo run build --filter=@starbeam/web...
-    startCommand: pnpm --filter @starbeam/web start
+    startCommand: pnpm --filter @starbeam/db exec prisma migrate deploy && pnpm --filter @starbeam/web start
     healthCheckPath: /
     envVars:
       - key: NODE_ENV
@@ -33,7 +33,7 @@ services:
     plan: starter
     autoDeploy: true
     buildCommand: npm i -g @openai/codex@latest && codex --version && pnpm install --frozen-lockfile && pnpm turbo run build --filter=@starbeam/worker...
-    startCommand: pnpm --filter @starbeam/worker start
+    startCommand: pnpm --filter @starbeam/db exec prisma migrate deploy && pnpm --filter @starbeam/worker start
     envVars:
       - key: NODE_ENV
         value: production

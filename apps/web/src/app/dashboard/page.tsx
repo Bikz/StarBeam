@@ -185,7 +185,7 @@ export default async function DashboardPage() {
                     todo.push({ label: "Add profile", href: `/w/${m.workspace.slug}/profile` });
                   }
                   if (goalCount === 0) {
-                    todo.push({ label: "Add goals", href: `/w/${m.workspace.slug}/goals` });
+                    todo.push({ label: "Add goals", href: `/w/${m.workspace.slug}/tracks` });
                   }
                   if (googleCount === 0) {
                     todo.push({ label: "Connect Google", href: `/w/${m.workspace.slug}/google` });
