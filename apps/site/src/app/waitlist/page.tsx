@@ -1,9 +1,5 @@
 import Link from "next/link";
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
 
-import { isAppHost } from "@/lib/hosts";
-import { siteOrigin } from "@/lib/siteOrigin";
 import { joinWaitlist } from "@/app/waitlist/actions";
 import SiteFooter from "@/components/site-footer";
 import SiteHeader from "@/components/site-header";
@@ -15,11 +11,6 @@ export default async function WaitlistPage({
 }: {
   searchParams: Promise<{ ref?: string }>;
 }) {
-  const host = (await headers()).get("host");
-  if (isAppHost(host)) {
-    redirect(`${siteOrigin()}/waitlist`);
-  }
-
   const sp = await searchParams;
   const ref = (sp.ref ?? "").trim();
   const app = webOrigin();

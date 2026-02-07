@@ -1,10 +1,8 @@
 import Link from "next/link";
-import { headers } from "next/headers";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 
 import { prisma } from "@starbeam/db";
 
-import { isAppHost } from "@/lib/hosts";
 import { siteOrigin } from "@/lib/siteOrigin";
 import SiteFooter from "@/components/site-footer";
 import SiteHeader from "@/components/site-header";
@@ -16,11 +14,6 @@ export default async function WaitlistThanksPage({
 }: {
   searchParams: Promise<{ code?: string }>;
 }) {
-  const host = (await headers()).get("host");
-  if (isAppHost(host)) {
-    redirect(`${siteOrigin()}/waitlist`);
-  }
-
   const sp = await searchParams;
   const code = (sp.code ?? "").trim();
   if (!code) notFound();

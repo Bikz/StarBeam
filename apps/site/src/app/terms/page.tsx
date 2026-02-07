@@ -1,19 +1,9 @@
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
-
 import SiteFooter from "@/components/site-footer";
 import SiteHeader from "@/components/site-header";
-import { isAppHost } from "@/lib/hosts";
-import { siteOrigin } from "@/lib/siteOrigin";
 import { supportEmail } from "@/lib/supportEmail";
 import { webOrigin } from "@/lib/webOrigin";
 
 export default async function TermsPage() {
-  const host = (await headers()).get("host");
-  if (isAppHost(host)) {
-    redirect(`${siteOrigin()}/terms`);
-  }
-
   const app = webOrigin();
   const email = supportEmail();
 
@@ -103,4 +93,3 @@ export default async function TermsPage() {
     </div>
   );
 }
-
