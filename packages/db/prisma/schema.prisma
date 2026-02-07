@@ -786,6 +786,17 @@ model RateLimitBucket {
   @@index([windowStart])
 }
 
+// Small DB-backed cursors/locks for background schedulers (worker tasks).
+model SchedulerState {
+  key    String  @id
+  cursor String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([updatedAt])
+}
+
 model WaitlistSignup {
   id String @id @default(cuid())
 
