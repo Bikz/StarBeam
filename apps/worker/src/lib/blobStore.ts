@@ -88,6 +88,42 @@ async function ensureBucketExistsIfConfigured(): Promise<void> {
   store.bucketEnsured = true;
 }
 
+export async function verifyBlobStoreRwDelete(args?: {
+  prefix?: string;
+}): Promise<void> {
+  const store = getBlobStore();
+  if (!store) throw new Error("S3 blob store not configured");
+
+  await ensureBucketExistsIfConfigured();
+
+  const prefix = (args?.prefix ?? "__starbeam__/health").replaceAll(/\/+/g, "/").replaceAll(/^\//g, "").replaceAll(/\/$/g, "");
+  const nonce = crypto.randomBytes(8).toString("hex");
+  const key = `${prefix}/${Date.now()}-${nonce}.txt`;
+  const plaintext = Buffer.from(`starbeam_blob_store_healthcheck:${nonce}`, "utf8");
+
+  await store.client.send(
+    new PutObjectCommand({
+      Bucket: store.env.bucket,
+      Key: key,
+      Body: plaintext,
+      ContentType: "text/plain",
+      CacheControl: "no-store",
+    }),
+  );
+
+  const resp = await store.client.send(
+    new GetObjectCommand({ Bucket: store.env.bucket, Key: key }),
+  );
+  const readBack = await s3BodyToBuffer(resp.Body);
+  if (!readBack.equals(plaintext)) {
+    throw new Error("S3 blob store verification failed: readback mismatch");
+  }
+
+  await store.client.send(
+    new DeleteObjectCommand({ Bucket: store.env.bucket, Key: key }),
+  );
+}
+
 export async function putEncryptedObject(args: {
   key: string;
   contentType?: string;

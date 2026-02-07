@@ -5,7 +5,7 @@ import dotenv from "dotenv";
 import { run, runMigrations } from "graphile-worker";
 import { z } from "zod";
 
-import { isBlobStoreConfigured } from "./lib/blobStore";
+import { isBlobStoreConfigured, verifyBlobStoreRwDelete } from "./lib/blobStore";
 import * as tasks from "./tasks";
 
 function isTruthyEnv(value: string | undefined): boolean {
@@ -87,6 +87,10 @@ async function main() {
   const codexExecEnabled = isTruthyEnv(process.env.STARB_CODEX_EXEC_ENABLED);
   const openaiApiKeyPresent = Boolean((process.env.OPENAI_API_KEY ?? "").trim());
   const blobStoreConfigured = isBlobStoreConfigured();
+  const blobVerifyEnabled =
+    process.env.STARB_BLOB_STORE_VERIFY_ON_BOOT === undefined
+      ? (env.NODE_ENV ?? "development") === "production"
+      : isTruthyEnv(process.env.STARB_BLOB_STORE_VERIFY_ON_BOOT);
 
   // eslint-disable-next-line no-console
   console.log("[starbeam-worker] boot", {
@@ -96,6 +100,7 @@ async function main() {
     mode: env.WORKER_MODE ?? "run",
     connectorPoll: { enabled: connectorPollEnabled, intervalMins: connectorPollIntervalMins, tickMins: 5 },
     codex: { execEnabled: codexExecEnabled, hasOpenAiKey: openaiApiKeyPresent, hasBlobStore: blobStoreConfigured },
+    blobStore: { verifyOnBoot: blobVerifyEnabled },
   });
 
   if (env.WORKER_MODE === "check") return;
@@ -114,6 +119,25 @@ async function main() {
     }
     // eslint-disable-next-line no-console
     console.warn(msg);
+  }
+
+  if (blobStoreConfigured && blobVerifyEnabled) {
+    try {
+      await verifyBlobStoreRwDelete();
+      // eslint-disable-next-line no-console
+      console.log("[starbeam-worker] blob store verification ok");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      const msg = `[starbeam-worker] blob store verification failed: ${message}`;
+      if ((env.NODE_ENV ?? "development") === "production") {
+        // eslint-disable-next-line no-console
+        console.error(msg);
+        process.exitCode = 1;
+        return;
+      }
+      // eslint-disable-next-line no-console
+      console.warn(msg);
+    }
   }
 
   // Ensure Graphile Worker schema/tables exist. This is idempotent and safe to

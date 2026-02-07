@@ -127,6 +127,29 @@ Minimum required env vars:
 - `S3_SECRET_ACCESS_KEY`
 - `S3_BUCKET` (used for encrypted Drive snapshots and attachments; prod bucket name convention: `starbeam-prod`)
 
+### R2 Blob Store Runbook (Worker)
+
+Starbeam stores encrypted connector snapshots/attachments in an S3-compatible blob store. In hosted environments,
+use Cloudflare R2 and configure the **worker** with R/W/D permissions.
+
+Recommended: **separate buckets** per environment (simpler + safer than prefixes).
+
+- Prod bucket: `starbeam-prod`
+- Staging bucket: `starbeam-staging`
+
+Worker env vars:
+
+- `S3_ENDPOINT`: R2 S3 endpoint, e.g. `https://<ACCOUNT_ID>.r2.cloudflarestorage.com`
+- `S3_REGION`: can be `auto` or `us-east-1`
+- `S3_ACCESS_KEY_ID`: R2 access key id
+- `S3_SECRET_ACCESS_KEY`: R2 secret
+- `S3_BUCKET`: `starbeam-prod` or `starbeam-staging`
+
+Verification:
+
+- By default, the worker runs a boot-time check (in production) that attempts a small **put/get/delete** round-trip.
+  You can override with `STARB_BLOB_STORE_VERIFY_ON_BOOT=0`.
+
 Additional recommended prod env vars:
 
 - `STARB_DAILY_PULSE_ENABLED` (default: `1`)
