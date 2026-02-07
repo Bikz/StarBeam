@@ -19,6 +19,7 @@ final class AppModel {
   private let cacheStore = OverviewCacheStore()
   private let notifications = NotificationScheduler()
   private var autoRefreshTask: Task<Void, Never>?
+  private var firstPulseBoostTask: Task<Void, Never>?
 
   init(settings: SettingsStore? = nil, auth: AuthStore? = nil) {
     // Default arguments are evaluated outside the MainActor context; construct defaults inside.
@@ -51,6 +52,47 @@ final class AppModel {
     configureAutoRefreshLoop()
     ensureSelectedWorkspaceIsValid()
     if canSync { Task { await refresh() } }
+  }
+
+  private func cancelFirstPulseBoost() {
+    firstPulseBoostTask?.cancel()
+    firstPulseBoostTask = nil
+  }
+
+  private func startFirstPulseBoostIfNeeded() {
+    if firstPulseBoostTask != nil { return }
+    guard canSync else { return }
+
+    firstPulseBoostTask = Task { [weak self] in
+      guard let self else { return }
+
+      let startedAt = Date()
+      while !Task.isCancelled {
+        // Stop after 20 minutes max.
+        if Date().timeIntervalSince(startedAt) >= 20 * 60 { break }
+
+        // Stop if user is no longer in a state where sync makes sense.
+        if !self.canSync { break }
+        if let overview = self.overview, !overview.pulse.isEmpty { break }
+
+        // Avoid stacking refresh calls.
+        if !self.isRefreshing {
+          await self.refresh()
+        }
+
+        let elapsed = Date().timeIntervalSince(startedAt)
+        let sleepSeconds: TimeInterval = elapsed < 10 * 60 ? 30 : 60
+        do {
+          try await Task.sleep(nanoseconds: UInt64(sleepSeconds * 1_000_000_000))
+        } catch {
+          break
+        }
+      }
+
+      await MainActor.run {
+        self.firstPulseBoostTask = nil
+      }
+    }
   }
 
   /// Keep the app usable for the common demo case:
@@ -220,6 +262,7 @@ final class AppModel {
 
     let client = APIClient(baseURL: baseURL)
     var activeSession = session
+    let hadPulse = (overview?.pulse.isEmpty == false)
 
     func applyRefreshedSession(_ refreshed: APIClient.DeviceRefreshResponse) throws {
       let expiresAt = Date().addingTimeInterval(TimeInterval(refreshed.expiresIn))
@@ -249,6 +292,7 @@ final class AppModel {
       )
       overview = result.overview
       lastError = nil
+      let hasPulseNow = !result.overview.pulse.isEmpty
 
       do {
         try cacheStore.save(rawJSON: result.rawJSON, workspaceID: workspaceID)
@@ -257,12 +301,25 @@ final class AppModel {
         // Cache failure should not block rendering fresh data.
       }
 
-      await notifications.scheduleIfNeeded(
-        isPulseReady: !result.overview.pulse.isEmpty,
-        signedIn: true,
-        enabled: settings.notificationsEnabled,
-        time: settings.notificationTimeComponents()
-      )
+      if !hadPulse, hasPulseNow {
+        await notifications.notifyPulseReadyNowIfNeeded(
+          signedIn: true,
+          enabled: settings.notificationsEnabled
+        )
+      } else {
+        await notifications.scheduleIfNeeded(
+          isPulseReady: hasPulseNow,
+          signedIn: true,
+          enabled: settings.notificationsEnabled,
+          time: settings.notificationTimeComponents()
+        )
+      }
+
+      if hasPulseNow {
+        cancelFirstPulseBoost()
+      } else {
+        startFirstPulseBoostIfNeeded()
+      }
     } catch {
       // If the access token expired early, refresh and retry once.
       if case APIClient.APIError.http(let statusCode, _) = error, statusCode == 401 {
@@ -275,6 +332,7 @@ final class AppModel {
           )
           overview = retry.overview
           lastError = nil
+          let hasPulseNow = !retry.overview.pulse.isEmpty
 
           do {
             try cacheStore.save(rawJSON: retry.rawJSON, workspaceID: workspaceID)
@@ -283,12 +341,25 @@ final class AppModel {
             // Cache failure should not block rendering fresh data.
           }
 
-          await notifications.scheduleIfNeeded(
-            isPulseReady: !retry.overview.pulse.isEmpty,
-            signedIn: true,
-            enabled: settings.notificationsEnabled,
-            time: settings.notificationTimeComponents()
-          )
+          if !hadPulse, hasPulseNow {
+            await notifications.notifyPulseReadyNowIfNeeded(
+              signedIn: true,
+              enabled: settings.notificationsEnabled
+            )
+          } else {
+            await notifications.scheduleIfNeeded(
+              isPulseReady: hasPulseNow,
+              signedIn: true,
+              enabled: settings.notificationsEnabled,
+              time: settings.notificationTimeComponents()
+            )
+          }
+
+          if hasPulseNow {
+            cancelFirstPulseBoost()
+          } else {
+            startFirstPulseBoostIfNeeded()
+          }
           return
         } catch {
           // Fallthrough to error surface below.
@@ -306,6 +377,7 @@ final class AppModel {
   func signOut() {
     autoRefreshTask?.cancel()
     autoRefreshTask = nil
+    cancelFirstPulseBoost()
     Task { await notifications.cancelScheduledPulseNotification() }
     auth.signOut()
     try? cacheStore.clear()
