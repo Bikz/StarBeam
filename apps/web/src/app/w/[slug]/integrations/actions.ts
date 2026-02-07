@@ -8,6 +8,7 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 
 import { authOptions } from "@/lib/auth";
+import { enqueueDeleteBlobs } from "@/lib/blobDeleteQueue";
 import { enqueueAutoFirstNightlyWorkspaceRun, enqueueWorkspaceBootstrap } from "@/lib/nightlyRunQueue";
 import { mintSignedState } from "@/lib/signedState";
 import { webOrigin } from "@/lib/webOrigin";
@@ -227,6 +228,60 @@ export async function disconnectGoogleConnection(
   });
   if (!existing) throw new Error("Connection not found");
 
+  // Purge Google-derived data before deleting the connection, otherwise
+  // SourceItem.connectionId would be nulled (onDelete: SetNull).
+  const sourceItems = await prisma.sourceItem.findMany({
+    where: {
+      workspaceId: workspace.id,
+      ownerUserId: userId,
+      connectionId: existing.id,
+    },
+    select: { id: true, contentBlobId: true },
+  });
+
+  const candidateBlobIds = sourceItems
+    .map((s) => s.contentBlobId)
+    .filter((id): id is string => typeof id === "string" && id.length > 0);
+
+  if (sourceItems.length) {
+    await prisma.sourceItem.deleteMany({
+      where: { id: { in: sourceItems.map((s) => s.id) } },
+    });
+  }
+
+  // Only delete blob-store objects that are no longer referenced by any source item.
+  if (candidateBlobIds.length) {
+    const [stillReferenced, blobs] = await Promise.all([
+      prisma.sourceItem.findMany({
+        where: { contentBlobId: { in: candidateBlobIds } },
+        select: { contentBlobId: true },
+      }),
+      prisma.blob.findMany({
+        where: { id: { in: candidateBlobIds }, deletedAt: null },
+        select: { id: true, bucket: true, key: true },
+      }),
+    ]);
+
+    const referenced = new Set(
+      stillReferenced
+        .map((s) => s.contentBlobId)
+        .filter((id): id is string => typeof id === "string" && id.length > 0),
+    );
+    const orphaned = blobs.filter((b) => !referenced.has(b.id));
+    const orphanedIds = orphaned.map((b) => b.id);
+
+    if (orphanedIds.length) {
+      await prisma.blob.updateMany({
+        where: { id: { in: orphanedIds } },
+        data: { deletedAt: new Date() },
+      });
+
+      await enqueueDeleteBlobs({
+        blobs: orphaned.map((b) => ({ bucket: b.bucket, key: b.key })),
+      }).catch(() => undefined);
+    }
+  }
+
   await prisma.googleConnection.delete({ where: { id: existing.id } });
   redirect(`/w/${workspaceSlug}/integrations?disconnected=google`);
 }
@@ -293,6 +348,16 @@ export async function disconnectGitHubConnection(
   if (!existing) throw new Error("Connection not found");
 
   await prisma.gitHubConnection.delete({ where: { id: existing.id } });
+
+  // Purge GitHub-derived items for this workspace/user.
+  await prisma.sourceItem.deleteMany({
+    where: {
+      workspaceId: workspace.id,
+      ownerUserId: userId,
+      type: { in: ["GITHUB_ISSUE", "GITHUB_PULL_REQUEST", "GITHUB_COMMIT"] },
+    },
+  });
+
   redirect(`/w/${workspaceSlug}/integrations?disconnected=github`);
 }
 
@@ -404,6 +469,15 @@ export async function disconnectLinearConnection(
   if (!existing) throw new Error("Connection not found");
 
   await prisma.linearConnection.delete({ where: { id: existing.id } });
+
+  await prisma.sourceItem.deleteMany({
+    where: {
+      workspaceId: workspace.id,
+      ownerUserId: userId,
+      type: "LINEAR_ISSUE",
+    },
+  });
+
   redirect(`/w/${workspaceSlug}/integrations?disconnected=linear`);
 }
 
@@ -461,5 +535,14 @@ export async function disconnectNotionConnection(
   if (!existing) throw new Error("Connection not found");
 
   await prisma.notionConnection.delete({ where: { id: existing.id } });
+
+  await prisma.sourceItem.deleteMany({
+    where: {
+      workspaceId: workspace.id,
+      ownerUserId: userId,
+      type: "NOTION_PAGE",
+    },
+  });
+
   redirect(`/w/${workspaceSlug}/integrations?disconnected=notion`);
 }

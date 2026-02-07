@@ -6,6 +6,7 @@ import {
   CreateBucketCommand,
   PutObjectCommand,
   GetObjectCommand,
+  DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
 import { decryptBytes, encryptBytes, parseAes256GcmKeyFromEnv } from "@starbeam/shared";
 
@@ -175,4 +176,19 @@ export async function getDecryptedObject(args: {
   const plaintext = decryptBytes(ciphertext, keyBytes);
 
   return { plaintext };
+}
+
+export async function deleteObjectBestEffort(args: {
+  bucket?: string;
+  key: string;
+}): Promise<void> {
+  const store = getBlobStore();
+  if (!store) return;
+
+  const bucket = args.bucket ?? store.env.bucket;
+  try {
+    await store.client.send(new DeleteObjectCommand({ Bucket: bucket, Key: args.key }));
+  } catch {
+    // Best effort: object might already be gone or we may lack perms.
+  }
 }
