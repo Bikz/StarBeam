@@ -76,9 +76,7 @@ export default async function TracksPage({
         </p>
 
         {!manageable ? (
-          <div className="mt-5 rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-4 text-sm text-[color:var(--sb-muted)]">
-            Only managers/admins can create tracks.
-          </div>
+          <div className="mt-5 sb-alert">Only managers/admins can create tracks.</div>
         ) : (
           <form action={createDepartment.bind(null, membership.workspace.slug)} className="mt-6 grid gap-3 max-w-md">
             <label className="grid gap-1 text-sm">
@@ -86,7 +84,7 @@ export default async function TracksPage({
               <input
                 name="name"
                 defaultValue="General"
-                className="h-11 rounded-2xl border border-black/10 dark:border-white/15 bg-white/45 dark:bg-white/10 px-4 text-[15px] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]"
+                className="sb-input"
                 required
                 minLength={2}
                 maxLength={48}
@@ -124,10 +122,9 @@ export default async function TracksPage({
                 key={d.id}
                 href={`${base}/tracks?track=${encodeURIComponent(d.id)}`}
                 className={[
-                  "rounded-2xl border px-4 py-3 text-sm",
-                  isSelected
-                    ? "border-black/10 dark:border-white/20 bg-black/5 dark:bg-white/10"
-                    : "border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5",
+                  "sb-card-inset px-4 py-3 text-sm transition",
+                  "hover:border-black/10 hover:bg-black/[0.03] dark:hover:border-white/15 dark:hover:bg-white/[0.06]",
+                  isSelected ? "border-black/10 dark:border-white/20 bg-black/5 dark:bg-white/10" : "",
                 ].join(" ")}
               >
                 <div className="flex items-center justify-between gap-3">
@@ -139,9 +136,7 @@ export default async function TracksPage({
                       {d.enabled ? "Enabled" : "Disabled"}
                     </div>
                   </div>
-                  <div className="rounded-full border border-black/10 dark:border-white/15 bg-white/40 dark:bg-white/10 px-2.5 py-1 text-[11px] text-[color:var(--sb-muted)]">
-                    {goalCount}
-                  </div>
+                  <div className="sb-pill">{goalCount}</div>
                 </div>
               </Link>
             );
@@ -155,7 +150,7 @@ export default async function TracksPage({
               <input
                 name="name"
                 placeholder="Marketing"
-                className="h-10 rounded-2xl border border-black/10 dark:border-white/15 bg-white/45 dark:bg-white/10 px-4 text-[14px] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]"
+                className="sb-input"
                 required
                 minLength={2}
                 maxLength={48}
@@ -188,7 +183,7 @@ export default async function TracksPage({
             action={updateDepartment.bind(null, membership.workspace.slug, selected.id)}
             className="mt-5 grid gap-3"
           >
-            <details className="rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-4">
+            <details className="sb-card-inset p-4">
               <summary className="cursor-pointer text-sm font-semibold text-[color:var(--sb-fg)]">
                 Track prompt (advanced)
               </summary>
@@ -197,7 +192,7 @@ export default async function TracksPage({
                   <span className="text-[color:var(--sb-muted)]">Prompt template</span>
                   <textarea
                     name="promptTemplate"
-                    className="min-h-[140px] rounded-2xl border border-black/10 dark:border-white/15 bg-white/45 dark:bg-white/10 px-4 py-3 text-[13px] leading-relaxed outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]"
+                    className="sb-textarea"
                     defaultValue={selected.promptTemplate}
                     readOnly={!manageable}
                   />
@@ -227,16 +222,13 @@ export default async function TracksPage({
         <div className="mt-6">
           <div className="text-xs font-extrabold sb-title">Goals</div>
           {goalsForSelected.length === 0 ? (
-            <div className="mt-2 rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-4 text-sm text-[color:var(--sb-muted)]">
+            <div className="mt-2 sb-alert">
               No goals yet for this track. Add 1–3 concrete goals to steer nightly research.
             </div>
           ) : (
             <div className="mt-3 grid gap-3">
               {goalsForSelected.map((g) => (
-                <div
-                  key={g.id}
-                  className="rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-5"
-                >
+                <div key={g.id} className="sb-card-inset p-5">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="sb-title text-lg leading-tight">{g.title}</div>
@@ -288,9 +280,7 @@ export default async function TracksPage({
           </p>
 
           {!manageable ? (
-            <div className="mt-4 rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-4 text-sm text-[color:var(--sb-muted)]">
-              Only managers/admins can create goals.
-            </div>
+            <div className="mt-4 sb-alert">Only managers/admins can create goals.</div>
           ) : selected ? (
             <form action={createGoal.bind(null, membership.workspace.slug)} className="mt-4 grid gap-3">
               <input type="hidden" name="departmentId" value={selected.id} />
@@ -299,7 +289,7 @@ export default async function TracksPage({
                 <input
                   name="title"
                   placeholder="Increase Q2 awareness for Feature X"
-                  className="h-11 rounded-2xl border border-black/10 dark:border-white/15 bg-white/45 dark:bg-white/10 px-4 text-[15px] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]"
+                  className="sb-input"
                   required
                   minLength={3}
                   maxLength={90}
@@ -310,7 +300,7 @@ export default async function TracksPage({
                 <textarea
                   name="body"
                   placeholder="What does success look like? What should we watch for?"
-                  className="min-h-[120px] rounded-2xl border border-black/10 dark:border-white/15 bg-white/45 dark:bg-white/10 px-4 py-3 text-[13px] leading-relaxed outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]"
+                  className="sb-textarea"
                 />
               </label>
               <div className="grid gap-3 sm:grid-cols-2">
@@ -318,7 +308,7 @@ export default async function TracksPage({
                   <span className="text-[color:var(--sb-muted)]">Priority</span>
                   <select
                     name="priority"
-                    className="h-11 rounded-2xl border border-black/10 dark:border-white/15 bg-white/45 dark:bg-white/10 px-3 text-[15px] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]"
+                    className="sb-select"
                     defaultValue="MEDIUM"
                   >
                     <option value="HIGH">High</option>
@@ -331,7 +321,7 @@ export default async function TracksPage({
                   <input
                     name="targetDate"
                     type="date"
-                    className="h-11 rounded-2xl border border-black/10 dark:border-white/15 bg-white/45 dark:bg-white/10 px-4 text-[15px] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]"
+                    className="sb-input"
                   />
                 </label>
               </div>

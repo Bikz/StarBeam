@@ -101,18 +101,13 @@ export default async function PulsePage({
           </div>
 
           {edition.cards.length === 0 ? (
-            <div className="mt-6 rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-4 text-sm text-[color:var(--sb-muted)]">
-              This edition has no cards yet.
-            </div>
+            <div className="mt-6 sb-alert">This edition has no cards yet.</div>
           ) : (
             <div className="mt-6 grid gap-3">
               {edition.cards.map((c) => {
                 const citations = extractCitations(c.sources);
                 return (
-                  <div
-                    key={c.id}
-                    className="rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-5"
-                  >
+                  <div key={c.id} className="sb-card-inset p-5">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0">
                         <h3 className="sb-title text-lg leading-tight">
@@ -122,9 +117,7 @@ export default async function PulsePage({
                           {kindLabel(c.kind)} | priority {c.priority}
                         </div>
                       </div>
-                      <div className="rounded-full border border-black/10 dark:border-white/15 bg-white/40 dark:bg-white/10 px-3 py-1 text-[11px] font-semibold text-[color:var(--sb-muted)]">
-                        {c.kind}
-                      </div>
+                      <div className="sb-pill">{c.kind}</div>
                     </div>
 
                     {c.body ? (

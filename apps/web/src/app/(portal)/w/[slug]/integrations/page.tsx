@@ -24,9 +24,7 @@ import { authOptions } from "@/lib/auth";
 
 function statusPill(status: string) {
   return (
-    <div className="rounded-full border border-black/10 dark:border-white/15 bg-white/40 dark:bg-white/10 px-2.5 py-1 text-[11px] text-[color:var(--sb-muted)]">
-      {status.toLowerCase()}
-    </div>
+    <div className="sb-pill">{status.toLowerCase()}</div>
   );
 }
 
@@ -80,18 +78,14 @@ export default async function IntegrationsPage({
           </p>
 
           {sp.connected === "google" ? (
-            <div className="mt-5 rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-4 text-sm text-[color:var(--sb-muted)]">
-              Connected.
-            </div>
+            <div className="mt-5 sb-alert">Connected.</div>
           ) : null}
           {sp.disconnected === "google" ? (
-            <div className="mt-5 rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-4 text-sm text-[color:var(--sb-muted)]">
-              Disconnected.
-            </div>
+            <div className="mt-5 sb-alert">Disconnected.</div>
           ) : null}
           {sp.error ? (
-            <div className="mt-5 rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-4 text-sm text-[color:var(--sb-muted)]">
-              Error: {sp.error}
+            <div className="mt-5 sb-alert">
+              <strong>Error:</strong> {sp.error}
             </div>
           ) : null}
 
@@ -114,7 +108,7 @@ export default async function IntegrationsPage({
                 {googleConnections.map((c) => (
                   <div
                     key={c.id}
-                    className="rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 px-4 py-3 text-sm"
+                    className="sb-card-inset px-4 py-3 text-sm"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="font-semibold text-[color:var(--sb-fg)]">
@@ -153,14 +147,10 @@ export default async function IntegrationsPage({
           </p>
 
           {sp.connected === "github" ? (
-            <div className="mt-5 rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-4 text-sm text-[color:var(--sb-muted)]">
-              Connected.
-            </div>
+            <div className="mt-5 sb-alert">Connected.</div>
           ) : null}
           {sp.disconnected === "github" ? (
-            <div className="mt-5 rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-4 text-sm text-[color:var(--sb-muted)]">
-              Disconnected.
-            </div>
+            <div className="mt-5 sb-alert">Disconnected.</div>
           ) : null}
 
           <form
@@ -174,7 +164,7 @@ export default async function IntegrationsPage({
                 type="password"
                 autoComplete="off"
                 spellCheck={false}
-                className="h-11 rounded-2xl border border-black/10 dark:border-white/15 bg-white/45 dark:bg-white/10 px-4 text-[15px] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]"
+                className="sb-input"
                 placeholder="ghp_…"
               />
             </label>
@@ -184,7 +174,7 @@ export default async function IntegrationsPage({
                 <select
                   name="mode"
                   defaultValue="SELECTED"
-                  className="h-11 w-full rounded-2xl border border-black/10 dark:border-white/15 bg-white/45 dark:bg-white/10 px-4 text-[15px] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]"
+                  className="sb-select"
                 >
                   <option value="SELECTED">Selected repos only (recommended)</option>
                   <option value="ALL">All accessible repos</option>
@@ -195,7 +185,7 @@ export default async function IntegrationsPage({
                 <textarea
                   name="repos"
                   rows={3}
-                  className="min-h-[72px] w-full rounded-2xl border border-black/10 dark:border-white/15 bg-white/45 dark:bg-white/10 px-4 py-2 text-[15px] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]"
+                  className="sb-textarea sb-textarea-compact"
                   placeholder={"owner/repo\nowner/another-repo"}
                 />
               </label>
@@ -222,7 +212,7 @@ export default async function IntegrationsPage({
                 {githubConnections.map((c) => (
                   <div
                     key={c.id}
-                    className="rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 px-4 py-3 text-sm"
+                    className="sb-card-inset px-4 py-3 text-sm"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="font-semibold text-[color:var(--sb-fg)]">
@@ -244,7 +234,7 @@ export default async function IntegrationsPage({
                           <select
                             name="mode"
                             defaultValue={c.repoSelectionMode}
-                            className="h-10 w-full rounded-2xl border border-black/10 dark:border-white/15 bg-white/45 dark:bg-white/10 px-3 text-[13px] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]"
+                            className="sb-select sb-select-compact"
                           >
                             <option value="ALL">All accessible repos</option>
                             <option value="SELECTED">Selected repos only</option>
@@ -257,7 +247,7 @@ export default async function IntegrationsPage({
                             name="repos"
                             defaultValue={(c.selectedRepoFullNames ?? []).join("\n")}
                             rows={3}
-                            className="min-h-[72px] w-full rounded-2xl border border-black/10 dark:border-white/15 bg-white/45 dark:bg-white/10 px-3 py-2 text-[13px] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]"
+                            className="sb-textarea sb-textarea-compact"
                             placeholder={"owner/repo\nowner/another-repo"}
                           />
                           <div className="text-[11px] text-[color:var(--sb-muted)]">
@@ -307,14 +297,10 @@ export default async function IntegrationsPage({
           </p>
 
           {sp.connected === "linear" ? (
-            <div className="mt-5 rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-4 text-sm text-[color:var(--sb-muted)]">
-              Connected.
-            </div>
+            <div className="mt-5 sb-alert">Connected.</div>
           ) : null}
           {sp.disconnected === "linear" ? (
-            <div className="mt-5 rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-4 text-sm text-[color:var(--sb-muted)]">
-              Disconnected.
-            </div>
+            <div className="mt-5 sb-alert">Disconnected.</div>
           ) : null}
 
           <form
@@ -328,7 +314,7 @@ export default async function IntegrationsPage({
                 type="password"
                 autoComplete="off"
                 spellCheck={false}
-                className="h-11 rounded-2xl border border-black/10 dark:border-white/15 bg-white/45 dark:bg-white/10 px-4 text-[15px] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]"
+                className="sb-input"
                 placeholder="lin_api_…"
               />
             </label>
@@ -350,7 +336,7 @@ export default async function IntegrationsPage({
                 {linearConnections.map((c) => (
                   <div
                     key={c.id}
-                    className="rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 px-4 py-3 text-sm"
+                    className="sb-card-inset px-4 py-3 text-sm"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="font-semibold text-[color:var(--sb-fg)]">
@@ -387,14 +373,10 @@ export default async function IntegrationsPage({
           </p>
 
           {sp.connected === "notion" ? (
-            <div className="mt-5 rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-4 text-sm text-[color:var(--sb-muted)]">
-              Connected.
-            </div>
+            <div className="mt-5 sb-alert">Connected.</div>
           ) : null}
           {sp.disconnected === "notion" ? (
-            <div className="mt-5 rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-4 text-sm text-[color:var(--sb-muted)]">
-              Disconnected.
-            </div>
+            <div className="mt-5 sb-alert">Disconnected.</div>
           ) : null}
 
           <form
@@ -408,7 +390,7 @@ export default async function IntegrationsPage({
                 type="password"
                 autoComplete="off"
                 spellCheck={false}
-                className="h-11 rounded-2xl border border-black/10 dark:border-white/15 bg-white/45 dark:bg-white/10 px-4 text-[15px] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]"
+                className="sb-input"
                 placeholder="secret_…"
               />
             </label>
@@ -430,7 +412,7 @@ export default async function IntegrationsPage({
                 {notionConnections.map((c) => (
                   <div
                     key={c.id}
-                    className="rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 px-4 py-3 text-sm"
+                    className="sb-card-inset px-4 py-3 text-sm"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="font-semibold text-[color:var(--sb-fg)]">

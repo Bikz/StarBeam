@@ -43,7 +43,7 @@ export default async function BetaKeysAdminPage({
           </p>
 
           {created ? (
-            <div className="mt-6 rounded-2xl border border-black/10 dark:border-white/15 bg-white/45 dark:bg-white/10 p-4">
+            <div className="mt-6 sb-card-inset p-4">
               <div className="text-xs font-semibold text-[color:var(--sb-muted)]">
                 Newly created key (copy it now)
               </div>
@@ -54,8 +54,8 @@ export default async function BetaKeysAdminPage({
           ) : null}
 
           {error ? (
-            <div className="mt-4 rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-4 text-sm text-[color:var(--sb-muted)]">
-              Error: {error}
+            <div className="mt-4 sb-alert">
+              <strong>Error:</strong> {error}
             </div>
           ) : null}
 
@@ -67,7 +67,7 @@ export default async function BetaKeysAdminPage({
                 <input
                   name="label"
                   placeholder="Launch batch A"
-                  className="h-11 rounded-2xl border border-black/10 dark:border-white/15 bg-white/45 dark:bg-white/10 px-4 text-[15px] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]"
+                  className="sb-input"
                 />
               </label>
               <label className="grid gap-2">
@@ -77,7 +77,7 @@ export default async function BetaKeysAdminPage({
                   type="number"
                   defaultValue={100}
                   min={1}
-                  className="h-11 rounded-2xl border border-black/10 dark:border-white/15 bg-white/45 dark:bg-white/10 px-4 text-[15px] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]"
+                  className="sb-input"
                 />
               </label>
               <label className="grid gap-2 sm:col-span-2">
@@ -87,7 +87,7 @@ export default async function BetaKeysAdminPage({
                   type="number"
                   defaultValue={0}
                   min={0}
-                  className="h-11 rounded-2xl border border-black/10 dark:border-white/15 bg-white/45 dark:bg-white/10 px-4 text-[15px] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]"
+                  className="sb-input"
                 />
               </label>
               <div className="flex items-end">
@@ -121,15 +121,13 @@ export default async function BetaKeysAdminPage({
                   return (
                     <div
                       key={k.id}
-                      className="rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 px-4 py-3 text-sm"
+                      className="sb-card-inset px-4 py-3 text-sm"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="font-semibold text-[color:var(--sb-fg)]">
                           {k.label || "Untitled"}
                         </div>
-                        <div className="rounded-full border border-black/10 dark:border-white/15 bg-white/40 dark:bg-white/10 px-2.5 py-1 text-[11px] text-[color:var(--sb-muted)]">
-                          {status}
-                        </div>
+                        <div className="sb-pill">{status}</div>
                       </div>
                       <div className="mt-1 text-xs text-[color:var(--sb-muted)]">
                         Uses: {used}/{k.maxUses}
@@ -155,4 +153,3 @@ export default async function BetaKeysAdminPage({
     </div>
   );
 }
-

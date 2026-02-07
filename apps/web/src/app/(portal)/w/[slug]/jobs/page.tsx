@@ -89,9 +89,7 @@ export default async function JobsPage({
             </p>
           </div>
           {queued ? (
-            <div className="rounded-full border border-black/10 dark:border-white/15 bg-white/40 dark:bg-white/10 px-3 py-1 text-[11px] font-semibold text-[color:var(--sb-muted)]">
-              Queued
-            </div>
+            <div className="sb-pill">Queued</div>
           ) : null}
         </div>
 
@@ -124,15 +122,13 @@ export default async function JobsPage({
               {jobRuns.map((jr) => (
                 <div
                   key={jr.id}
-                  className="rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 px-4 py-3 text-sm"
+                  className="sb-card-inset px-4 py-3 text-sm"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="font-semibold text-[color:var(--sb-fg)]">
                       {formatStatus(jr.status)}
                     </div>
-                    <div className="rounded-full border border-black/10 dark:border-white/15 bg-white/40 dark:bg-white/10 px-2.5 py-1 text-[11px] text-[color:var(--sb-muted)]">
-                      {jr.createdAt.toLocaleString()}
-                    </div>
+                    <div className="sb-pill">{jr.createdAt.toLocaleString()}</div>
                   </div>
                   {jr.startedAt ? (
                     <div className="mt-1 text-xs text-[color:var(--sb-muted)]">

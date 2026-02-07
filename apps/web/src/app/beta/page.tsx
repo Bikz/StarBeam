@@ -46,7 +46,7 @@ export default async function BetaPage({
             5 friends with your referral link.
           </p>
 
-          <div className="mt-6 rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-4 text-sm text-[color:var(--sb-muted)]">
+          <div className="mt-6 sb-alert">
             Signed in as{" "}
             <span className="font-semibold text-[color:var(--sb-fg)]">
               {user?.email ?? session.user.email ?? "unknown"}
@@ -55,7 +55,7 @@ export default async function BetaPage({
           </div>
 
           {error ? (
-            <div className="mt-4 rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-4 text-sm text-[color:var(--sb-muted)]">
+            <div className="mt-4 sb-alert">
               Could not redeem invite key ({error}).
             </div>
           ) : null}
@@ -67,7 +67,7 @@ export default async function BetaPage({
                 <input
                   name="code"
                   placeholder="Paste invite key"
-                  className="h-11 rounded-2xl border border-black/10 dark:border-white/15 bg-white/45 dark:bg-white/10 px-4 text-[15px] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]"
+                  className="sb-input"
                   autoComplete="off"
                   spellCheck={false}
                 />
@@ -85,12 +85,10 @@ export default async function BetaPage({
                     Share your link. When 5 people sign up, your account unlocks automatically.
                   </p>
                 </div>
-                <div className="rounded-full border border-black/10 dark:border-white/15 bg-white/40 dark:bg-white/10 px-3 py-1 text-[11px] text-[color:var(--sb-muted)]">
-                  {status.referralCount}/5
-                </div>
+                <div className="sb-pill">{status.referralCount}/5</div>
               </div>
 
-              <div className="mt-4 rounded-2xl border border-black/10 dark:border-white/15 bg-white/45 dark:bg-white/10 px-4 py-3 text-sm">
+              <div className="mt-4 sb-card-inset p-4 text-sm">
                 <div className="text-xs font-semibold text-[color:var(--sb-muted)]">
                   Your referral link
                 </div>

@@ -140,14 +140,33 @@ export default async function OnboardingPage({
       select: { id: true },
     }),
     prisma.jobRun.findUnique({
-      where: { id: `bootstrap:${membership.workspace.id}` },
+      where: { id: `bootstrap:${membership.workspace.id}:${session.user.id}` },
       select: { status: true, errorSummary: true, createdAt: true, startedAt: true, finishedAt: true },
     }),
     prisma.jobRun.findUnique({
-      where: { id: `auto-first:${membership.workspace.id}` },
+      where: { id: `auto-first:${membership.workspace.id}:${session.user.id}` },
       select: { status: true, errorSummary: true, createdAt: true, startedAt: true, finishedAt: true },
     }),
   ]);
+
+  // Backward-compat: older deployments stored bootstrap/auto-first as workspace-scoped ids.
+  const [bootstrapJobRunCompat, autoFirstJobRunCompat] = await Promise.all([
+    bootstrapJobRun
+      ? Promise.resolve(null)
+      : prisma.jobRun.findUnique({
+          where: { id: `bootstrap:${membership.workspace.id}` },
+          select: { status: true, errorSummary: true, createdAt: true, startedAt: true, finishedAt: true },
+        }),
+    autoFirstJobRun
+      ? Promise.resolve(null)
+      : prisma.jobRun.findUnique({
+          where: { id: `auto-first:${membership.workspace.id}` },
+          select: { status: true, errorSummary: true, createdAt: true, startedAt: true, finishedAt: true },
+        }),
+  ]);
+
+  const bootstrapRun = bootstrapJobRun ?? bootstrapJobRunCompat;
+  const autoFirstRun = autoFirstJobRun ?? autoFirstJobRunCompat;
 
   // If the first pulse exists, this flow is done.
   if (pulseEdition) {
@@ -389,12 +408,12 @@ export default async function OnboardingPage({
               <div className="mt-1 text-sm text-[color:var(--sb-muted)]">
                 Status:{" "}
                 <span className="font-semibold text-[color:var(--sb-fg)]">
-                  {statusLabel(bootstrapJobRun?.status)}
+                  {statusLabel(bootstrapRun?.status)}
                 </span>
               </div>
-              {bootstrapJobRun?.errorSummary ? (
+              {bootstrapRun?.errorSummary ? (
                 <div className="mt-2 text-xs text-[color:var(--sb-muted)]">
-                  Error: {bootstrapJobRun.errorSummary}
+                  Error: {bootstrapRun.errorSummary}
                 </div>
               ) : null}
             </div>
@@ -411,12 +430,12 @@ export default async function OnboardingPage({
               <div className="mt-1 text-sm text-[color:var(--sb-muted)]">
                 Status:{" "}
                 <span className="font-semibold text-[color:var(--sb-fg)]">
-                  {statusLabel(autoFirstJobRun?.status)}
+                  {statusLabel(autoFirstRun?.status)}
                 </span>
               </div>
-              {autoFirstJobRun?.errorSummary ? (
+              {autoFirstRun?.errorSummary ? (
                 <div className="mt-2 text-xs text-[color:var(--sb-muted)]">
-                  Error: {autoFirstJobRun.errorSummary}
+                  Error: {autoFirstRun.errorSummary}
                 </div>
               ) : null}
             </div>

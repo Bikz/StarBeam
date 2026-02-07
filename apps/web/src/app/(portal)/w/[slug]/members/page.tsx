@@ -61,7 +61,7 @@ export default async function MembersPage({
           {members.map((m) => (
             <div
               key={m.id}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 px-4 py-3"
+              className="sb-card-inset flex flex-wrap items-center justify-between gap-3 px-4 py-3"
             >
               <div className="min-w-0">
                 <div className="truncate text-sm font-semibold text-[color:var(--sb-fg)]">
@@ -71,9 +71,7 @@ export default async function MembersPage({
                   {m.user.name || "No name"} - {m.role.toLowerCase()}
                 </div>
               </div>
-              <div className="rounded-full border border-black/10 dark:border-white/15 bg-white/40 dark:bg-white/10 px-2.5 py-1 text-[11px] text-[color:var(--sb-muted)]">
-                {m.userId.slice(0, 8)}
-              </div>
+              <div className="sb-pill">{m.userId.slice(0, 8)}</div>
             </div>
           ))}
         </div>
@@ -86,9 +84,7 @@ export default async function MembersPage({
           </p>
 
         {!isAdmin ? (
-          <div className="mt-5 rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-4 text-sm text-[color:var(--sb-muted)]">
-            Only admins can create invites in v0.
-          </div>
+          <div className="mt-5 sb-alert">Only admins can create invites in v0.</div>
         ) : (
           <form
             action={createInvite.bind(null, membership.workspace.slug)}
@@ -102,7 +98,7 @@ export default async function MembersPage({
                 placeholder="teammate@company.com…"
                 autoComplete="email"
                 spellCheck={false}
-                className="h-11 rounded-2xl border border-black/10 dark:border-white/15 bg-white/45 dark:bg-white/10 px-4 text-[15px] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]"
+                className="sb-input"
                 required
               />
             </label>
@@ -110,7 +106,7 @@ export default async function MembersPage({
               <span className="text-[color:var(--sb-muted)]">Role</span>
               <select
                 name="role"
-                className="h-11 rounded-2xl border border-black/10 dark:border-white/15 bg-white/45 dark:bg-white/10 px-3 text-[15px] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]"
+                className="sb-select"
                 defaultValue="MEMBER"
               >
                 <option value="MEMBER">Member</option>
@@ -127,7 +123,7 @@ export default async function MembersPage({
         )}
 
         {inviteUrl ? (
-          <div className="mt-6 rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-4">
+          <div className="mt-6 sb-card-inset p-4">
             <div className="text-xs font-extrabold sb-title">New invite link</div>
             <div className="mt-2 break-all text-xs text-[color:var(--sb-muted)]">
               {inviteUrl}
@@ -153,13 +149,13 @@ export default async function MembersPage({
                 return (
                   <div
                     key={inv.id}
-                    className="rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 px-4 py-3 text-sm"
+                    className="sb-card-inset px-4 py-3 text-sm"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="font-semibold text-[color:var(--sb-fg)]">
                         {inv.email}
                       </div>
-                      <div className="rounded-full border border-black/10 dark:border-white/15 bg-white/40 dark:bg-white/10 px-2.5 py-1 text-[11px] text-[color:var(--sb-muted)]">
+                      <div className="sb-pill">
                         {inv.role.toLowerCase()} - {status}
                       </div>
                     </div>

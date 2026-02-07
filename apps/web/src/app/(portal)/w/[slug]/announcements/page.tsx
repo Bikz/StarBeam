@@ -57,16 +57,13 @@ export default async function AnnouncementsPage({
         </p>
 
         {announcements.length === 0 ? (
-          <div className="mt-5 rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-4 text-sm text-[color:var(--sb-muted)]">
+          <div className="mt-5 sb-alert">
             Nothing to show. Managers can post a pinned note to drive the demo.
           </div>
         ) : (
           <div className="mt-6 grid gap-3">
             {announcements.map((a) => (
-              <div
-                key={a.id}
-                className="rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-5"
-              >
+              <div key={a.id} className="sb-card-inset p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="sb-title text-lg leading-tight">
@@ -131,9 +128,7 @@ export default async function AnnouncementsPage({
         </p>
 
         {!manageable ? (
-          <div className="mt-5 rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-4 text-sm text-[color:var(--sb-muted)]">
-            Only managers/admins can post announcements.
-          </div>
+          <div className="mt-5 sb-alert">Only managers/admins can post announcements.</div>
         ) : (
           <form
             action={createAnnouncement.bind(null, membership.workspace.slug)}
@@ -144,7 +139,7 @@ export default async function AnnouncementsPage({
               <input
                 name="title"
                 placeholder="Q2 focus: ship Feature X onboarding improvements"
-                className="h-11 rounded-2xl border border-black/10 dark:border-white/15 bg-white/45 dark:bg-white/10 px-4 text-[15px] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]"
+                className="sb-input"
                 required
                 minLength={3}
                 maxLength={90}
@@ -155,7 +150,7 @@ export default async function AnnouncementsPage({
               <textarea
                 name="body"
                 placeholder="One or two lines of context."
-                className="min-h-[120px] rounded-2xl border border-black/10 dark:border-white/15 bg-white/45 dark:bg-white/10 px-4 py-3 text-[13px] leading-relaxed outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]"
+                className="sb-textarea"
               />
             </label>
             <label className="flex items-center gap-2 text-sm">

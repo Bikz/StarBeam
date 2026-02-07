@@ -32,7 +32,7 @@ export default async function FeedbackAdminPage() {
                 {items.map((f) => (
                   <div
                     key={f.id}
-                    className="rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-5"
+                    className="sb-card-inset p-5"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="text-sm font-semibold text-[color:var(--sb-fg)]">
@@ -61,4 +61,3 @@ export default async function FeedbackAdminPage() {
     </div>
   );
 }
-

@@ -140,6 +140,99 @@ html.dark .sb-bg::before {
   background: var(--sb-inset-bg);
 }
 
+/* Small UI primitives used across portal + marketing. */
+.sb-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  border: 1px solid var(--sb-divider);
+  background: var(--sb-inset-bg);
+  padding: 0.25rem 0.75rem;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--sb-muted);
+}
+
+.sb-divider {
+  height: 1px;
+  background: var(--sb-divider);
+}
+
+.sb-input,
+.sb-textarea,
+.sb-select {
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid var(--sb-divider);
+  background: var(--sb-inset-bg);
+  color: var(--sb-fg);
+  outline: none;
+}
+
+.sb-input,
+.sb-select {
+  height: 44px;
+  padding-inline: 16px;
+  font-size: 15px;
+}
+
+.sb-input-compact,
+.sb-select-compact {
+  height: 40px;
+  padding-inline: 12px;
+  font-size: 13px;
+}
+
+.sb-textarea {
+  min-height: 120px;
+  padding: 12px 16px;
+  font-size: 13px;
+  line-height: 1.55;
+  resize: vertical;
+}
+
+.sb-textarea-compact {
+  min-height: 72px;
+  padding: 10px 14px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.sb-input::placeholder,
+.sb-textarea::placeholder {
+  color: var(--sb-muted);
+  opacity: 0.85;
+}
+
+.sb-input:focus-visible,
+.sb-textarea:focus-visible,
+.sb-select:focus-visible {
+  box-shadow: 0 0 0 4px var(--sb-ring);
+}
+
+.sb-input:disabled,
+.sb-textarea:disabled,
+.sb-select:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.sb-alert {
+  border-radius: 14px;
+  border: 1px solid var(--sb-divider);
+  background: var(--sb-inset-bg);
+  padding: 12px 16px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--sb-muted);
+}
+
+.sb-alert strong {
+  color: var(--sb-fg);
+}
+
 /* Typography: default to Manrope (portal). Marketing opts into display type via data attribute. */
 .sb-title {
   font-family: var(--font-sb-body), ui-sans-serif, system-ui;

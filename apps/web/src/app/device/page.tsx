@@ -78,7 +78,7 @@ export default async function DevicePage({
             {message}
           </p>
 
-          <div className="mt-6 rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-4">
+          <div className="mt-6 sb-card-inset p-4">
             <div className="text-xs font-semibold text-[color:var(--sb-muted)]">
               Device code
             </div>

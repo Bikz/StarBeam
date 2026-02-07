@@ -98,7 +98,7 @@ export default function EmailCodeSignIn({
               placeholder="you@company.com…"
               autoComplete="email"
               spellCheck={false}
-              className="h-11 rounded-2xl border border-black/10 dark:border-white/15 bg-white/45 dark:bg-white/10 px-4 text-[15px] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]"
+              className="sb-input"
               disabled={busy || disabled}
             />
           </label>
@@ -113,7 +113,7 @@ export default function EmailCodeSignIn({
               placeholder="Paste code (or open a referral link)"
               autoComplete="off"
               spellCheck={false}
-              className="h-11 rounded-2xl border border-black/10 dark:border-white/15 bg-white/45 dark:bg-white/10 px-4 text-[15px] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]"
+              className="sb-input"
               disabled={busy || disabled}
             />
           </label>
@@ -138,7 +138,7 @@ export default function EmailCodeSignIn({
               onChange={(e) => setCode(e.target.value)}
               placeholder="123456"
               autoComplete="one-time-code"
-              className="h-11 rounded-2xl border border-black/10 dark:border-white/15 bg-white/45 dark:bg-white/10 px-4 font-mono text-[15px] tracking-widest outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]"
+              className="sb-input font-mono tracking-widest"
               disabled={busy || disabled}
             />
           </div>
@@ -177,9 +177,7 @@ export default function EmailCodeSignIn({
       )}
 
       {error ? (
-        <div className="rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 px-5 py-3 text-sm text-[color:var(--sb-muted)]">
-          {error}
-        </div>
+        <div className="sb-alert">{error}</div>
       ) : null}
     </div>
   );

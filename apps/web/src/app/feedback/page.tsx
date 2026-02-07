@@ -71,13 +71,11 @@ export default async function FeedbackPage({
           </p>
 
           {sent ? (
-            <div className="mt-6 rounded-xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-4 text-sm text-[color:var(--sb-muted)]">
-              Thanks. We got it.
-            </div>
+            <div className="mt-6 sb-alert">Thanks. We got it.</div>
           ) : null}
 
           {error ? (
-            <div className="mt-4 rounded-xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-4 text-sm text-[color:var(--sb-muted)]">
+            <div className="mt-4 sb-alert">
               Could not submit feedback ({error}). Try again.
             </div>
           ) : null}
@@ -92,7 +90,7 @@ export default async function FeedbackPage({
               <textarea
                 name="message"
                 rows={6}
-                className="min-h-[140px] w-full rounded-xl border border-black/10 dark:border-white/15 bg-white/45 dark:bg-white/10 px-4 py-3 text-[15px] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]"
+                className="sb-textarea"
                 placeholder="What happened? What should happen? Any links or screenshots?"
               />
             </label>

@@ -49,16 +49,12 @@ export default async function WorkspaceProfilePage({
             </p>
           </div>
           {saved ? (
-            <div className="rounded-full border border-black/10 dark:border-white/15 bg-white/40 dark:bg-white/10 px-3 py-1 text-[11px] font-semibold text-[color:var(--sb-muted)]">
-              Saved
-            </div>
+            <div className="sb-pill">Saved</div>
           ) : null}
         </div>
 
         {!manageable ? (
-          <div className="mt-5 rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-4 text-sm text-[color:var(--sb-muted)]">
-            Only managers/admins can edit the profile in v0.
-          </div>
+          <div className="mt-5 sb-alert">Only managers/admins can edit the profile in v0.</div>
         ) : null}
 
         <form
@@ -72,7 +68,7 @@ export default async function WorkspaceProfilePage({
               type="text"
               placeholder="https://company.com"
               defaultValue={profile?.websiteUrl ?? ""}
-              className="h-11 rounded-2xl border border-black/10 dark:border-white/15 bg-white/45 dark:bg-white/10 px-4 text-[15px] outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]"
+              className="sb-input"
               readOnly={!manageable}
             />
             <span className="mt-1 text-xs text-[color:var(--sb-muted)]">
@@ -86,7 +82,7 @@ export default async function WorkspaceProfilePage({
               name="description"
               placeholder="What do you do? Who is your customer? What's the current focus?"
               defaultValue={profile?.description ?? ""}
-              className="min-h-[140px] rounded-2xl border border-black/10 dark:border-white/15 bg-white/45 dark:bg-white/10 px-4 py-3 text-[13px] leading-relaxed outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]"
+              className="sb-textarea"
               readOnly={!manageable}
             />
           </label>
@@ -97,7 +93,7 @@ export default async function WorkspaceProfilePage({
               name="competitorDomains"
               placeholder={"competitor-a.com\ncompetitor-b.com"}
               defaultValue={competitorText}
-              className="min-h-[120px] rounded-2xl border border-black/10 dark:border-white/15 bg-white/45 dark:bg-white/10 px-4 py-3 text-[13px] leading-relaxed outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]"
+              className="sb-textarea"
               readOnly={!manageable}
             />
             <span className="mt-1 text-xs text-[color:var(--sb-muted)]">
