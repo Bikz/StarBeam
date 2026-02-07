@@ -38,6 +38,10 @@ function blobStoreEnvFromProcessEnv(env: NodeJS.ProcessEnv = process.env): BlobS
   return { endpoint, region, accessKeyId, secretAccessKey, bucket };
 }
 
+export function isBlobStoreConfigured(env: NodeJS.ProcessEnv = process.env): boolean {
+  return blobStoreEnvFromProcessEnv(env) !== null;
+}
+
 function makeS3Client(env: BlobStoreEnv): S3Client {
   return new S3Client({
     region: env.region,
@@ -190,5 +194,21 @@ export async function deleteObjectBestEffort(args: {
     await store.client.send(new DeleteObjectCommand({ Bucket: bucket, Key: args.key }));
   } catch {
     // Best effort: object might already be gone or we may lack perms.
+  }
+}
+
+export async function deleteObjectIfConfigured(args: {
+  bucket?: string;
+  key: string;
+}): Promise<boolean> {
+  const store = getBlobStore();
+  if (!store) return false;
+
+  const bucket = args.bucket ?? store.env.bucket;
+  try {
+    await store.client.send(new DeleteObjectCommand({ Bucket: bucket, Key: args.key }));
+    return true;
+  } catch {
+    return false;
   }
 }
