@@ -19,12 +19,12 @@ const BootstrapProfileSchema = z.object({
   competitorDomains: z.array(z.string().min(1).max(120)).max(10).default([]),
 });
 
-export const CodexWorkspaceBootstrapOutputSchema = z.object({
+const CodexWorkspaceBootstrapOutputSchema = z.object({
   profile: BootstrapProfileSchema,
   goals: z.array(BootstrapGoalSchema).min(1).max(5),
 });
 
-export type CodexWorkspaceBootstrapOutput = z.infer<typeof CodexWorkspaceBootstrapOutputSchema>;
+type CodexWorkspaceBootstrapOutput = z.infer<typeof CodexWorkspaceBootstrapOutputSchema>;
 
 function bootstrapOutputJsonSchema(): unknown {
   return {

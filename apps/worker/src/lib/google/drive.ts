@@ -10,7 +10,7 @@ type DriveListResponse = {
   nextPageToken?: string;
 };
 
-export type DriveFileRef = {
+type DriveFileRef = {
   id: string;
   name: string;
   mimeType: string;
@@ -120,4 +120,3 @@ export async function downloadDriveFile(args: {
   const url = `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(args.fileId)}?${params.toString()}`;
   return googleGetBytes(url, args.accessToken);
 }
-

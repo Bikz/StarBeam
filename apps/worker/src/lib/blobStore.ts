@@ -61,7 +61,7 @@ function getBlobStore(): { env: BlobStoreEnv; client: S3Client; bucketEnsured: b
   return cached;
 }
 
-export async function ensureBucketExistsIfConfigured(): Promise<void> {
+async function ensureBucketExistsIfConfigured(): Promise<void> {
   const store = getBlobStore();
   if (!store) return;
   if (store.bucketEnsured) return;

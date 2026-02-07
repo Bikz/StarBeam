@@ -30,22 +30,22 @@ const WebResearchCardSchema = BaseCardSchema.extend({
   citations: z.array(CitationSchema).min(1).max(6),
 });
 
-export const CodexPulseCardSchema = z.discriminatedUnion("kind", [
+const CodexPulseCardSchema = z.discriminatedUnion("kind", [
   WebResearchCardSchema,
   InternalCardSchema,
 ]);
 
-export const CodexPulseMemorySchema = z.object({
+const CodexPulseMemorySchema = z.object({
   baseMarkdown: z.string().min(1).max(25_000),
   dailyMarkdown: z.string().min(1).max(25_000),
 });
 
-export const CodexPulseOutputSchema = z.object({
+const CodexPulseOutputSchema = z.object({
   memory: CodexPulseMemorySchema,
   cards: z.array(CodexPulseCardSchema).max(7),
 });
 
-export type CodexPulseOutput = z.infer<typeof CodexPulseOutputSchema>;
+type CodexPulseOutput = z.infer<typeof CodexPulseOutputSchema>;
 
 function pulseOutputJsonSchema(args: { includeWebResearch: boolean }): unknown {
   const baseCardSchema = {

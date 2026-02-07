@@ -7,19 +7,19 @@ function requireDatabaseUrl(): string {
   return connectionString;
 }
 
-export function autoFirstNightlyJobKey(workspaceId: string): string {
+function autoFirstNightlyJobKey(workspaceId: string): string {
   return `nightly_workspace_run:auto-first:${workspaceId}`;
 }
 
-export function autoFirstNightlyJobRunId(workspaceId: string): string {
+function autoFirstNightlyJobRunId(workspaceId: string): string {
   return `auto-first:${workspaceId}`;
 }
 
-export function workspaceBootstrapJobKey(workspaceId: string): string {
+function workspaceBootstrapJobKey(workspaceId: string): string {
   return `workspace_bootstrap:${workspaceId}`;
 }
 
-export function workspaceBootstrapJobRunId(workspaceId: string): string {
+function workspaceBootstrapJobRunId(workspaceId: string): string {
   return `bootstrap:${workspaceId}`;
 }
 
