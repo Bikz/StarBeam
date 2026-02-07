@@ -23,8 +23,7 @@ Create a keychain profile (recommended):
 ```bash
 xcrun notarytool store-credentials "starbeam-notary" \
   --apple-id "you@starbeamhq.com" \
-  --team-id "YOUR_TEAM_ID" \
-  --password "APP_SPECIFIC_PASSWORD"
+  --team-id "YOUR_TEAM_ID"
 ```
 
 Then export:
@@ -32,6 +31,11 @@ Then export:
 ```bash
 export NOTARY_PROFILE=starbeam-notary
 ```
+
+Notes:
+- `notarytool store-credentials` will prompt for your app-specific password. Prefer the prompt over passing `--password` to avoid leaking secrets via shell history.
+- You can debug failed notarization submissions with:
+  - `xcrun notarytool log <submission-id> --keychain-profile "starbeam-notary"`
 
 ### 2) Sparkle public key
 
@@ -91,6 +95,30 @@ Outputs:
 - `dist/macos/Starbeam-<version>.dmg` (first install)
 - `dist/macos/updates/Starbeam-<version>.zip` (Sparkle update payload)
 - `dist/macos/appcast.xml` (if Sparkle private key provided)
+
+## Troubleshooting
+
+### Notarization returns `Invalid` (critical validation errors)
+
+If you see an error like:
+
+- `Archive contains critical validation errors`
+- `The binary is not signed with a valid Developer ID certificate`
+- `The signature does not include a secure timestamp`
+
+Most commonly, this happens when a nested helper executable inside a framework is left **ad-hoc signed**.
+
+For Starbeam, Sparkle embeds a helper executable at:
+
+- `Starbeam.app/Contents/Frameworks/Sparkle.framework/Versions/*/Autoupdate`
+
+Our release script (`scripts/macos/release_direct.sh`) explicitly signs **standalone executables under `*.framework/Versions/*`** before signing the enclosing framework and app. If you modify signing logic, keep this behavior or notarization will fail.
+
+To inspect what is signed ad-hoc:
+
+```bash
+codesign -dv --verbose=4 "Starbeam.app/Contents/Frameworks/Sparkle.framework/Versions/B/Autoupdate" 2>&1 | rg -n "Signature=|TeamIdentifier=|Authority="
+```
 
 ## Hosting
 
