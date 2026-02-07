@@ -37,9 +37,8 @@ export default async function WorkspaceLayout({
 
   const context = [
     { href: `${base}/profile`, label: "Profile" },
-    { href: `${base}/goals`, label: "Goals" },
+    { href: `${base}/tracks`, label: "Tracks" },
     { href: `${base}/announcements`, label: "Announcements" },
-    { href: `${base}/departments`, label: "Tracks" },
   ];
 
   const ops = [
