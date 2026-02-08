@@ -8,6 +8,7 @@ import { prisma } from "@starbeam/db";
 import { createOrgWorkspace } from "@/app/dashboard/actions";
 import AppShell from "@/components/app-shell";
 import CopyPill from "@/components/copy-pill";
+import PageHeader from "@/components/page-header";
 import { authOptions } from "@/lib/auth";
 import { requireBetaAccessOrRedirect } from "@/lib/betaAccess";
 
@@ -107,10 +108,11 @@ export default async function DashboardPage() {
     >
       <div className="grid gap-6">
         <section className="sb-card p-6 sm:p-7">
-          <h2 className="sb-title text-2xl font-extrabold">Overview</h2>
-          <p className="mt-2 text-sm text-[color:var(--sb-muted)]">
-            Open a workspace to manage context and view your latest pulse.
-          </p>
+          <PageHeader
+            title="Overview"
+            description="Open a workspace to manage context and view your latest pulse."
+            size="lg"
+          />
 
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             <div className="sb-card-inset px-4 py-3">
@@ -137,7 +139,7 @@ export default async function DashboardPage() {
 
         <div className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr] lg:items-start">
           <section className="sb-card p-6 sm:p-7">
-            <h2 className="sb-title text-xl font-extrabold">Your workspaces</h2>
+            <PageHeader title="Your workspaces" />
 
             {memberships.length === 0 ? (
               <div className="mt-4 sb-card-inset p-5">
@@ -251,12 +253,10 @@ export default async function DashboardPage() {
           </section>
 
           <aside className="sb-card p-6 sm:p-7">
-            <h2 className="sb-title text-xl font-extrabold">
-              Create org workspace
-            </h2>
-            <p className="mt-1 text-sm text-[color:var(--sb-muted)]">
-              Create a shared workspace for a team or project. Add goals, connect Google, and run overnight pulses.
-            </p>
+            <PageHeader
+              title="Create org workspace"
+              description="Create a shared workspace for a team or project. Add goals, connect Google, and run overnight pulses."
+            />
 
             <form action={createOrgWorkspace} className="mt-5 grid gap-3">
               <label className="grid gap-1 text-sm">

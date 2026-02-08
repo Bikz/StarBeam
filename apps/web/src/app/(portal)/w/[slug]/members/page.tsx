@@ -6,6 +6,7 @@ import { getServerSession } from "next-auth";
 import { prisma } from "@starbeam/db";
 
 import { createInvite } from "@/app/(portal)/w/[slug]/members/actions";
+import PageHeader from "@/components/page-header";
 import { authOptions } from "@/lib/auth";
 import { webOrigin } from "@/lib/webOrigin";
 
@@ -48,12 +49,14 @@ export default async function MembersPage({
   return (
     <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
         <div className="sb-card p-7">
-          <div className="flex items-center justify-between gap-4">
-            <h2 className="sb-title text-xl font-extrabold">Current members</h2>
-            <div className="text-xs text-[color:var(--sb-muted)]">
-              {members.length} total
-            </div>
-          </div>
+          <PageHeader
+            title="Current members"
+            actions={
+              <div className="text-xs text-[color:var(--sb-muted)]">
+                {members.length} total
+              </div>
+            }
+          />
 
         <div className="mt-5 grid gap-2">
           {members.map((m) => (
@@ -76,10 +79,10 @@ export default async function MembersPage({
       </div>
 
         <div className="sb-card p-7">
-          <h2 className="sb-title text-xl font-extrabold">Invite someone</h2>
-          <p className="mt-2 text-sm text-[color:var(--sb-muted)]">
-            Create a link-based invite. Invites are tied to email and expire in 7 days.
-          </p>
+          <PageHeader
+            title="Invite someone"
+            description="Create a link-based invite. Invites are tied to email and expire in 7 days."
+          />
 
         {!isAdmin ? (
           <div className="mt-5 sb-alert">Only admins can create invites in v0.</div>

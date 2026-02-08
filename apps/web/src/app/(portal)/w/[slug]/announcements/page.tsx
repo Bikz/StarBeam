@@ -9,6 +9,7 @@ import {
   dismissAnnouncement,
   toggleAnnouncementPinned,
 } from "@/app/(portal)/w/[slug]/announcements/actions";
+import PageHeader from "@/components/page-header";
 
 function canManage(role: string): boolean {
   return role === "ADMIN" || role === "MANAGER";
@@ -45,16 +46,17 @@ export default async function AnnouncementsPage({
   return (
     <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
       <div className="sb-card p-7">
-        <div className="flex items-center justify-between gap-4">
-          <div className="sb-title text-xl">Announcements</div>
-          <div className="text-xs text-[color:var(--sb-muted)]">
-            Visible to you: {announcements.length}
-          </div>
-        </div>
-        <p className="mt-2 text-sm text-[color:var(--sb-muted)]">
-          Announcements stay in the pulse until dismissed. Pinned announcements
-          rank above everything else.
-        </p>
+        <PageHeader
+          title="Announcements"
+          description={
+            "Announcements stay in the pulse until dismissed. Pinned announcements rank above everything else."
+          }
+          actions={
+            <div className="text-xs text-[color:var(--sb-muted)]">
+              Visible to you: {announcements.length}
+            </div>
+          }
+        />
 
         {announcements.length === 0 ? (
           <div className="mt-5 sb-alert">
@@ -121,11 +123,12 @@ export default async function AnnouncementsPage({
       </div>
 
       <div className="sb-card p-7">
-        <div className="sb-title text-xl">Post an announcement</div>
-        <p className="mt-2 text-sm text-[color:var(--sb-muted)]">
-          Keep it short. In v0, announcements can trigger a badge and appear in
-          the macOS app on next sync.
-        </p>
+        <PageHeader
+          title="Post an announcement"
+          description={
+            "Keep it short. In v0, announcements can trigger a badge and appear in the macOS app on next sync."
+          }
+        />
 
         {!manageable ? (
           <div className="mt-5 sb-alert">Only managers/admins can post announcements.</div>

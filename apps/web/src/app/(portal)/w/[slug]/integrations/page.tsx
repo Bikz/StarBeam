@@ -21,6 +21,7 @@ import {
   disconnectNotionConnection,
 } from "@/app/(portal)/w/[slug]/integrations/notionActions";
 import { authOptions } from "@/lib/auth";
+import PageHeader from "@/components/page-header";
 
 function statusPill(status: string) {
   return (
@@ -70,12 +71,10 @@ export default async function IntegrationsPage({
     <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
       <div className="grid gap-6">
         <div className="sb-card p-7">
-          <div className="sb-title text-xl">Google (OAuth, read-only)</div>
-          <p className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
-            Connect Gmail, Calendar, and Drive. Tokens are stored encrypted.
-            Drive file snapshots are stored encrypted for processing, and raw
-            contents are not logged.
-          </p>
+          <PageHeader
+            title="Google (OAuth, read-only)"
+            description="Connect Gmail, Calendar, and Drive. Tokens are stored encrypted. Drive file snapshots are stored encrypted for processing, and raw contents are not logged."
+          />
 
           {sp.connected === "google" ? (
             <div className="mt-5 sb-alert">Connected.</div>
@@ -140,11 +139,10 @@ export default async function IntegrationsPage({
         </div>
 
         <div className="sb-card p-7">
-          <div className="sb-title text-xl">GitHub (token)</div>
-          <p className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
-            Paste a GitHub personal access token. This is the quickest way to
-            connect without configuring an OAuth app.
-          </p>
+          <PageHeader
+            title="GitHub (token)"
+            description="Paste a GitHub personal access token. This is the quickest way to connect without configuring an OAuth app."
+          />
 
           {sp.connected === "github" ? (
             <div className="mt-5 sb-alert">Connected.</div>
@@ -290,11 +288,10 @@ export default async function IntegrationsPage({
         </div>
 
         <div className="sb-card p-7">
-          <div className="sb-title text-xl">Linear (token)</div>
-          <p className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
-            Paste a Linear API key. Starbeam will ingest assigned issues and
-            recent updates for your workspace pulse.
-          </p>
+          <PageHeader
+            title="Linear (token)"
+            description="Paste a Linear API key. Starbeam will ingest assigned issues and recent updates for your workspace pulse."
+          />
 
           {sp.connected === "linear" ? (
             <div className="mt-5 sb-alert">Connected.</div>
@@ -365,12 +362,10 @@ export default async function IntegrationsPage({
         </div>
 
         <div className="sb-card p-7">
-          <div className="sb-title text-xl">Notion (token)</div>
-          <p className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
-            Paste a Notion integration token. Make sure to share the relevant
-            pages/databases with the integration, otherwise Notion search will
-            return nothing.
-          </p>
+          <PageHeader
+            title="Notion (token)"
+            description="Paste a Notion integration token. Make sure to share the relevant pages/databases with the integration, otherwise Notion search will return nothing."
+          />
 
           {sp.connected === "notion" ? (
             <div className="mt-5 sb-alert">Connected.</div>
@@ -443,7 +438,7 @@ export default async function IntegrationsPage({
 
       <div className="grid gap-6">
         <div className="sb-card p-7">
-          <div className="sb-title text-xl">Privacy</div>
+          <PageHeader title="Privacy" />
           <div className="mt-3 grid gap-3 text-sm text-[color:var(--sb-muted)] leading-relaxed">
             <div>Token-based connectors are stored encrypted.</div>
             <div>
@@ -454,7 +449,7 @@ export default async function IntegrationsPage({
         </div>
 
         <div className="sb-card p-7">
-          <div className="sb-title text-xl">Next</div>
+          <PageHeader title="Next" />
           <div className="mt-3 grid gap-3 text-sm text-[color:var(--sb-muted)] leading-relaxed">
             <div>
               After you connect an integration, go to <span className="sb-title">Runs</span> and click{" "}

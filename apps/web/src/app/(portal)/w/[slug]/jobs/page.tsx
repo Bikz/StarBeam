@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { prisma } from "@starbeam/db";
 
 import { runNightlyNow } from "@/actions/run-nightly-now";
+import PageHeader from "@/components/page-header";
 import { authOptions } from "@/lib/auth";
 
 function canManage(role: string): boolean {
@@ -80,18 +81,11 @@ export default async function JobsPage({
   return (
     <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
       <div className="sb-card p-7">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <div className="sb-title text-xl">Nightly runs</div>
-            <p className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
-              This is the “overnight research” engine. v0 will run it on demand,
-              and also auto-run daily (2–5am user-local).
-            </p>
-          </div>
-          {queued ? (
-            <div className="sb-pill">Queued</div>
-          ) : null}
-        </div>
+        <PageHeader
+          title="Nightly runs"
+          description="This is the “overnight research” engine. v0 will run it on demand, and also auto-run daily (2–5am user-local)."
+          actions={queued ? <div className="sb-pill">Queued</div> : null}
+        />
 
         <div className="mt-6 flex flex-wrap items-center gap-3">
           <form action={runNightlyNow.bind(null, membership.workspace.slug)}>
@@ -164,7 +158,7 @@ export default async function JobsPage({
       </div>
 
       <div className="sb-card p-7">
-        <div className="sb-title text-xl">What it will do</div>
+        <PageHeader title="What it will do" />
         <div className="mt-3 grid gap-3 text-sm text-[color:var(--sb-muted)] leading-relaxed">
           <div>
             <span className="font-semibold text-[color:var(--sb-fg)]">
