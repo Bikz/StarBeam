@@ -9,6 +9,7 @@ import { z } from "zod";
 const JoinWaitlistSchema = z.object({
   email: z.string().email().max(254),
   ref: z.string().max(64).optional(),
+  returnTo: z.string().max(256).optional(),
 });
 
 function makeReferralCode(): string {
@@ -16,19 +17,37 @@ function makeReferralCode(): string {
   return crypto.randomBytes(6).toString("base64url");
 }
 
+function safeReturnTo(value: string | undefined): string {
+  const v = (value ?? "").trim();
+  if (!v) return "/waitlist";
+  if (!v.startsWith("/")) return "/waitlist";
+  if (v.startsWith("//")) return "/waitlist";
+  if (v.includes("://")) return "/waitlist";
+  if (v.includes("..")) return "/waitlist";
+  return v;
+}
+
+function withError(returnTo: string, error: string): string {
+  const sep = returnTo.includes("?") ? "&" : "?";
+  return `${returnTo}${sep}error=${encodeURIComponent(error)}`;
+}
+
 export async function joinWaitlist(formData: FormData) {
   const rawEmail = String(formData.get("email") ?? "")
     .trim()
     .toLowerCase();
   const rawRef = String(formData.get("ref") ?? "").trim();
+  const rawReturnTo = String(formData.get("returnTo") ?? "").trim();
 
   const parsed = JoinWaitlistSchema.safeParse({
     email: rawEmail,
     ref: rawRef || undefined,
+    returnTo: rawReturnTo || undefined,
   });
   if (!parsed.success) {
-    throw new Error("Invalid email");
+    redirect(withError(safeReturnTo(rawReturnTo), "invalid_email"));
   }
+  const returnTo = safeReturnTo(parsed.data.returnTo);
 
   const existing = await prisma.waitlistSignup.findUnique({
     where: { email: parsed.data.email },
@@ -66,5 +85,5 @@ export async function joinWaitlist(formData: FormData) {
     }
   }
 
-  throw new Error("Failed to create waitlist entry");
+  redirect(withError(returnTo, "try_again"));
 }

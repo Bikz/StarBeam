@@ -41,19 +41,24 @@ export const metadata: Metadata = {
 export default async function Home({
   searchParams,
 }: {
-  searchParams?: { ref?: string | string[] };
+  searchParams?: { ref?: string | string[]; error?: string | string[] };
 }) {
   const app = webOrigin();
   const email = supportEmail();
   const ref =
     typeof searchParams?.ref === "string" ? searchParams?.ref.trim() : "";
+  const error =
+    typeof searchParams?.error === "string" ? searchParams?.error.trim() : "";
 
   return (
     <div className="sb-bg">
+      <a href="#main" className="sb-skip-link">
+        Skip to content
+      </a>
       <div className="mx-auto max-w-6xl px-6 py-12 sm:py-16">
         <SiteHeader appOrigin={app} />
 
-        <main className="mt-10">
+        <main id="main" className="mt-10">
           <section className="sb-marketing-shell">
             <div className="sb-card relative overflow-hidden px-8 py-10 sm:px-10 sm:py-12">
               <div className="sb-orbit" aria-hidden />
@@ -102,6 +107,7 @@ export default async function Home({
                       />
                     </label>
                     <input type="hidden" name="ref" value={ref} />
+                    <input type="hidden" name="returnTo" value="/" />
                     <button
                       type="submit"
                       className="sb-btn sb-btn-primary h-12 px-6 text-sm font-extrabold text-[color:var(--sb-fg)]"
@@ -109,6 +115,15 @@ export default async function Home({
                       Join the waitlist
                     </button>
                   </form>
+
+                  {error ? (
+                    <div role="alert" className="mt-4 sb-alert">
+                      <strong>Couldn’t join the waitlist.</strong>{" "}
+                      {error === "invalid_email"
+                        ? "Please enter a valid email address."
+                        : "Please try again."}
+                    </div>
+                  ) : null}
 
                   <div className="mt-3 text-xs text-[color:var(--sb-muted)] leading-relaxed">
                     Private beta. No spam. Already joined? You’ll see your

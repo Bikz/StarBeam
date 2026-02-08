@@ -11,10 +11,13 @@ export default async function AboutPage() {
 
   return (
     <div className="sb-bg">
+      <a href="#main" className="sb-skip-link">
+        Skip to content
+      </a>
       <div className="mx-auto max-w-5xl px-6 py-12 sm:py-16">
         <SiteHeader appOrigin={app} />
 
-        <main className="mt-10 sb-marketing-shell">
+        <main id="main" className="mt-10 sb-marketing-shell">
           <div className="sb-card p-8 sm:p-10 relative overflow-hidden">
             <div className="sb-orbit" aria-hidden />
             <div className="relative">

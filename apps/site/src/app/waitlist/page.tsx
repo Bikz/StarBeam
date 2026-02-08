@@ -9,18 +9,22 @@ import { webOrigin } from "@/lib/webOrigin";
 export default async function WaitlistPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ref?: string }>;
+  searchParams: Promise<{ ref?: string; error?: string }>;
 }) {
   const sp = await searchParams;
   const ref = (sp.ref ?? "").trim();
+  const error = (sp.error ?? "").trim();
   const app = webOrigin();
   const email = supportEmail();
 
   return (
     <div className="sb-bg">
+      <a href="#main" className="sb-skip-link">
+        Skip to content
+      </a>
       <div className="mx-auto max-w-2xl px-6 py-16">
         <SiteHeader appOrigin={app} />
-        <div className="sb-card p-8">
+        <main id="main" className="sb-card p-8">
           <div className="sb-title text-2xl">Join the waitlist</div>
           <p className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
             Starbeam is launching soon. Get early access and help shape the product.
@@ -41,11 +45,21 @@ export default async function WaitlistPage({
             </label>
 
             <input type="hidden" name="ref" value={ref} />
+            <input type="hidden" name="returnTo" value="/waitlist" />
 
             <button type="submit" className="sb-btn sb-btn-primary h-11 px-5 text-sm font-extrabold">
               Join waitlist
             </button>
           </form>
+
+          {error ? (
+            <div role="alert" className="mt-4 sb-alert">
+              <strong>Couldn’t join the waitlist.</strong>{" "}
+              {error === "invalid_email"
+                ? "Please enter a valid email address."
+                : "Please try again."}
+            </div>
+          ) : null}
 
           {ref ? (
             <div className="mt-5 rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-4 text-xs text-[color:var(--sb-muted)]">
@@ -70,7 +84,7 @@ export default async function WaitlistPage({
               Sign in
             </a>
           </div>
-        </div>
+        </main>
         <SiteFooter appOrigin={app} supportEmail={email} />
       </div>
     </div>

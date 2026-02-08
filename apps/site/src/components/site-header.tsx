@@ -4,7 +4,11 @@ export default function SiteHeader({ appOrigin }: { appOrigin: string }) {
   return (
     <header className="sb-marketing-shell">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="inline-flex items-center gap-3">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-3"
+          aria-label="Starbeam home"
+        >
           <div className="sb-card grid h-11 w-11 place-items-center">
             <span className="text-xl sb-title" aria-hidden>
               *
@@ -16,9 +20,12 @@ export default function SiteHeader({ appOrigin }: { appOrigin: string }) {
               A calm daily pulse for startup teams
             </div>
           </div>
-        </div>
+        </Link>
 
-        <nav className="flex flex-wrap items-center gap-2">
+        <nav
+          className="flex flex-wrap items-center gap-2"
+          aria-label="Primary navigation"
+        >
           <Link
             href="/download"
             className="sb-btn px-4 py-2 text-xs font-semibold text-[color:var(--sb-fg)]"
@@ -54,4 +61,3 @@ export default function SiteHeader({ appOrigin }: { appOrigin: string }) {
     </header>
   );
 }
-

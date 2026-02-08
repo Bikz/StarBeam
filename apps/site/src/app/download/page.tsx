@@ -13,10 +13,16 @@ export default async function DownloadPage() {
 
   return (
     <div className="sb-bg">
+      <a href="#main" className="sb-skip-link">
+        Skip to content
+      </a>
       <div className="mx-auto max-w-6xl px-6 py-12 sm:py-16">
         <SiteHeader appOrigin={app} />
 
-        <main className="mt-10 grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
+        <main
+          id="main"
+          className="mt-10 grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-start"
+        >
           <section className="sb-marketing-shell">
             <div className="sb-card p-8 sm:p-10 relative overflow-hidden">
               <div className="sb-orbit" aria-hidden />

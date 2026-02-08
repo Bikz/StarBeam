@@ -34,9 +34,12 @@ export default async function WaitlistThanksPage({
 
   return (
     <div className="sb-bg">
+      <a href="#main" className="sb-skip-link">
+        Skip to content
+      </a>
       <div className="mx-auto max-w-2xl px-6 py-16">
         <SiteHeader appOrigin={app} />
-        <div className="sb-card p-8">
+        <main id="main" className="sb-card p-8">
           <div className="sb-title text-2xl">You’re on the list</div>
           <p className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
             We’ll email{" "}
@@ -77,7 +80,7 @@ export default async function WaitlistThanksPage({
               </Link>
             </div>
           </div>
-        </div>
+        </main>
         <SiteFooter appOrigin={app} supportEmail={email} />
       </div>
     </div>
