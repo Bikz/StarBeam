@@ -105,7 +105,9 @@ async function tryAcquireSchedulerLock(): Promise<boolean> {
   // Two-int advisory lock key. Keep stable forever to avoid changing behavior
   // across deployments.
   const rows = await prisma.$queryRawUnsafe<{ ok: boolean }[]>(
-    "select pg_try_advisory_lock($1, $2) as ok",
+    // Postgres supports the 2-key variant only for int4,int4. Prisma sends JS
+    // numbers as int8, so we cast explicitly to avoid runtime failures.
+    "select pg_try_advisory_lock($1::int, $2::int) as ok",
     8011,
     41027,
   );
@@ -113,7 +115,11 @@ async function tryAcquireSchedulerLock(): Promise<boolean> {
 }
 
 async function releaseSchedulerLock(): Promise<void> {
-  await prisma.$executeRawUnsafe("select pg_advisory_unlock($1, $2)", 8011, 41027);
+  await prisma.$executeRawUnsafe(
+    "select pg_advisory_unlock($1::int, $2::int)",
+    8011,
+    41027,
+  );
 }
 
 // Enqueue per-user daily pulses during a small user-local window (2-5am by default).
