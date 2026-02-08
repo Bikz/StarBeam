@@ -8,17 +8,27 @@ import { authOptions } from "@/lib/auth";
 import { webOrigin } from "@/lib/webOrigin";
 
 export async function GET(request: Request) {
+  const url = new URL(request.url);
+
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
-    return NextResponse.redirect(new URL("/login", webOrigin()));
+    const loginUrl = new URL("/login", webOrigin());
+    loginUrl.searchParams.set("callbackUrl", `${url.pathname}${url.search}`);
+
+    const ref = (url.searchParams.get("ref") ?? "").trim();
+    if (ref) loginUrl.searchParams.set("ref", ref);
+
+    return NextResponse.redirect(loginUrl);
   }
 
-  const url = new URL(request.url);
   const next = url.searchParams.get("next") ?? "/beta";
   const safeNext = next.startsWith("/") ? next : "/beta";
 
   const cookieStore = await cookies();
-  const referralCode = cookieStore.get("sb_ref")?.value ?? "";
+  const cookieRef = cookieStore.get("sb_ref")?.value ?? "";
+  const queryRef = url.searchParams.get("ref") ?? "";
+  const referralCodeRaw = (cookieRef || queryRef).trim();
+  const referralCode = referralCodeRaw.length <= 128 ? referralCodeRaw : "";
 
   const resp = NextResponse.redirect(new URL(safeNext, webOrigin()));
   // Clear cookie regardless of validity (prevents loops).

@@ -7,13 +7,25 @@ export async function GET(
   { params }: { params: Promise<{ code: string }> },
 ) {
   const { code } = await params;
+  const referralCode = String(code ?? "").trim();
+
+  const loginUrl = new URL("/login", webOrigin());
+  if (referralCode) {
+    loginUrl.searchParams.set("ref", referralCode);
+    loginUrl.searchParams.set(
+      "callbackUrl",
+      `/beta/claim?ref=${encodeURIComponent(referralCode)}&next=/beta`,
+    );
+  }
   // Note: in production behind proxies, `request.url` can reflect an internal
   // origin (e.g. localhost:PORT). Always redirect to the configured public origin.
-  const resp = NextResponse.redirect(new URL("/login", webOrigin()));
-  resp.cookies.set("sb_ref", code, {
-    path: "/",
-    maxAge: 7 * 24 * 60 * 60,
-    sameSite: "lax",
-  });
+  const resp = NextResponse.redirect(loginUrl);
+  if (referralCode) {
+    resp.cookies.set("sb_ref", referralCode, {
+      path: "/",
+      maxAge: 7 * 24 * 60 * 60,
+      sameSite: "lax",
+    });
+  }
   return resp;
 }

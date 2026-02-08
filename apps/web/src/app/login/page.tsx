@@ -11,7 +11,7 @@ import { siteOrigin } from "@/lib/siteOrigin";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ callbackUrl?: string }>;
+  searchParams: Promise<{ callbackUrl?: string; ref?: string }>;
 }) {
   const session = await getServerSession(authOptions);
   if (session?.user?.id) {
@@ -26,7 +26,12 @@ export default async function LoginPage({
     process.env.GOOGLE_CLIENT_SECRET.length > 0;
 
   const sp = await searchParams;
-  const callbackUrl = (sp.callbackUrl ?? "/beta").trim() || "/beta";
+  const callbackUrlRaw = (sp.callbackUrl ?? "/beta").trim() || "/beta";
+  const safeNext = callbackUrlRaw.startsWith("/") ? callbackUrlRaw : "/beta";
+  const referralCode = typeof sp.ref === "string" ? sp.ref.trim() : "";
+  const callbackUrl = referralCode
+    ? `/beta/claim?ref=${encodeURIComponent(referralCode)}&next=${encodeURIComponent(safeNext)}`
+    : callbackUrlRaw;
 
   return (
     <div className="sb-bg">
@@ -38,7 +43,10 @@ export default async function LoginPage({
           </p>
 
           <div className="mt-6">
-            <EmailCodeSignIn callbackUrl={callbackUrl} />
+            <EmailCodeSignIn
+              callbackUrl={callbackUrl}
+              initialReferralCode={referralCode}
+            />
           </div>
 
           {hasGoogleAuth ? (

@@ -11,15 +11,17 @@ type Step = "email" | "code";
 
 export default function EmailCodeSignIn({
   callbackUrl = "/beta",
+  initialReferralCode = "",
 }: {
   callbackUrl?: string;
+  initialReferralCode?: string;
 }) {
   const { status } = useSession();
   const disabled = status === "loading";
 
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
-  const [ref, setRef] = useState("");
+  const [ref, setRef] = useState(() => initialReferralCode.trim());
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
