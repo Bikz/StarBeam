@@ -19,6 +19,7 @@
 		599C6BEE5F7F8B248ADF4F47 /* Overview.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4250514EF57A58CE4EE2CD1 /* Overview.swift */; };
 		5A398A9189679FC5939B59E7 /* StarbeamTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77B0E7000F2D1D40B1B3A3E6 /* StarbeamTheme.swift */; };
 		5B4C4613249366C87F89A3C5 /* StarbeamBackgroundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3270FA1FE2B9B19ECF10865D /* StarbeamBackgroundView.swift */; };
+		D2A0C3B7A1B245E7C8D9F012 /* StarbeamVisualStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B5C /* StarbeamVisualStyle.swift */; };
 		5C952D7E5CE7F036ED4519C3 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E8CCAD2B3D95AF3B2E49F36 /* ContentView.swift */; };
 		EE0190E4AE6CD3B899247203 /* CardIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60604C9EA9CA5D048427D6DB /* CardIcon.swift */; };
 		9F650C051AD4CD9BA09444F6 /* StarbeamApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3ED4D3D5A373434E8E8EECBA /* StarbeamApp.swift */; };
@@ -38,6 +39,7 @@
 		1AC1E0C63E12D9AC481FE21B /* SettingsSheetView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SettingsSheetView.swift; path = UI/Popover/SettingsSheetView.swift; sourceTree = "<group>"; };
 		E2A1C9B6D4F3A8B7C6D5E4F3 /* WorkspacePagerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = WorkspacePagerView.swift; path = UI/Popover/WorkspacePagerView.swift; sourceTree = "<group>"; };
 		3270FA1FE2B9B19ECF10865D /* StarbeamBackgroundView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = StarbeamBackgroundView.swift; path = UI/StarbeamBackgroundView.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60718293A4B5C /* StarbeamVisualStyle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = StarbeamVisualStyle.swift; path = UI/StarbeamVisualStyle.swift; sourceTree = "<group>"; };
 		3D1598C3E6ACFF599BE47717 /* Starbeam.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = Starbeam.entitlements; sourceTree = "<group>"; };
 		3E8CCAD2B3D95AF3B2E49F36 /* ContentView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		3ED4D3D5A373434E8E8EECBA /* StarbeamApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StarbeamApp.swift; sourceTree = "<group>"; };
@@ -102,6 +104,7 @@
 				66E27822CB59C5FFE27F134F /* PulseSkeletonView.swift */,
 				1AC1E0C63E12D9AC481FE21B /* SettingsSheetView.swift */,
 				3270FA1FE2B9B19ECF10865D /* StarbeamBackgroundView.swift */,
+				A1B2C3D4E5F60718293A4B5C /* StarbeamVisualStyle.swift */,
 				77B0E7000F2D1D40B1B3A3E6 /* StarbeamTheme.swift */,
 				573AACCB3728A1F04D6D7E56 /* Info.plist */,
 				3D1598C3E6ACFF599BE47717 /* Starbeam.entitlements */,
@@ -238,6 +241,7 @@
 				F48094D3F79A7C794546F633 /* PulseCardView.swift in Sources */,
 				F76CABECEA7CCE21B5D66ED9 /* FocusAndCalendarViews.swift in Sources */,
 				5B4C4613249366C87F89A3C5 /* StarbeamBackgroundView.swift in Sources */,
+				D2A0C3B7A1B245E7C8D9F012 /* StarbeamVisualStyle.swift in Sources */,
 				5A398A9189679FC5939B59E7 /* StarbeamTheme.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -293,6 +297,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = STARBEAM_LIQUID_GLASS;
 				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
 				SWIFT_VERSION = 5.0;
 			};
@@ -376,7 +381,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG STARBEAM_LIQUID_GLASS";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 			};

@@ -17,15 +17,11 @@ struct StarbeamCardModifier: ViewModifier {
 
   func body(content: Content) -> some View {
     content
-      .background(
-        RoundedRectangle(cornerRadius: StarbeamTheme.cardCorner, style: .continuous)
-          .fill(.thinMaterial)
+      .starbeamSurface(
+        cornerRadius: StarbeamTheme.cardCorner,
+        material: .thinMaterial,
+        shadow: .card
       )
-      .overlay(
-        RoundedRectangle(cornerRadius: StarbeamTheme.cardCorner, style: .continuous)
-          .strokeBorder(.white.opacity(scheme == .dark ? 0.10 : 0.22), lineWidth: 1)
-      )
-      .shadow(color: StarbeamTheme.cardShadow(scheme), radius: scheme == .dark ? 14 : 18, x: 0, y: 10)
   }
 }
 

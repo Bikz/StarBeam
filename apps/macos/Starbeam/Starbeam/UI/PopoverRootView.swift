@@ -7,79 +7,75 @@ struct PopoverRootView: View {
 
   var body: some View {
     @Bindable var model = model
+    let style = model.settings.visualStyleEnum
 
     ZStack {
-      StarbeamBackgroundView()
+      StarbeamRootBackgroundView(style: style)
 
-      VStack(spacing: 0) {
-        ScrollView {
-          VStack(alignment: .leading, spacing: 14) {
-            header
-            bumpBanner
-            if let error = model.lastError {
-              ErrorCardView(error: error) {
-                Task { await model.refresh() }
-              }
-            }
-
-            Text("Your Pulse")
-              .font(.system(size: 18, weight: .bold, design: .rounded))
-              .padding(.top, 2)
-              .accessibilityAddTraits(.isHeader)
-
-            pulseSection
-
-            HStack {
-              Spacer()
-              Button {
-                openViewMore()
-              } label: {
-                HStack(spacing: 6) {
-                  Text("View more…")
-                  Image(systemName: "chevron.right")
-                    .font(.system(size: 11, weight: .semibold))
+      StarbeamGlassGroup {
+        VStack(spacing: 0) {
+          ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+              header
+              bumpBanner
+              if let error = model.lastError {
+                ErrorCardView(error: error) {
+                  Task { await model.refresh() }
                 }
               }
-              .buttonStyle(.plain)
-              .foregroundStyle(.secondary)
-              .accessibilityLabel("View more on dashboard")
+
+              Text("Your Pulse")
+                .font(.system(size: 18, weight: .bold, design: .rounded))
+                .padding(.top, 2)
+                .accessibilityAddTraits(.isHeader)
+
+              pulseSection
+
+              HStack {
+                Spacer()
+                Button {
+                  openViewMore()
+                } label: {
+                  HStack(spacing: 6) {
+                    Text("View more…")
+                    Image(systemName: "chevron.right")
+                      .font(.system(size: 11, weight: .semibold))
+                  }
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
+                .accessibilityLabel("View more on dashboard")
+              }
+              .padding(.top, 2)
+
+              Divider()
+                .opacity(0.6)
+                .padding(.top, 4)
+
+              splitPanels
             }
-            .padding(.top, 2)
-
-            Divider()
-              .opacity(0.6)
-              .padding(.top, 4)
-
-            splitPanels
+            .padding(18)
           }
-          .padding(18)
+          .scrollIndicators(.hidden)
+
+          WorkspacePagerView(
+            workspaces: model.auth.session?.workspaces ?? [],
+            selectedWorkspaceID: model.settings.workspaceID,
+            signedIn: model.auth.isSignedIn,
+            onSelect: { id in
+              model.selectWorkspace(id: id, shouldRefresh: true)
+            }
+          )
+
+          Divider().opacity(0.6)
+
+          footer
         }
-        .scrollIndicators(.hidden)
-
-        WorkspacePagerView(
-          workspaces: model.auth.session?.workspaces ?? [],
-          selectedWorkspaceID: model.settings.workspaceID,
-          signedIn: model.auth.isSignedIn,
-          onSelect: { id in
-            model.selectWorkspace(id: id, shouldRefresh: true)
-          }
-        )
-
-        Divider().opacity(0.6)
-
-        footer
+        .starbeamSurface(cornerRadius: StarbeamTheme.outerCorner, material: .ultraThinMaterial, shadow: .window)
+        .padding(10)
       }
-      .background(
-        RoundedRectangle(cornerRadius: StarbeamTheme.outerCorner, style: .continuous)
-          .fill(.ultraThinMaterial)
-      )
-      .overlay(
-        RoundedRectangle(cornerRadius: StarbeamTheme.outerCorner, style: .continuous)
-          .strokeBorder(.white.opacity(0.20), lineWidth: 1)
-      )
-      .padding(10)
-      .shadow(color: .black.opacity(0.18), radius: 26, x: 0, y: 18)
     }
+    .environment(\.starbeamVisualStyle, style)
     // Workspace switching: swipe left/right anywhere in the popover.
     // Keep it strict to avoid interfering with normal vertical scrolling.
     .simultaneousGesture(workspaceSwipeGesture())
@@ -95,22 +91,39 @@ struct PopoverRootView: View {
   }
 
   private var header: some View {
-    HStack(alignment: .top, spacing: 12) {
-      ZStack {
-        RoundedRectangle(cornerRadius: 14, style: .continuous)
-          .fill(
-            LinearGradient(
-              colors: [Color.pink.opacity(0.6), Color.blue.opacity(0.45)],
-              startPoint: .topLeading,
-              endPoint: .bottomTrailing
-            )
-          )
-          .frame(width: 44, height: 44)
-          .shadow(color: .black.opacity(0.12), radius: 10, x: 0, y: 6)
+    let style = model.settings.visualStyleEnum
 
-        Image(systemName: "sparkles")
-          .font(.system(size: 18, weight: .semibold))
-          .foregroundStyle(.white)
+    return HStack(alignment: .top, spacing: 12) {
+      ZStack {
+        if style == .chroma {
+          RoundedRectangle(cornerRadius: 14, style: .continuous)
+            .fill(
+              LinearGradient(
+                colors: [Color.pink.opacity(0.6), Color.blue.opacity(0.45)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+              )
+            )
+            .frame(width: 44, height: 44)
+            .shadow(color: .black.opacity(0.12), radius: 10, x: 0, y: 6)
+
+          Image(systemName: "sparkles")
+            .font(.system(size: 18, weight: .semibold))
+            .foregroundStyle(.white)
+        } else {
+          RoundedRectangle(cornerRadius: 14, style: .continuous)
+            .fill(.thinMaterial)
+            .frame(width: 44, height: 44)
+            .overlay(
+              RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(.white.opacity(0.16), lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 6)
+
+          Image(systemName: "sparkles")
+            .font(.system(size: 18, weight: .semibold))
+            .foregroundStyle(.primary)
+        }
       }
       .accessibilityHidden(true)
 
@@ -161,7 +174,9 @@ struct PopoverRootView: View {
   }
 
   private var bumpBanner: some View {
-    HStack(spacing: 12) {
+    let style = model.settings.visualStyleEnum
+
+    return HStack(spacing: 12) {
       ZStack {
         Circle()
           .fill(Color.orange.opacity(0.22))
@@ -181,13 +196,22 @@ struct PopoverRootView: View {
       Spacer(minLength: 0)
 
       if !model.auth.isSignedIn {
-        Button("Sign in") {
-          model.showingSignInSheet = true
+        if style == .chroma {
+          Button("Sign in") {
+            model.showingSignInSheet = true
+          }
+          .buttonStyle(.borderedProminent)
+          .tint(Color.blue.opacity(0.75))
+          .controlSize(.small)
+          .accessibilityLabel("Sign in")
+        } else {
+          Button("Sign in") {
+            model.showingSignInSheet = true
+          }
+          .buttonStyle(.borderedProminent)
+          .controlSize(.small)
+          .accessibilityLabel("Sign in")
         }
-        .buttonStyle(.borderedProminent)
-        .tint(Color.blue.opacity(0.75))
-        .controlSize(.small)
-        .accessibilityLabel("Sign in")
       } else {
         Image(systemName: model.auth.session?.workspaces.count ?? 0 > 1 ? "chevron.left.slash.chevron.right" : "sparkle")
           .foregroundStyle(.secondary)
@@ -198,7 +222,7 @@ struct PopoverRootView: View {
     .padding(14)
     .starbeamCard()
     .accessibilityElement(children: .contain)
-      .accessibilityLabel("Pulse bump")
+    .accessibilityLabel("Pulse bump")
   }
 
   private var bumpText: String {

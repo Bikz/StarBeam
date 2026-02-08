@@ -11,6 +11,8 @@ final class SettingsStore {
     static let notificationsEnabled = "notificationsEnabled"
     static let notificationTimeMinutes = "notificationTimeMinutes"
     static let submitIdeaURL = "submitIdeaURL"
+    static let appearanceMode = "appearanceMode"
+    static let visualStyle = "visualStyle"
   }
 
   private let defaults: UserDefaults
@@ -44,6 +46,16 @@ final class SettingsStore {
     didSet { defaults.set(submitIdeaURL, forKey: Keys.submitIdeaURL) }
   }
 
+  /// "system" | "light" | "dark"
+  var appearanceMode: String {
+    didSet { defaults.set(appearanceMode, forKey: Keys.appearanceMode) }
+  }
+
+  /// "glass" | "chroma"
+  var visualStyle: String {
+    didSet { defaults.set(visualStyle, forKey: Keys.visualStyle) }
+  }
+
   init(defaults: UserDefaults = .standard) {
     self.defaults = defaults
 
@@ -57,6 +69,10 @@ final class SettingsStore {
     notificationTimeMinutes = defaults.object(forKey: Keys.notificationTimeMinutes) as? Int ?? defaultMinutes
 
     submitIdeaURL = defaults.string(forKey: Keys.submitIdeaURL) ?? "\(Self.defaultWebOrigin)/feedback?source=macos"
+
+    // Default: neutral system glass and follow OS appearance.
+    appearanceMode = defaults.string(forKey: Keys.appearanceMode) ?? "system"
+    visualStyle = defaults.string(forKey: Keys.visualStyle) ?? "glass"
 
     // Demo guardrail: migrate old/stale origins to the current hosted origin.
     // This prevents accidental cross-project sync when the user has other local servers running.

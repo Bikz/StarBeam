@@ -8,6 +8,26 @@ struct SettingsView: View {
     @Bindable var settings = model.settings
 
     Form {
+      Section("Appearance") {
+        Picker("Mode", selection: $settings.appearanceMode) {
+          ForEach(StarbeamAppearanceMode.allCases) { mode in
+            Text(mode.displayName).tag(mode.rawValue)
+          }
+        }
+        .pickerStyle(.segmented)
+
+        Picker("Style", selection: $settings.visualStyle) {
+          ForEach(StarbeamVisualStyle.allCases) { s in
+            Text(s.displayName).tag(s.rawValue)
+          }
+        }
+        .pickerStyle(.segmented)
+
+        Text("Glass is neutral and system-native. Chroma brings back the colorful background.")
+          .font(.footnote)
+          .foregroundStyle(.secondary)
+      }
+
       Section("Account") {
         if model.auth.isSignedIn {
           Text("Signed in")
