@@ -5,11 +5,12 @@ import { cookies } from "next/headers";
 import { prisma } from "@starbeam/db";
 
 import { authOptions } from "@/lib/auth";
+import { webOrigin } from "@/lib/webOrigin";
 
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    return NextResponse.redirect(new URL("/login", webOrigin()));
   }
 
   const url = new URL(request.url);
@@ -19,7 +20,7 @@ export async function GET(request: Request) {
   const cookieStore = await cookies();
   const referralCode = cookieStore.get("sb_ref")?.value ?? "";
 
-  const resp = NextResponse.redirect(new URL(safeNext, request.url));
+  const resp = NextResponse.redirect(new URL(safeNext, webOrigin()));
   // Clear cookie regardless of validity (prevents loops).
   resp.cookies.set("sb_ref", "", { path: "/", maxAge: 0 });
 
