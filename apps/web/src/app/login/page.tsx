@@ -29,7 +29,7 @@ export default async function LoginPage({
   const callbackUrlRaw = (sp.callbackUrl ?? "/beta").trim() || "/beta";
   const safeNext = callbackUrlRaw.startsWith("/") ? callbackUrlRaw : "/beta";
   const referralCode = typeof sp.ref === "string" ? sp.ref.trim() : "";
-  const callbackUrl = referralCode
+  const callbackUrl = referralCode && !callbackUrlRaw.startsWith("/beta/claim")
     ? `/beta/claim?ref=${encodeURIComponent(referralCode)}&next=${encodeURIComponent(safeNext)}`
     : callbackUrlRaw;
 

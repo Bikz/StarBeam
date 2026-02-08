@@ -12,10 +12,6 @@ export async function GET(
   const loginUrl = new URL("/login", webOrigin());
   if (referralCode) {
     loginUrl.searchParams.set("ref", referralCode);
-    loginUrl.searchParams.set(
-      "callbackUrl",
-      `/beta/claim?ref=${encodeURIComponent(referralCode)}&next=/beta`,
-    );
   }
   // Note: in production behind proxies, `request.url` can reflect an internal
   // origin (e.g. localhost:PORT). Always redirect to the configured public origin.
