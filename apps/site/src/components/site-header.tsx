@@ -32,18 +32,6 @@ export default function SiteHeader({ appOrigin }: { appOrigin: string }) {
           >
             Download
           </Link>
-          <Link
-            href="/pricing"
-            className="sb-btn px-4 py-2 text-xs font-semibold text-[color:var(--sb-fg)]"
-          >
-            Pricing
-          </Link>
-          <Link
-            href="/faq"
-            className="sb-btn px-4 py-2 text-xs font-semibold text-[color:var(--sb-fg)]"
-          >
-            FAQ
-          </Link>
           <a
             href={`${appOrigin}/login`}
             className="sb-btn px-4 py-2 text-xs font-semibold text-[color:var(--sb-fg)]"
