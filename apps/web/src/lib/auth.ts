@@ -17,7 +17,9 @@ export const authOptions: NextAuthOptions = {
     signOut: "/signout",
   },
   session: {
-    strategy: "database",
+    // Credentials sign-in + Render/Cloudflare proxying is much more reliable with
+    // JWT sessions (no DB session write/read dependency).
+    strategy: "jwt",
   },
   callbacks: {
     session: async ({ session, user, token }) => {
