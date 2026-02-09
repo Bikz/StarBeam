@@ -8,6 +8,7 @@ import { generateFirstPulseNow } from "@/actions/generate-first-pulse-now";
 import PageHeader from "@/components/page-header";
 import UiModeToggle from "@/components/ui-mode-toggle";
 import { authOptions } from "@/lib/auth";
+import { isAdminEmail } from "@/lib/admin";
 import { siteOrigin } from "@/lib/siteOrigin";
 import { startGoogleConnect, disconnectGoogleConnection } from "@/app/(portal)/w/[slug]/integrations/googleActions";
 
@@ -49,6 +50,7 @@ export default async function SettingsPage({
   const manageable = canManage(membership.role);
   const base = `/w/${membership.workspace.slug}`;
   const dl = `${siteOrigin()}/download`;
+  const isAdmin = isAdminEmail(session.user.email);
 
   const [edition, googleConnections, deviceTokens, bootstrapJobRun, autoFirstJobRun] =
     await Promise.all([
@@ -351,6 +353,13 @@ export default async function SettingsPage({
             </Link>
             .
           </div>
+          {isAdmin ? (
+            <div className="pt-2">
+              <Link href="/admin/beta-keys" className="sb-btn h-11 px-5 text-sm font-semibold">
+                Admin: beta keys
+              </Link>
+            </div>
+          ) : null}
         </div>
       </section>
     </div>
