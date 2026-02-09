@@ -11,6 +11,8 @@ export const authOptions: NextAuthOptions = {
   pages: {
     // Login is hosted on the app subdomain; marketing lives on the root domain.
     signIn: "/login",
+    // Replace the default NextAuth sign-out confirmation UI with Starbeam UI.
+    signOut: "/signout",
   },
   session: {
     strategy: "database",
