@@ -15,6 +15,12 @@ function canonicalOrigin(): string | null {
   }
 }
 
+function firstHeaderValue(raw: string | null): string {
+  // Headers like x-forwarded-host can be a comma-separated list. We only care
+  // about the client-facing entry.
+  return (raw ?? "").split(",")[0]?.trim() ?? "";
+}
+
 export function middleware(request: NextRequest) {
   // Keep health checks stable and non-redirecting.
   const { pathname } = request.nextUrl;
@@ -23,10 +29,24 @@ export function middleware(request: NextRequest) {
   const origin = canonicalOrigin();
   if (!origin) return NextResponse.next();
 
-  // If the request comes in on a non-canonical host (e.g. *.onrender.com),
-  // redirect to the canonical origin so auth cookies live on one domain.
-  const currentOrigin = `${request.nextUrl.protocol}//${request.nextUrl.host}`;
-  if (currentOrigin === origin) return NextResponse.next();
+  // Cloudflare (and other proxies) may connect to Render over HTTP even when the
+  // user is on HTTPS. Relying on request.nextUrl.protocol can cause an infinite
+  // "https -> https" redirect loop. Canonicalize by host only.
+  const canonicalHost = (() => {
+    try {
+      return new URL(origin).host;
+    } catch {
+      return "";
+    }
+  })();
+  if (!canonicalHost) return NextResponse.next();
+
+  const reqHost =
+    firstHeaderValue(request.headers.get("x-forwarded-host")) ||
+    firstHeaderValue(request.headers.get("host")) ||
+    request.nextUrl.host;
+
+  if (reqHost === canonicalHost) return NextResponse.next();
 
   const target = new URL(request.nextUrl.pathname + request.nextUrl.search, origin);
   return NextResponse.redirect(target, 308);
@@ -35,4 +55,3 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: ["/((?!_next/|favicon.ico).*)"],
 };
-
