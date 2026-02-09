@@ -181,8 +181,9 @@ struct DeviceSignInView: View {
       }
     }
     .onDisappear {
-      pollTask?.cancel()
-      pollTask = nil
+      // Menu bar popovers automatically dismiss when the user clicks into their browser.
+      // Keep polling in the background so device sign-in can complete even if this view
+      // disappears. Users can still cancel explicitly via the Cancel/Close buttons.
     }
   }
 
