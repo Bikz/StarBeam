@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { signIn, useSession } from "next-auth/react";
 
 function normalizeEmail(input: string): string {
@@ -39,9 +39,24 @@ export default function EmailCodeSignIn({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sentAt, setSentAt] = useState<number | null>(null);
+  const [now, setNow] = useState(() => Date.now());
 
   const emailValue = useMemo(() => normalizeEmail(email), [email]);
   const canContinue = Boolean(emailValue) && !busy && !disabled;
+
+  const resendCooldownMs = 30_000;
+  const resendRemainingMs =
+    step === "code" && sentAt ? Math.max(0, resendCooldownMs - (now - sentAt)) : 0;
+  const resendRemainingSec = Math.ceil(resendRemainingMs / 1000);
+  const canResend = step === "code" && resendRemainingMs === 0 && !busy && !disabled;
+
+  useEffect(() => {
+    if (step !== "code" || !sentAt) return;
+    if (resendRemainingMs <= 0) return;
+
+    const id = window.setInterval(() => setNow(Date.now()), 250);
+    return () => window.clearInterval(id);
+  }, [step, sentAt, resendRemainingMs]);
 
   async function requestCode() {
     setError(null);
@@ -58,6 +73,7 @@ export default function EmailCodeSignIn({
         body: JSON.stringify({ email: emailValue }),
       });
       setSentAt(Date.now());
+      setNow(Date.now());
       setStep("code");
     } catch {
       setError("Could not send a code. Try again.");
@@ -165,10 +181,10 @@ export default function EmailCodeSignIn({
               type="button"
               className="sb-btn h-11 px-5 text-sm font-semibold"
               onClick={requestCode}
-              disabled={busy || disabled}
+              disabled={!canResend}
               aria-label="Resend code"
             >
-              Resend
+              {resendRemainingSec > 0 ? `Resend (${resendRemainingSec}s)` : "Resend"}
             </button>
             <button
               type="button"
