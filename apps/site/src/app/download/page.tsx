@@ -41,7 +41,7 @@ export default async function DownloadPage() {
                   Download Starbeam for macOS
                 </h1>
                 <p className="mt-3 text-[color:var(--sb-muted)] text-lg leading-relaxed">
-                  One calm menu bar update a day.
+                  Let Starbeam do the background thinking for you.
                 </p>
 
                 <div className="mt-7 flex justify-center">
