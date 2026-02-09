@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 
@@ -69,22 +68,7 @@ export default async function LoginPage({
               href={`${siteOrigin()}/waitlist`}
               className="text-[color:var(--sb-fg)] hover:underline"
             >
-              Join waitlist
-            </a>
-            <span className="text-[color:var(--sb-muted)]" aria-hidden>
-              ·
-            </span>
-            <Link href="/" className="text-[color:var(--sb-muted)] hover:underline">
-              Back to app
-            </Link>
-            <span className="text-[color:var(--sb-muted)]" aria-hidden>
-              ·
-            </span>
-            <a
-              href={siteOrigin()}
-              className="text-[color:var(--sb-muted)] hover:underline"
-            >
-              Visit site
+              No invite yet? Join the waitlist
             </a>
           </div>
         </div>

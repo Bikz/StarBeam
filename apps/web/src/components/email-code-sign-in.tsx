@@ -7,6 +7,18 @@ function normalizeEmail(input: string): string {
   return input.trim().toLowerCase();
 }
 
+function isProbablyValidEmail(email: string): boolean {
+  // Keep this permissive; the server validates. This is just to keep the primary
+  // CTA disabled until the user enters something plausibly correct.
+  const e = email.trim();
+  if (!e) return false;
+  const at = e.indexOf("@");
+  if (at <= 0) return false;
+  const dot = e.lastIndexOf(".");
+  if (dot <= at + 1) return false;
+  return dot < e.length - 1;
+}
+
 type Step = "email" | "code";
 
 export default function EmailCodeSignIn({
@@ -22,17 +34,20 @@ export default function EmailCodeSignIn({
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
   const [ref, setRef] = useState(() => initialReferralCode.trim());
+  const [refOpen, setRefOpen] = useState(() => Boolean(initialReferralCode.trim()));
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sentAt, setSentAt] = useState<number | null>(null);
 
   const emailValue = useMemo(() => normalizeEmail(email), [email]);
+  const canContinue = isProbablyValidEmail(emailValue) && !busy && !disabled;
+  const refValue = ref.trim();
 
   async function requestCode() {
     setError(null);
-    if (!emailValue) {
-      setError("Enter your email.");
+    if (!isProbablyValidEmail(emailValue)) {
+      setError("Enter a valid email.");
       return;
     }
 
@@ -41,7 +56,7 @@ export default function EmailCodeSignIn({
       await fetch("/api/auth/email/code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: emailValue, ...(ref.trim() ? { ref: ref.trim() } : {}) }),
+        body: JSON.stringify({ email: emailValue, ...(refValue ? { ref: refValue } : {}) }),
       });
       setSentAt(Date.now());
       setStep("code");
@@ -79,8 +94,8 @@ export default function EmailCodeSignIn({
 
   const sentHint =
     step === "code" && sentAt
-      ? `Code sent to ${emailValue || "your email"}.`
-      : "We’ll email you a 6-digit code.";
+      ? `We sent a 6-digit code to ${emailValue || "your email"}.`
+      : "Enter your email to continue. We’ll email you a 6-digit code.";
 
   return (
     <div className="grid gap-4">
@@ -89,7 +104,14 @@ export default function EmailCodeSignIn({
       </div>
 
       {step === "email" ? (
-        <div className="grid gap-3">
+        <form
+          className="grid gap-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!canContinue) return;
+            requestCode();
+          }}
+        >
           <label className="grid gap-2">
             <div className="text-xs font-extrabold sb-title">Email</div>
             <input
@@ -105,30 +127,41 @@ export default function EmailCodeSignIn({
             />
           </label>
 
-          <label className="grid gap-2">
-            <div className="text-xs font-extrabold sb-title">
-              Referral code <span className="text-[color:var(--sb-muted)] font-semibold">(optional)</span>
-            </div>
-            <input
-              value={ref}
-              onChange={(e) => setRef(e.target.value)}
-              placeholder="Paste code (or open a referral link)"
-              autoComplete="off"
-              spellCheck={false}
-              className="sb-input"
+          <div className="grid gap-2">
+            <button
+              type="button"
+              className="text-left text-xs font-semibold text-[color:var(--sb-muted)] hover:text-[color:var(--sb-fg)]"
+              onClick={() => setRefOpen((v) => !v)}
               disabled={busy || disabled}
-            />
-          </label>
+              aria-expanded={refOpen}
+            >
+              Have a referral code?{" "}
+              <span className="text-[color:var(--sb-muted)]">(optional)</span>
+            </button>
+            {refOpen ? (
+              <label className="grid gap-2">
+                <div className="text-xs font-extrabold sb-title">Referral code</div>
+                <input
+                  value={ref}
+                  onChange={(e) => setRef(e.target.value)}
+                  placeholder="Paste code (or open a referral link)"
+                  autoComplete="off"
+                  spellCheck={false}
+                  className="sb-input"
+                  disabled={busy || disabled}
+                />
+              </label>
+            ) : null}
+          </div>
 
           <button
-            type="button"
+            type="submit"
             className="sb-btn sb-btn-primary h-11 px-5 text-sm font-extrabold"
-            onClick={requestCode}
-            disabled={busy || disabled}
+            disabled={!canContinue}
           >
-            Send code
+            Continue
           </button>
-        </div>
+        </form>
       ) : (
         <div className="grid gap-3">
           <div className="grid gap-2">
@@ -152,7 +185,7 @@ export default function EmailCodeSignIn({
               onClick={verifyCode}
               disabled={busy || disabled}
             >
-              Sign in
+              Log in
             </button>
             <button
               type="button"
