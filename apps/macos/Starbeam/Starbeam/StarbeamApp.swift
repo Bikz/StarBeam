@@ -11,6 +11,8 @@ struct StarbeamApp: App {
         .environment(model)
         .frame(width: 460, height: 760)
     } label: {
+      // Keep this as an SF Symbol for now. Custom menu bar icons should be
+      // vector/PDF template assets (or SF Symbols) to avoid fuzziness.
       Image(systemName: "sparkles")
         .accessibilityLabel("Starbeam")
     }

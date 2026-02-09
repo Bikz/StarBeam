@@ -3,6 +3,7 @@ import AppKit
 
 struct PopoverRootView: View {
   @Environment(AppModel.self) private var model
+  @Environment(\.starbeamVisualStyle) private var style
 
   private enum Route {
     case home
@@ -15,7 +16,6 @@ struct PopoverRootView: View {
 
   var body: some View {
     @Bindable var model = model
-    let style = model.settings.visualStyleEnum
 
     ZStack {
       StarbeamRootBackgroundView(style: style)
@@ -35,89 +35,92 @@ struct PopoverRootView: View {
         .padding(10)
       }
     }
-    .environment(\.starbeamVisualStyle, style)
     .onDisappear {
       // MenuBarExtra closes when focus changes; ensure we don't "stick" on Settings/Sign-in.
       route = .home
     }
   }
 
+  @ViewBuilder
   private var homeContent: some View {
-    Group {
-      if !model.auth.isSignedIn {
-        signedOutContent
-      } else {
-        VStack(spacing: 0) {
-          ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-              headerFlat
+    if !model.auth.isSignedIn {
+      signedOutContent
+    } else {
+      VStack(spacing: 0) {
+        ScrollView {
+          VStack(alignment: .leading, spacing: 14) {
+            headerFlat()
 
-              if let error = model.lastError {
-                errorBanner(error)
-              }
+            if let error = model.lastError {
+              errorBanner(error)
+            }
 
-              Text("Your Pulse")
-                .font(.system(size: 18, weight: .bold, design: .rounded))
-                .padding(.top, 2)
-                .accessibilityAddTraits(.isHeader)
-
-              pulseSection
-
-              HStack {
-                Spacer()
-                Button {
-                  openViewMore()
-                } label: {
-                  HStack(spacing: 6) {
-                    Text("View more…")
-                    Image(systemName: "chevron.right")
-                      .font(.system(size: 11, weight: .semibold))
-                  }
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
-                .accessibilityLabel("View more on dashboard")
-              }
+            Text("Your Pulse")
+              .font(.system(size: 18, weight: .bold, design: .rounded))
               .padding(.top, 2)
+              .accessibilityAddTraits(.isHeader)
 
-              Divider()
-                .opacity(0.6)
-                .padding(.top, 4)
+            pulseSection
 
-              splitPanels
+            HStack {
+              Spacer()
+              Button {
+                openViewMore()
+              } label: {
+                HStack(spacing: 6) {
+                  Text("View more…")
+                  Image(systemName: "chevron.right")
+                    .font(.system(size: 11, weight: .semibold))
+                }
+              }
+              .buttonStyle(.plain)
+              .foregroundStyle(.secondary)
+              .accessibilityLabel("View more on dashboard")
             }
-            .padding(18)
-          }
-          .scrollIndicators(.hidden)
-          .refreshable {
-            guard model.canSync else { return }
-            await model.refresh()
-          }
-          // Workspace switching: swipe left/right anywhere in the popover.
-          // Keep it strict to avoid interfering with normal vertical scrolling.
-          .simultaneousGesture(workspaceSwipeGesture())
+            .padding(.top, 2)
 
-          WorkspacePagerView(
-            workspaces: model.auth.session?.workspaces ?? [],
-            selectedWorkspaceID: model.settings.workspaceID,
-            signedIn: model.auth.isSignedIn,
-            onSelect: { id in
-              model.selectWorkspace(id: id, shouldRefresh: true)
-            }
-          )
+            Divider()
+              .opacity(0.6)
+              .padding(.top, 4)
+
+            splitPanels
+          }
+          .padding(18)
         }
+        .scrollIndicators(.hidden)
+        .refreshable {
+          guard model.canSync else { return }
+          await model.refresh()
+        }
+        // Workspace switching: swipe left/right anywhere in the popover.
+        // Keep it strict to avoid interfering with normal vertical scrolling.
+        .simultaneousGesture(workspaceSwipeGesture())
+
+        WorkspacePagerView(
+          workspaces: model.auth.session?.workspaces ?? [],
+          selectedWorkspaceID: model.settings.workspaceID,
+          signedIn: model.auth.isSignedIn,
+          onSelect: { id in
+            model.selectWorkspace(id: id, shouldRefresh: true)
+          }
+        )
       }
     }
   }
 
   private var signedOutContent: some View {
     VStack(spacing: 0) {
-      headerFlat
+      headerFlat(showDivider: false)
         .padding(.horizontal, 18)
         .padding(.top, 18)
 
       VStack(spacing: 14) {
         Spacer(minLength: 0)
+
+        EmptyStatePulseArt()
+          .frame(width: 176, height: 176)
+          .opacity(0.92)
+          .padding(.bottom, 2)
 
         if let notice = model.signedOutNotice {
           VStack(alignment: .leading, spacing: 6) {
@@ -217,7 +220,7 @@ struct PopoverRootView: View {
     let canOpenDashboard = model.auth.isSignedIn && model.dashboardURL(kind: .dashboardHome) != nil
 
     return StarbeamHeaderBar(
-      style: model.settings.visualStyleEnum,
+      style: style,
       workspaceName: model.workspaceName,
       signedIn: model.auth.isSignedIn,
       canOpenDashboard: canOpenDashboard,
@@ -229,10 +232,12 @@ struct PopoverRootView: View {
     )
   }
 
-  private var headerFlat: some View {
+  private func headerFlat(showDivider: Bool = true) -> some View {
     VStack(alignment: .leading, spacing: 10) {
       header
-      Divider().opacity(0.35)
+      if showDivider {
+        Divider().opacity(0.35)
+      }
     }
   }
 
@@ -251,27 +256,31 @@ struct PopoverRootView: View {
       HStack(alignment: .center, spacing: 12) {
         appMark
 
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: signedIn ? 2 : 0) {
           Text("Starbeam")
             .font(StarbeamTheme.headerTitleFont)
             .lineLimit(1)
 
-          Text("Your Pulse for \(workspaceName)")
-            .font(StarbeamTheme.headerSubtitleFont)
-            .foregroundStyle(.secondary)
-            .lineLimit(1)
+          if signedIn {
+            Text("Your Pulse for \(workspaceName)")
+              .font(StarbeamTheme.headerSubtitleFont)
+              .foregroundStyle(.secondary)
+              .lineLimit(1)
+          }
         }
         .layoutPriority(1)
 
         Spacer(minLength: 0)
 
         HStack(spacing: 10) {
-          HeaderIconButton(
-            systemImage: "house",
-            accessibilityLabel: "Open pulse on web",
-            enabled: canOpenDashboard,
-            action: onOpenDashboard
-          )
+          if signedIn {
+            HeaderIconButton(
+              systemImage: "house",
+              accessibilityLabel: "Open pulse on web",
+              enabled: canOpenDashboard,
+              action: onOpenDashboard
+            )
+          }
 
           HeaderIconButton(
             systemImage: "gearshape",
@@ -280,18 +289,20 @@ struct PopoverRootView: View {
             action: onOpenSettings
           )
 
-          HeaderIconButton(
-            accessibilityLabel: "Refresh",
-            enabled: signedIn && canSync,
-            action: onRefresh,
-            accessibilityHint: canSync ? "Sync now" : "Sign in and set a workspace in settings to enable sync"
-          ) {
-            if isRefreshing {
-              ProgressView()
-                .controlSize(.small)
-            } else {
-              Image(systemName: "arrow.clockwise")
-                .font(.system(size: 13, weight: .semibold))
+          if signedIn {
+            HeaderIconButton(
+              accessibilityLabel: "Refresh",
+              enabled: canSync,
+              action: onRefresh,
+              accessibilityHint: canSync ? "Sync now" : "Set a workspace in Settings to enable sync"
+            ) {
+              if isRefreshing {
+                ProgressView()
+                  .controlSize(.small)
+              } else {
+                Image(systemName: "arrow.clockwise")
+                  .font(.system(size: 13, weight: .semibold))
+              }
             }
           }
         }
@@ -331,6 +342,44 @@ struct PopoverRootView: View {
         }
       }
       .accessibilityHidden(true)
+    }
+  }
+
+  private struct EmptyStatePulseArt: View {
+    @Environment(\.colorScheme) private var scheme
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+    var body: some View {
+      if reduceTransparency {
+        EmptyView()
+      } else if let img = load() {
+        Image(nsImage: img)
+          .resizable()
+          .scaledToFit()
+          .saturation(scheme == .dark ? 0.96 : 0.86)
+      } else {
+        EmptyView()
+      }
+    }
+
+    private func load() -> NSImage? {
+      let base = "empty_state_pulse_glass_orb"
+      let ext = "png"
+
+      func url(_ subdir: String?) -> URL? {
+        Bundle.main.url(forResource: base, withExtension: ext, subdirectory: subdir)
+      }
+
+      let candidates = [
+        url(nil),
+        url("EmptyState"),
+        url("Resources/EmptyState"),
+      ].compactMap { $0 }
+
+      for u in candidates {
+        if let img = NSImage(contentsOf: u) { return img }
+      }
+      return nil
     }
   }
 

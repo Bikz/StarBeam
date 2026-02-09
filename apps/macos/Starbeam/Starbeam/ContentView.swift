@@ -4,6 +4,7 @@ struct ContentView: View {
   @Environment(AppModel.self) private var model
 
   var body: some View {
+    @Bindable var model = model
     PopoverRootView()
       // Apply here (not in StarbeamApp) so changes to SettingsStore trigger SwiftUI updates.
       .environment(\.starbeamVisualStyle, model.settings.visualStyleEnum)
