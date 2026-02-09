@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { prisma } from "@starbeam/db";
 
+import { isAdminEmail } from "@/lib/admin";
 import { ensureReferralCodeForUser } from "@/lib/userProvisioning";
 
 export async function referralCountForUser(userId: string): Promise<number> {
@@ -21,7 +22,7 @@ export async function ensureBetaEligibilityProcessed(userId: string): Promise<{
   const [user, referralCount] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, betaAccessGrantedAt: true, referralCode: true },
+      select: { id: true, email: true, betaAccessGrantedAt: true, referralCode: true },
     }),
     referralCountForUser(userId),
   ]);
@@ -31,6 +32,17 @@ export async function ensureBetaEligibilityProcessed(userId: string): Promise<{
   const referralCode =
     user.referralCode ??
     (await prisma.$transaction((tx) => ensureReferralCodeForUser(tx, userId)));
+
+  // Admin allowlist bypasses the beta gate (useful for internal testing / ops).
+  if (isAdminEmail(user.email)) {
+    if (!user.betaAccessGrantedAt) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { betaAccessGrantedAt: new Date() },
+      });
+    }
+    return { hasAccess: true, referralCode, referralCount };
+  }
 
   if (user.betaAccessGrantedAt) {
     return { hasAccess: true, referralCode, referralCount };
@@ -51,4 +63,3 @@ export async function requireBetaAccessOrRedirect(userId: string): Promise<void>
   const status = await ensureBetaEligibilityProcessed(userId);
   if (!status.hasAccess) redirect("/beta");
 }
-

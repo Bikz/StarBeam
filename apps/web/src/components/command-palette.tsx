@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import type { ActiveWorkspace, ShellWorkspace } from "@/components/app-shell";
 import { runNightlyNow } from "@/actions/run-nightly-now";
 import { IconSearch } from "@/components/sb-icons";
+import { useUiMode } from "@/components/ui-mode";
 
 type Item = {
   id: string;
@@ -38,6 +39,8 @@ export default function CommandPalette({
 }) {
   const router = useRouter();
   const pathname = usePathname() ?? "/";
+  const { mode } = useUiMode();
+  const advanced = mode === "advanced";
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const [error, setError] = useState<string>("");
@@ -96,16 +99,6 @@ export default function CommandPalette({
     const workspaceNav: Item[] = w
       ? [
           {
-            id: "nav:setup",
-            section: "Workspace",
-            label: "Setup",
-            keywords: "onboarding profile",
-            perform: () => {
-              router.push(`/w/${w.slug}/onboarding`);
-              onClose();
-            },
-          },
-          {
             id: "nav:pulse",
             section: "Workspace",
             label: "Pulse",
@@ -115,6 +108,33 @@ export default function CommandPalette({
               onClose();
             },
           },
+          {
+            id: "nav:settings",
+            section: "Workspace",
+            label: "Settings",
+            keywords: "setup tools context advanced",
+            perform: () => {
+              router.push(`/w/${w.slug}/settings`);
+              onClose();
+            },
+          },
+        ]
+      : [];
+
+    if (w && advanced) {
+      workspaceNav.push({
+        id: "nav:integrations",
+        section: "Workspace",
+        label: "Integrations",
+        keywords: "google github linear notion",
+        perform: () => {
+          router.push(`/w/${w.slug}/integrations`);
+          onClose();
+        },
+      });
+
+      if (isManageRole(w.role)) {
+        workspaceNav.push(
           {
             id: "nav:tracks",
             section: "Workspace",
@@ -146,16 +166,6 @@ export default function CommandPalette({
             },
           },
           {
-            id: "nav:integrations",
-            section: "Workspace",
-            label: "Integrations",
-            keywords: "google github linear notion",
-            perform: () => {
-              router.push(`/w/${w.slug}/integrations`);
-              onClose();
-            },
-          },
-          {
             id: "nav:runs",
             section: "Workspace",
             label: "Runs",
@@ -165,11 +175,12 @@ export default function CommandPalette({
               onClose();
             },
           },
-        ]
-      : [];
+        );
+      }
+    }
 
     const actions: Item[] =
-      w && isManageRole(w.role)
+      w && advanced && isManageRole(w.role)
         ? [
             {
               id: "act:run",
@@ -210,7 +221,7 @@ export default function CommandPalette({
         : [];
 
     return [...actions, ...global, ...workspaceNav, ...wsItems];
-  }, [activeWorkspace, onClose, pathname, pending, router, workspaces]);
+  }, [activeWorkspace, advanced, onClose, pathname, pending, router, workspaces]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();

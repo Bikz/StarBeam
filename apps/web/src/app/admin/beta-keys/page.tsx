@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 
@@ -134,6 +135,12 @@ export default async function BetaKeysAdminPage({
                         {k.expiresAt ? ` · Expires: ${k.expiresAt.toISOString()}` : ""}
                       </div>
                       <div className="mt-3 flex gap-2">
+                        <Link
+                          href={`/admin/beta-keys/${k.id}`}
+                          className="sb-btn px-4 py-2 text-xs font-semibold"
+                        >
+                          View redemptions
+                        </Link>
                         {!disabled ? (
                           <form action={disableBetaKey.bind(null, k.id)}>
                             <button type="submit" className="sb-btn px-4 py-2 text-xs font-semibold">

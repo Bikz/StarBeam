@@ -5,8 +5,7 @@ import { prisma } from "@starbeam/db";
 
 import { authOptions } from "@/lib/auth";
 
-// `/w/:slug` is intentionally not a "settings/checklist" page anymore.
-// It routes new users into the guided onboarding flow, and routed users to Pulse.
+// `/w/:slug` is intentionally a thin redirect so Pulse is always the primary object.
 export default async function WorkspaceHome({
   params,
 }: {
@@ -23,15 +22,5 @@ export default async function WorkspaceHome({
   });
   if (!membership) notFound();
 
-  const pulseEdition = await prisma.pulseEdition.findFirst({
-    where: { workspaceId: membership.workspace.id, userId: session.user.id },
-    select: { id: true },
-  });
-
-  if (pulseEdition) {
-    redirect(`/w/${membership.workspace.slug}/pulse`);
-  }
-
-  redirect(`/w/${membership.workspace.slug}/onboarding`);
+  redirect(`/w/${membership.workspace.slug}/pulse`);
 }
-

@@ -13,8 +13,8 @@ function sectionLabel(pathname: string, activeWorkspace: ActiveWorkspace): strin
   if (activeWorkspace) {
     const base = `/w/${activeWorkspace.slug}`;
     const map: Array<{ label: string; href: string }> = [
-      { label: "Setup", href: `${base}/onboarding` },
       { label: "Pulse", href: `${base}/pulse` },
+      { label: "Settings", href: `${base}/settings` },
       { label: "Tracks", href: `${base}/tracks` },
       { label: "Announcements", href: `${base}/announcements` },
       { label: "People", href: `${base}/members` },
@@ -26,7 +26,7 @@ function sectionLabel(pathname: string, activeWorkspace: ActiveWorkspace): strin
     if (match) return match.label;
 
     // Legacy / auxiliary routes that still matter to core journeys.
-    if (pathname === `${base}/profile` || pathname.startsWith(`${base}/profile/`)) return "Setup";
+    if (pathname === `${base}/profile` || pathname.startsWith(`${base}/profile/`)) return "Settings";
     if (
       pathname === `${base}/goals` ||
       pathname.startsWith(`${base}/goals/`) ||

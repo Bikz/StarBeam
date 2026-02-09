@@ -152,7 +152,7 @@ export default function PulseReader({
       <section className="sb-card p-7">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h2 className="sb-title text-xl font-extrabold">Latest pulse</h2>
+            <h2 className="sb-title text-xl font-extrabold">Pulse</h2>
             <div className="mt-1 text-xs text-[color:var(--sb-muted)]">
               {formatDate(editionDate)}
               {rel ? ` · ${rel}` : ""} · status {edition.status.toLowerCase()}

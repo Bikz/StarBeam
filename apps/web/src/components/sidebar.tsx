@@ -6,6 +6,8 @@ import { useMemo, useState } from "react";
 
 import ThemeToggle from "@/components/theme-toggle";
 import type { ActiveWorkspace, ShellUser, ShellWorkspace } from "@/components/app-shell";
+import type { UiMode } from "@/components/ui-mode";
+import { useUiMode } from "@/components/ui-mode";
 import {
   IconChevronLeft,
   IconChevronRight,
@@ -25,8 +27,8 @@ import {
 type NavIcon =
   | "dashboard"
   | "workspaces"
-  | "setup"
   | "pulse"
+  | "settings"
   | "tracks"
   | "announcements"
   | "people"
@@ -48,8 +50,8 @@ function isActivePathname(pathname: string, item: NavItem): boolean {
 function iconFor(icon: NavIcon, className: string) {
   if (icon === "dashboard") return <IconHome className={className} />;
   if (icon === "workspaces") return <IconGrid className={className} />;
-  if (icon === "setup") return <IconSettings className={className} />;
   if (icon === "pulse") return <IconSpark className={className} />;
+  if (icon === "settings") return <IconSettings className={className} />;
   if (icon === "tracks") return <IconList className={className} />;
   if (icon === "announcements") return <IconMegaphone className={className} />;
   if (icon === "people") return <IconUsers className={className} />;
@@ -70,23 +72,43 @@ function workspaceInitials(name: string): string {
   return `${first[0] ?? "?"}${second[0] ?? "?"}`.toUpperCase();
 }
 
-function navFor(activeWorkspace: ActiveWorkspace): { global: NavItem[]; workspace: NavItem[] } {
-  const global: NavItem[] = [
-    { href: "/dashboard", label: "Dashboard", icon: "dashboard", match: "exact" },
-    { href: "/workspaces", label: "Workspaces", icon: "workspaces", match: "exact" },
-  ];
+function isManageRole(role: string | null | undefined): boolean {
+  return role === "ADMIN" || role === "MANAGER";
+}
+
+function navFor(
+  activeWorkspace: ActiveWorkspace,
+  mode: UiMode,
+): { global: NavItem[]; workspace: NavItem[] } {
+  const global: NavItem[] =
+    mode === "advanced"
+      ? [
+          { href: "/dashboard", label: "Dashboard", icon: "dashboard", match: "exact" },
+          { href: "/workspaces", label: "Workspaces", icon: "workspaces", match: "exact" },
+        ]
+      : [];
   if (!activeWorkspace) return { global, workspace: [] };
 
   const base = `/w/${activeWorkspace.slug}`;
   const workspace: NavItem[] = [
-    { href: `${base}/onboarding`, label: "Setup", icon: "setup" },
     { href: `${base}/pulse`, label: "Pulse", icon: "pulse" },
-    { href: `${base}/tracks`, label: "Tracks", icon: "tracks" },
-    { href: `${base}/announcements`, label: "Announcements", icon: "announcements" },
-    { href: `${base}/members`, label: "People", icon: "people" },
-    { href: `${base}/integrations`, label: "Integrations", icon: "integrations" },
-    { href: `${base}/jobs`, label: "Runs", icon: "runs" },
+    { href: `${base}/settings`, label: "Settings", icon: "settings" },
   ];
+
+  if (mode === "simple") return { global, workspace };
+
+  // Advanced mode: reveal additional surfaces, but avoid showing admin-only pages
+  // to non-managers by default.
+  workspace.push({ href: `${base}/integrations`, label: "Integrations", icon: "integrations" });
+
+  if (isManageRole(activeWorkspace.role)) {
+    workspace.push(
+      { href: `${base}/tracks`, label: "Tracks", icon: "tracks" },
+      { href: `${base}/announcements`, label: "Announcements", icon: "announcements" },
+      { href: `${base}/members`, label: "People", icon: "people" },
+      { href: `${base}/jobs`, label: "Runs", icon: "runs" },
+    );
+  }
   return { global, workspace };
 }
 
@@ -211,15 +233,17 @@ export default function Sidebar({
   onToggleCollapsed?: () => void;
   onNavigate?: () => void;
 }) {
+  const { mode } = useUiMode();
   const collapsed = variant === "desktop" && Boolean(collapsedProp);
   const pathname = usePathname();
   const [workspaceQuery, setWorkspaceQuery] = useState("");
+  const homeHref = activeWorkspace ? `/w/${activeWorkspace.slug}/pulse` : "/dashboard";
   const feedbackHref = useMemo(() => {
     const p = pathname || "/";
     return `/feedback?path=${encodeURIComponent(p)}`;
   }, [pathname]);
 
-  const nav = useMemo(() => navFor(activeWorkspace), [activeWorkspace]);
+  const nav = useMemo(() => navFor(activeWorkspace, mode), [activeWorkspace, mode]);
   const showWorkspaceSearch = workspaces.length > 8;
   const workspaceMatches = useMemo(() => {
     const q = workspaceQuery.trim().toLowerCase();
@@ -237,7 +261,7 @@ export default function Sidebar({
     <nav aria-label="Primary" className="sb-card p-4">
       <div className="flex items-center justify-between gap-2">
         <Link
-          href="/dashboard"
+          href={homeHref}
           onClick={onNavigate}
           aria-label={collapsed ? "Starbeam dashboard" : undefined}
           className={[

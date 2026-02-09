@@ -69,6 +69,5 @@ export async function redeemBetaKey(formData: FormData) {
     redirect(`/beta?error=${encodeURIComponent(msg)}`);
   }
 
-  redirect("/dashboard");
+  redirect(`/w/personal-${session.user.id}`);
 }
-

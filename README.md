@@ -68,6 +68,21 @@ Recommended split:
 - Marketing site (`apps/site`) on Vercel
 - Postgres on Neon
 
+## Private Beta Admin (Invite Keys)
+
+Starbeam ships with a private beta gate (invite keys + referrals).
+
+To administer invite keys:
+
+- Set `STARB_ADMIN_EMAILS` (comma-separated) to your admin emails (example: `you@company.com`).
+- Sign in with an allowed email.
+- Open `/admin/beta-keys` to create/disable keys and view redemptions.
+
+Notes:
+
+- Admin allowlisted emails bypass the beta gate (useful for internal testing / ops).
+- Plaintext invite codes are only shown at creation time and are not stored in the DB.
+
 ### Dashboard + Worker (Render + Neon)
 
 This repo includes a Render Blueprint at `render.yaml` for deploying:
