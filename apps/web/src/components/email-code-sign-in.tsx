@@ -30,6 +30,17 @@ export default function EmailCodeSignIn({
   initialEmail?: string;
   variant?: "signin" | "waitlist";
 }) {
+  function sameOriginPath(href: string): string {
+    // NextAuth may return an absolute URL (and can sometimes be misconfigured to
+    // a different host). Keep navigation on the current origin.
+    try {
+      const u = new URL(href, window.location.origin);
+      return `${u.pathname}${u.search}${u.hash}`;
+    } catch {
+      return href.startsWith("/") ? href : "/beta";
+    }
+  }
+
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState(() => initialEmail);
   const [code, setCode] = useState("");
@@ -107,7 +118,7 @@ export default function EmailCodeSignIn({
       }
 
       // Use a hard navigation so NextAuth cookies/session are applied consistently.
-      window.location.href = resp?.url ?? callbackUrl;
+      window.location.assign(sameOriginPath(resp?.url ?? callbackUrl));
     } catch {
       setError("Sign-in failed. Try again.");
     } finally {
@@ -187,7 +198,7 @@ export default function EmailCodeSignIn({
             </button>
             <button
               type="button"
-              className="sb-btn h-11 px-5 text-sm font-semibold"
+              className="sb-btn h-9 px-4 text-xs font-semibold"
               onClick={requestCode}
               disabled={!canResend}
               aria-label="Resend code"
@@ -196,7 +207,7 @@ export default function EmailCodeSignIn({
             </button>
             <button
               type="button"
-              className="sb-btn h-11 px-5 text-sm font-semibold"
+              className="sb-btn h-9 px-4 text-xs font-semibold"
               onClick={() => {
                 setStep("email");
                 setCode("");
