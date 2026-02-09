@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 
-import { joinWaitlist } from "@/app/waitlist/actions";
 import { siteOrigin } from "@/lib/siteOrigin";
 import { supportEmail } from "@/lib/supportEmail";
 import { webOrigin } from "@/lib/webOrigin";
@@ -89,7 +88,8 @@ export default async function Home({
                   </p>
 
                   <form
-                    action={joinWaitlist}
+                    action={`${app}/login`}
+                    method="GET"
                     className="mt-7 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end"
                   >
                     <label className="grid gap-1 text-sm">
@@ -106,8 +106,9 @@ export default async function Home({
                         required
                       />
                     </label>
+                    <input type="hidden" name="mode" value="waitlist" />
                     <input type="hidden" name="ref" value={ref} />
-                    <input type="hidden" name="returnTo" value="/" />
+                    <input type="hidden" name="callbackUrl" value="/beta" />
                     <button
                       type="submit"
                       className="sb-btn sb-btn-primary h-12 px-6 text-sm font-extrabold text-[color:var(--sb-fg)]"
@@ -130,21 +131,21 @@ export default async function Home({
                     referral link.
                   </div>
 
-                  <div className="mt-7 flex flex-wrap items-center gap-4 text-xs">
-                    <a
-                      href={`${app}/login`}
-                      className="font-semibold text-[color:var(--sb-fg)] hover:underline"
-                    >
-                      Sign in
-                    </a>
-                    <a
-                      href="/download"
-                      className="font-semibold text-[color:var(--sb-muted)] hover:text-[color:var(--sb-fg)] hover:underline"
-                    >
-                      Download macOS app
-                    </a>
-                  </div>
+                <div className="mt-7 flex flex-wrap items-center gap-4 text-xs">
+                  <a
+                    href={`${app}/login`}
+                    className="font-semibold text-[color:var(--sb-fg)] hover:underline"
+                  >
+                    Sign in
+                  </a>
+                  <a
+                    href="/download"
+                    className="font-semibold text-[color:var(--sb-muted)] hover:text-[color:var(--sb-fg)] hover:underline"
+                  >
+                    Download macOS app
+                  </a>
                 </div>
+              </div>
 
                 <div className="relative">
                   <div className="pointer-events-none absolute -inset-6 rounded-[30px] bg-[radial-gradient(600px_420px_at_40%_40%,rgba(0,0,0,0.08),transparent_60%)] dark:bg-[radial-gradient(600px_420px_at_40%_40%,rgba(255,255,255,0.10),transparent_60%)]" />
@@ -246,7 +247,7 @@ export default async function Home({
                 </ol>
                 <div className="mt-7 flex flex-wrap items-center gap-4">
                   <a
-                    href="/waitlist"
+                    href={`${app}/login?mode=waitlist`}
                     className="sb-btn sb-btn-primary px-5 py-2.5 text-xs font-extrabold text-[color:var(--sb-fg)]"
                   >
                     Join waitlist
@@ -302,7 +303,7 @@ export default async function Home({
                     Sign in
                   </a>
                   <a
-                    href="/waitlist"
+                    href={`${app}/login?mode=waitlist`}
                     className="text-xs font-semibold text-[color:var(--sb-muted)] hover:text-[color:var(--sb-fg)] hover:underline"
                   >
                     Join waitlist

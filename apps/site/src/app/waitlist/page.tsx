@@ -1,6 +1,5 @@
 import Link from "next/link";
 
-import { joinWaitlist } from "@/app/waitlist/actions";
 import SiteFooter from "@/components/site-footer";
 import SiteHeader from "@/components/site-header";
 import { supportEmail } from "@/lib/supportEmail";
@@ -13,7 +12,6 @@ export default async function WaitlistPage({
 }) {
   const sp = await searchParams;
   const ref = (sp.ref ?? "").trim();
-  const error = (sp.error ?? "").trim();
   const app = webOrigin();
   const email = supportEmail();
 
@@ -23,14 +21,14 @@ export default async function WaitlistPage({
         Skip to content
       </a>
       <div className="mx-auto max-w-2xl px-6 py-16">
-        <SiteHeader appOrigin={app} />
+        <SiteHeader appOrigin={app} minimal />
         <main id="main" className="sb-card p-8">
           <div className="sb-title text-2xl">Join the waitlist</div>
           <p className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
-            Starbeam is launching soon. Get early access and help shape the product.
+            Create your account with a 6-digit code. If you don’t have an invite yet, you’ll unlock via an invite key or 5 referrals.
           </p>
 
-          <form action={joinWaitlist} className="mt-6 grid gap-3">
+          <form action={`${app}/login`} method="GET" className="mt-6 grid gap-3">
             <label className="grid gap-1 text-sm">
               <span className="text-[color:var(--sb-muted)]">Email</span>
               <input
@@ -44,22 +42,14 @@ export default async function WaitlistPage({
               />
             </label>
 
+            <input type="hidden" name="mode" value="waitlist" />
             <input type="hidden" name="ref" value={ref} />
-            <input type="hidden" name="returnTo" value="/waitlist" />
+            <input type="hidden" name="callbackUrl" value="/beta" />
 
             <button type="submit" className="sb-btn sb-btn-primary h-11 px-5 text-sm font-extrabold">
-              Join waitlist
+              Continue
             </button>
           </form>
-
-          {error ? (
-            <div role="alert" className="mt-4 sb-alert">
-              <strong>Couldn’t join the waitlist.</strong>{" "}
-              {error === "invalid_email"
-                ? "Please enter a valid email address."
-                : "Please try again."}
-            </div>
-          ) : null}
 
           {ref ? (
             <div className="mt-5 rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-4 text-xs text-[color:var(--sb-muted)]">
@@ -74,18 +64,9 @@ export default async function WaitlistPage({
             <Link href="/" className="text-[color:var(--sb-muted)] hover:underline">
               ← Back to home
             </Link>
-            <span className="text-[color:var(--sb-muted)]" aria-hidden>
-              ·
-            </span>
-            <a
-              href={`${app}/login`}
-              className="text-[color:var(--sb-fg)] hover:underline"
-            >
-              Sign in
-            </a>
           </div>
         </main>
-        <SiteFooter appOrigin={app} supportEmail={email} />
+        <SiteFooter appOrigin={app} supportEmail={email} minimal />
       </div>
     </div>
   );

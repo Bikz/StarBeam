@@ -45,12 +45,12 @@ export default function SiteHeader({
             >
               Sign in
             </a>
-            <Link
-              href="/waitlist"
+            <a
+              href={`${appOrigin}/login?mode=waitlist`}
               className="sb-btn sb-btn-primary px-4 py-2 text-xs font-extrabold text-[color:var(--sb-fg)]"
             >
               Join waitlist
-            </Link>
+            </a>
           </nav>
         )}
       </div>
