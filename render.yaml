@@ -5,7 +5,16 @@ services:
     plan: starter
     autoDeploy: true
     buildCommand: pnpm install --frozen-lockfile && pnpm turbo run build --filter=@starbeam/web...
-    startCommand: pnpm --filter @starbeam/db exec prisma migrate deploy && pnpm --filter @starbeam/web start
+    startCommand: >-
+      export DATABASE_URL=${DATABASE_URL:-$STARB_DATABASE_URL};
+      export EMAIL_FROM=${EMAIL_FROM:-$STARB_EMAIL_FROM};
+      i=0;
+      until pnpm --filter @starbeam/db exec prisma migrate deploy; do
+        i=$((i+1));
+        if [ $i -ge 5 ]; then exit 1; fi;
+        sleep $((i*3));
+      done;
+      pnpm --filter @starbeam/web start
     healthCheckPath: /
     envVars:
       - key: NODE_ENV
@@ -33,7 +42,7 @@ services:
     plan: starter
     autoDeploy: true
     buildCommand: npm i -g @openai/codex@latest && codex --version && pnpm install --frozen-lockfile && pnpm turbo run build --filter=@starbeam/worker...
-    startCommand: pnpm --filter @starbeam/db exec prisma migrate deploy && pnpm --filter @starbeam/worker start
+    startCommand: pnpm --filter @starbeam/worker start
     envVars:
       - key: NODE_ENV
         value: production

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export default function SiteHeader({
   appOrigin,
@@ -16,9 +17,13 @@ export default function SiteHeader({
           aria-label="Starbeam home"
         >
           <div className="sb-card grid h-11 w-11 place-items-center">
-            <span className="text-xl sb-title" aria-hidden>
-              *
-            </span>
+            <Image
+              src="/brand/starbeam-logo.png"
+              alt=""
+              width={34}
+              height={34}
+              priority
+            />
           </div>
           <div>
             <div className="sb-title text-xl leading-none">Starbeam</div>

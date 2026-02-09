@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useMemo, useState } from "react";
 
@@ -269,9 +270,13 @@ export default function Sidebar({
           ].join(" ")}
         >
           <div className="sb-card-inset grid h-10 w-10 place-items-center border border-black/10 dark:border-white/10">
-            <span className="sb-title text-base font-extrabold" aria-hidden>
-              *
-            </span>
+            <Image
+              src="/brand/starbeam-logo.png"
+              alt=""
+              width={28}
+              height={28}
+              priority
+            />
           </div>
           {!collapsed ? (
             <div className="min-w-0">
