@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { signIn, useSession } from "next-auth/react";
+import { signIn } from "next-auth/react";
 
 function normalizeEmail(input: string): string {
   return input.trim().toLowerCase();
@@ -30,9 +30,6 @@ export default function EmailCodeSignIn({
   initialEmail?: string;
   variant?: "signin" | "waitlist";
 }) {
-  const { status } = useSession();
-  const disabled = status === "loading";
-
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState(() => initialEmail);
   const [code, setCode] = useState("");
@@ -42,13 +39,14 @@ export default function EmailCodeSignIn({
   const [now, setNow] = useState(() => Date.now());
 
   const emailValue = useMemo(() => normalizeEmail(email), [email]);
-  const canContinue = Boolean(emailValue) && !busy && !disabled;
+  const canContinue = isProbablyValidEmail(emailValue) && !busy;
+  const canVerify = /^[0-9]{6}$/.test(code.trim()) && !busy;
 
   const resendCooldownMs = 30_000;
   const resendRemainingMs =
     step === "code" && sentAt ? Math.max(0, resendCooldownMs - (now - sentAt)) : 0;
   const resendRemainingSec = Math.ceil(resendRemainingMs / 1000);
-  const canResend = step === "code" && resendRemainingMs === 0 && !busy && !disabled;
+  const canResend = step === "code" && resendRemainingMs === 0 && !busy;
 
   useEffect(() => {
     if (step !== "code" || !sentAt) return;
@@ -67,11 +65,15 @@ export default function EmailCodeSignIn({
 
     setBusy(true);
     try {
-      await fetch("/api/auth/email/code", {
+      const resp = await fetch("/api/auth/email/code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: emailValue }),
       });
+      if (!resp.ok) {
+        setError("Could not send a code. Try again.");
+        return;
+      }
       setSentAt(Date.now());
       setNow(Date.now());
       setStep("code");
@@ -141,13 +143,13 @@ export default function EmailCodeSignIn({
               name="email"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@company.com…"
-              autoComplete="email"
-              spellCheck={false}
-              className="sb-input"
-              disabled={busy || disabled}
-            />
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@company.com…"
+            autoComplete="email"
+            spellCheck={false}
+            className="sb-input"
+            disabled={busy}
+          />
           </label>
 
           <button
@@ -170,7 +172,7 @@ export default function EmailCodeSignIn({
               placeholder="123456"
               autoComplete="one-time-code"
               className="sb-input font-mono tracking-widest"
-              disabled={busy || disabled}
+              disabled={busy}
             />
           </div>
 
@@ -179,7 +181,7 @@ export default function EmailCodeSignIn({
               type="button"
               className="sb-btn sb-btn-primary h-11 px-5 text-sm font-extrabold"
               onClick={verifyCode}
-              disabled={busy || disabled}
+              disabled={!canVerify}
             >
               {variant === "waitlist" ? "Continue" : "Log in"}
             </button>
@@ -199,7 +201,7 @@ export default function EmailCodeSignIn({
                 setStep("email");
                 setCode("");
               }}
-              disabled={busy || disabled}
+              disabled={busy}
             >
               Change email
             </button>
