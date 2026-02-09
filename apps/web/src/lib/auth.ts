@@ -6,6 +6,8 @@ import { buildProvidersFromEnv } from "./authProviders";
 import { provisionNewUser } from "./userProvisioning";
 
 export const authOptions: NextAuthOptions = {
+  // Be explicit so all runtimes use the same secret.
+  secret: process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET,
   adapter: PrismaAdapter(prisma),
   providers: buildProvidersFromEnv(process.env),
   pages: {
