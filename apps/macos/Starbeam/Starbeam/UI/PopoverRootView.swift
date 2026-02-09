@@ -356,14 +356,15 @@ struct PopoverRootView: View {
         Image(nsImage: img)
           .resizable()
           .scaledToFit()
-          .saturation(scheme == .dark ? 0.96 : 0.86)
+          .saturation(scheme == .dark ? 0.98 : 0.86)
       } else {
         EmptyView()
       }
     }
 
     private func load() -> NSImage? {
-      let base = "empty_state_pulse_glass_orb"
+      // Use separate assets for light/dark so we can tune the tonemapping per scheme.
+      let base = scheme == .dark ? "empty_state_pulse_glass_orb_dark" : "empty_state_pulse_glass_orb"
       let ext = "png"
 
       func url(_ subdir: String?) -> URL? {

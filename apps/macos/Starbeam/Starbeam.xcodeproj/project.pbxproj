@@ -34,6 +34,7 @@
 		F76CABECEA7CCE21B5D66ED9 /* FocusAndCalendarViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CD36A21A8C4F7ADF5C9159A /* FocusAndCalendarViews.swift */; };
 			FA3F6D6CB5541B322825DF1F /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FFD0DF58CEE638C3AA2EE6C /* KeychainStore.swift */; };
 			1E0C0A9B6A6B9E7C3B71B5C2 /* empty_state_pulse_glass_orb.png in Resources */ = {isa = PBXBuildFile; fileRef = 8D1B7A8E6F3C4B1A9C2D3E4F /* empty_state_pulse_glass_orb.png */; };
+			5B0B0B0B0B0B0B0B0B0B0B0B /* empty_state_pulse_glass_orb_dark.png in Resources */ = {isa = PBXBuildFile; fileRef = 6B0B0B0B0B0B0B0B0B0B0B0B /* empty_state_pulse_glass_orb_dark.png */; };
 	/* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -66,6 +67,7 @@
 		F4AC6F75573A9D86470EFE39 /* APIClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = APIClient.swift; path = Services/APIClient.swift; sourceTree = "<group>"; };
 			F67C0AF3D7900D05249D3829 /* OverviewPreviewMocks.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = OverviewPreviewMocks.swift; path = PreviewSupport/OverviewPreviewMocks.swift; sourceTree = "<group>"; };
 			8D1B7A8E6F3C4B1A9C2D3E4F /* empty_state_pulse_glass_orb.png */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = image.png; name = empty_state_pulse_glass_orb.png; path = Resources/EmptyState/empty_state_pulse_glass_orb.png; sourceTree = "<group>"; };
+			6B0B0B0B0B0B0B0B0B0B0B0B /* empty_state_pulse_glass_orb_dark.png */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = image.png; name = empty_state_pulse_glass_orb_dark.png; path = Resources/EmptyState/empty_state_pulse_glass_orb_dark.png; sourceTree = "<group>"; };
 	/* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -109,6 +111,7 @@
 				A1B2C3D4E5F60718293A4B5C /* StarbeamVisualStyle.swift */,
 					77B0E7000F2D1D40B1B3A3E6 /* StarbeamTheme.swift */,
 					8D1B7A8E6F3C4B1A9C2D3E4F /* empty_state_pulse_glass_orb.png */,
+					6B0B0B0B0B0B0B0B0B0B0B0B /* empty_state_pulse_glass_orb_dark.png */,
 					573AACCB3728A1F04D6D7E56 /* Info.plist */,
 					3D1598C3E6ACFF599BE47717 /* Starbeam.entitlements */,
 				);
@@ -213,6 +216,7 @@
 				buildActionMask = 2147483647;
 				files = (
 					1E0C0A9B6A6B9E7C3B71B5C2 /* empty_state_pulse_glass_orb.png in Resources */,
+					5B0B0B0B0B0B0B0B0B0B0B0B /* empty_state_pulse_glass_orb_dark.png in Resources */,
 				);
 				runOnlyForDeploymentPostprocessing = 0;
 			};
