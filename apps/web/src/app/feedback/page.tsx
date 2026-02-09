@@ -64,14 +64,34 @@ export default async function FeedbackPage({
     >
       <div className="mx-auto max-w-2xl">
         <div className="sb-card p-7 sm:p-8">
-          <h2 className="sb-title text-2xl font-extrabold">Send feedback</h2>
+          <h2 className="sb-title text-2xl font-extrabold">
+            {sent ? "Thanks for the feedback" : "Send feedback"}
+          </h2>
           <p className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
             This is an early beta. Send the good, the bad, and the ideas. If you include steps to
             reproduce, we can move much faster.
           </p>
 
           {sent ? (
-            <div className="mt-6 sb-alert">Thanks. We got it.</div>
+            <div className="mt-6 sb-card-inset p-6">
+              <div className="sb-title text-lg font-extrabold">We got it.</div>
+              <div className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
+                Thank you. If you think of anything else, you can{" "}
+                <Link href="/feedback" className="text-[color:var(--sb-fg)] hover:underline">
+                  send more feedback
+                </Link>
+                .
+              </div>
+
+              <div className="mt-5 flex flex-wrap items-center gap-3">
+                <Link href="/dashboard" className="sb-btn sb-btn-primary h-11 px-6 text-sm font-extrabold">
+                  Back to dashboard
+                </Link>
+                <Link href="/feedback" className="sb-btn h-11 px-6 text-sm font-semibold">
+                  Send more
+                </Link>
+              </div>
+            </div>
           ) : null}
 
           {error ? (
@@ -80,6 +100,7 @@ export default async function FeedbackPage({
             </div>
           ) : null}
 
+          {sent ? null : (
           <form action={submitFeedback} className="mt-6 grid gap-3">
             <input type="hidden" name="source" value={source} />
             <input type="hidden" name="path" value={path} />
@@ -104,6 +125,7 @@ export default async function FeedbackPage({
               </Link>
             </div>
           </form>
+          )}
         </div>
       </div>
     </AppShell>
