@@ -41,7 +41,7 @@ export default function EmailCodeSignIn({
   const [sentAt, setSentAt] = useState<number | null>(null);
 
   const emailValue = useMemo(() => normalizeEmail(email), [email]);
-  const canContinue = isProbablyValidEmail(emailValue) && !busy && !disabled;
+  const canContinue = Boolean(emailValue) && !busy && !disabled;
   const refValue = ref.trim();
 
   async function requestCode() {
@@ -95,7 +95,7 @@ export default function EmailCodeSignIn({
   const sentHint =
     step === "code" && sentAt
       ? `We sent a 6-digit code to ${emailValue || "your email"}.`
-      : "Enter your email to continue. We’ll email you a 6-digit code.";
+      : "Enter your email and we’ll email you a 6-digit code.";
 
   return (
     <div className="grid gap-4">
@@ -159,7 +159,7 @@ export default function EmailCodeSignIn({
             className="sb-btn sb-btn-primary h-11 px-5 text-sm font-extrabold"
             disabled={!canContinue}
           >
-            Continue
+            Log in
           </button>
         </form>
       ) : (
