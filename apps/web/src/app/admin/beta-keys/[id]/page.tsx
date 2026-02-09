@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { notFound, redirect } from "next/navigation";
+import { sbButtonClass } from "@starbeam/shared";
 
 import { prisma } from "@starbeam/db";
 
@@ -68,7 +69,13 @@ export default async function BetaKeyDetailPage({
                 Plaintext codes are not stored. You can only copy the code at creation time.
               </div>
             </div>
-            <Link href="/admin/beta-keys" className="sb-btn h-11 px-5 text-sm font-semibold">
+            <Link
+              href="/admin/beta-keys"
+              className={sbButtonClass({
+                variant: "secondary",
+                className: "h-11 px-5 text-sm font-semibold",
+              })}
+            >
               Back to keys
             </Link>
           </div>
@@ -91,7 +98,13 @@ export default async function BetaKeyDetailPage({
 
               {!key.disabledAt ? (
                 <form action={disableBetaKey.bind(null, key.id)}>
-                  <button type="submit" className="sb-btn h-11 px-5 text-sm font-semibold">
+                  <button
+                    type="submit"
+                    className={sbButtonClass({
+                      variant: "secondary",
+                      className: "h-11 px-5 text-sm font-semibold",
+                    })}
+                  >
                     Disable key
                   </button>
                 </form>
@@ -137,4 +150,3 @@ export default async function BetaKeyDetailPage({
     </div>
   );
 }
-

@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
+import { sbButtonClass } from "@starbeam/shared";
 
 import { prisma } from "@starbeam/db";
 
@@ -92,7 +93,10 @@ export default async function DevicePage({
               <form action={approveDevice.bind(null, code)}>
                 <button
                   type="submit"
-                  className="sb-btn h-11 px-6 text-sm font-extrabold"
+                  className={sbButtonClass({
+                    variant: "primary",
+                    className: "h-11 px-6 text-sm font-extrabold",
+                  })}
                 >
                   Approve
                 </button>

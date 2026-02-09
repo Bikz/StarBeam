@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
+import { sbButtonClass } from "@starbeam/shared";
 
 import { prisma } from "@starbeam/db";
 
@@ -151,7 +152,10 @@ export default async function PulsePage({
               <form action={startGoogleConnect.bind(null, membership.workspace.slug)}>
                 <button
                   type="submit"
-                  className="sb-btn sb-btn-primary h-11 px-5 text-sm font-extrabold"
+                  className={sbButtonClass({
+                    variant: "primary",
+                    className: "h-11 px-5 text-sm font-extrabold",
+                  })}
                   disabled={!hasGoogleAuthEnv()}
                   title={!hasGoogleAuthEnv() ? "Google OAuth not configured" : undefined}
                 >
@@ -195,7 +199,13 @@ export default async function PulsePage({
               </div>
 
               <form action={generateFirstPulseNow.bind(null, membership.workspace.slug)}>
-                <button type="submit" className="sb-btn sb-btn-primary h-11 px-5 text-sm font-extrabold">
+                <button
+                  type="submit"
+                  className={sbButtonClass({
+                    variant: "primary",
+                    className: "h-11 px-5 text-sm font-extrabold",
+                  })}
+                >
                   Generate now
                 </button>
               </form>
@@ -217,7 +227,13 @@ export default async function PulsePage({
                   {deviceTokens > 0 ? "macOS app signed in" : "not signed in yet"}
                 </div>
               </div>
-              <a href={dl} className="sb-btn h-11 px-5 text-sm font-semibold">
+              <a
+                href={dl}
+                className={sbButtonClass({
+                  variant: "secondary",
+                  className: "h-11 px-5 text-sm font-semibold",
+                })}
+              >
                 Download macOS app
               </a>
             </div>
@@ -225,12 +241,24 @@ export default async function PulsePage({
         </div>
 
         <div className="mt-6 flex flex-wrap items-center gap-3">
-          <Link href={`${base}/settings`} className="sb-btn h-11 px-5 text-sm font-semibold">
+          <Link
+            href={`${base}/settings`}
+            className={sbButtonClass({
+              variant: "secondary",
+              className: "h-11 px-5 text-sm font-semibold",
+            })}
+          >
             Open settings
           </Link>
 
           <AdvancedOnly>
-            <Link href={`${base}/jobs`} className="sb-btn h-11 px-5 text-sm font-semibold">
+            <Link
+              href={`${base}/jobs`}
+              className={sbButtonClass({
+                variant: "secondary",
+                className: "h-11 px-5 text-sm font-semibold",
+              })}
+            >
               Advanced status
             </Link>
           </AdvancedOnly>
@@ -293,7 +321,13 @@ export default async function PulsePage({
         </div>
 
         <div className="mt-6">
-          <Link href={`${base}/settings`} className="sb-btn h-11 px-5 text-sm font-semibold">
+          <Link
+            href={`${base}/settings`}
+            className={sbButtonClass({
+              variant: "secondary",
+              className: "h-11 px-5 text-sm font-semibold",
+            })}
+          >
             Settings
           </Link>
         </div>
@@ -322,4 +356,3 @@ export default async function PulsePage({
     </div>
   );
 }
-

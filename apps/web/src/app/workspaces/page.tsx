@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
+import { sbButtonClass } from "@starbeam/shared";
 
 import { prisma } from "@starbeam/db";
 
@@ -91,7 +92,10 @@ export default async function WorkspacesPage({
                       </div>
                       <Link
                         href={`/w/${m.workspace.slug}`}
-                        className="sb-btn sb-btn-primary h-10 px-4 text-xs font-extrabold"
+                        className={sbButtonClass({
+                          variant: "primary",
+                          className: "h-10 px-4 text-xs font-extrabold",
+                        })}
                       >
                         Open
                       </Link>
@@ -103,7 +107,13 @@ export default async function WorkspacesPage({
           </div>
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
-            <Link href="/dashboard" className="sb-btn h-11 px-5 text-sm font-extrabold">
+            <Link
+              href="/dashboard"
+              className={sbButtonClass({
+                variant: "secondary",
+                className: "h-11 px-5 text-sm font-extrabold",
+              })}
+            >
               Back to dashboard
             </Link>
           </div>
@@ -112,4 +122,3 @@ export default async function WorkspacesPage({
     </AppShell>
   );
 }
-

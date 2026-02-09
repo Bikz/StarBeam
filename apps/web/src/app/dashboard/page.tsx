@@ -2,6 +2,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
+import { sbButtonClass } from "@starbeam/shared";
 
 import { prisma } from "@starbeam/db";
 
@@ -35,7 +36,13 @@ export default async function DashboardPage() {
             <p className="mt-2 text-sm text-[color:var(--sb-muted)]">
               Sign in to access your dashboard.
             </p>
-            <Link href="/" className="sb-btn sb-btn-primary inline-flex mt-5 px-5 py-3">
+            <Link
+              href="/"
+              className={sbButtonClass({
+                variant: "primary",
+                className: "mt-5 px-5 py-3",
+              })}
+            >
               Go to sign in
             </Link>
           </div>
@@ -151,7 +158,10 @@ export default async function DashboardPage() {
                 </div>
                 <Link
                   href="/api/auth/signout?callbackUrl=/"
-                  className="sb-btn sb-btn-primary inline-flex mt-4 px-4 py-2 text-xs font-semibold"
+                  className={sbButtonClass({
+                    variant: "primary",
+                    className: "mt-4 px-4 py-2 text-xs font-semibold",
+                  })}
                 >
                   Sign out to retry
                 </Link>
@@ -223,7 +233,10 @@ export default async function DashboardPage() {
                       <div className="mt-4 flex flex-wrap items-center gap-3">
                         <Link
                           href={`/w/${m.workspace.slug}`}
-                          className="sb-btn sb-btn-primary px-4 py-2 text-xs font-semibold"
+                          className={sbButtonClass({
+                            variant: "primary",
+                            className: "px-4 py-2 text-xs font-semibold",
+                          })}
                         >
                           Open
                         </Link>
@@ -273,7 +286,10 @@ export default async function DashboardPage() {
               </label>
               <button
                 type="submit"
-                className="sb-btn sb-btn-primary h-11 px-5 text-sm font-extrabold"
+                className={sbButtonClass({
+                  variant: "primary",
+                  className: "h-11 px-5 text-sm font-extrabold",
+                })}
               >
                 Create workspace
               </button>

@@ -1,6 +1,7 @@
 "use client";
 
 import { signIn, useSession } from "next-auth/react";
+import { sbButtonClass } from "@starbeam/shared";
 
 export default function SignInButton({
   provider = "google",
@@ -16,7 +17,10 @@ export default function SignInButton({
   return (
     <button
       type="button"
-      className="sb-btn px-5 py-3 text-sm font-semibold text-[color:var(--sb-fg)]"
+      className={sbButtonClass({
+        variant: "secondary",
+        className: "px-5 py-3 text-sm font-semibold",
+      })}
       onClick={() => signIn(provider, { callbackUrl })}
       disabled={status === "loading"}
     >

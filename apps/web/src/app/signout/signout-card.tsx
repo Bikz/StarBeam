@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { signOut } from "next-auth/react";
+import { sbButtonClass } from "@starbeam/shared";
 
 export default function SignOutCard({ callbackUrl }: { callbackUrl: string }) {
   const [busy, setBusy] = useState(false);
@@ -10,7 +11,10 @@ export default function SignOutCard({ callbackUrl }: { callbackUrl: string }) {
     <div className="grid gap-3">
       <button
         type="button"
-        className="sb-btn sb-btn-primary h-11 px-5 text-sm font-extrabold"
+        className={sbButtonClass({
+          variant: "primary",
+          className: "h-11 px-5 text-sm font-extrabold",
+        })}
         disabled={busy}
         onClick={async () => {
           setBusy(true);
@@ -26,4 +30,3 @@ export default function SignOutCard({ callbackUrl }: { callbackUrl: string }) {
     </div>
   );
 }
-

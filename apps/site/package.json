@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@starbeam/db": "workspace:*",
+    "@starbeam/shared": "workspace:*",
     "@starbeam/ui": "workspace:*",
     "next": "16.1.6",
     "react": "19.2.3",

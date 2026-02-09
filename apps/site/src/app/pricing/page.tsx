@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { sbButtonClass } from "@starbeam/shared";
 
 import SiteFooter from "@/components/site-footer";
 import SiteHeader from "@/components/site-header";
@@ -46,7 +47,10 @@ export default async function PricingPage() {
                     <div className="mt-5">
                       <Link
                         href="/waitlist"
-                        className="sb-btn sb-btn-primary h-11 px-5 inline-flex items-center text-xs font-extrabold text-[color:var(--sb-fg)]"
+                        className={sbButtonClass({
+                          variant: "primary",
+                          className: "h-11 px-5 text-xs font-extrabold",
+                        })}
                       >
                         Join waitlist
                       </Link>
@@ -100,13 +104,19 @@ export default async function PricingPage() {
               <div className="mt-7 flex flex-wrap items-center gap-2">
                 <Link
                   href="/download"
-                  className="sb-btn px-5 py-2.5 text-xs font-semibold text-[color:var(--sb-fg)]"
+                  className={sbButtonClass({
+                    variant: "secondary",
+                    className: "px-5 py-2.5 text-xs font-semibold",
+                  })}
                 >
                   Download macOS app
                 </Link>
                 <a
                   href={`${app}/login`}
-                  className="sb-btn sb-btn-primary px-5 py-2.5 text-xs font-extrabold text-[color:var(--sb-fg)]"
+                  className={sbButtonClass({
+                    variant: "ghost",
+                    className: "px-5 py-2.5 text-xs font-extrabold",
+                  })}
                 >
                   Sign in
                 </a>

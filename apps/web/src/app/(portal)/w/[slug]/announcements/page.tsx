@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
+import { sbButtonClass } from "@starbeam/shared";
 
 import { prisma } from "@starbeam/db";
 
@@ -88,7 +89,10 @@ export default async function AnnouncementsPage({
                       >
                         <button
                           type="submit"
-                          className="sb-btn px-4 py-2 text-xs font-semibold"
+                          className={sbButtonClass({
+                            variant: "secondary",
+                            className: "px-4 py-2 text-xs font-semibold",
+                          })}
                         >
                           {a.pinned ? "Unpin" : "Pin"}
                         </button>
@@ -103,7 +107,10 @@ export default async function AnnouncementsPage({
                     >
                       <button
                         type="submit"
-                        className="sb-btn px-4 py-2 text-xs font-semibold"
+                        className={sbButtonClass({
+                          variant: "secondary",
+                          className: "px-4 py-2 text-xs font-semibold",
+                        })}
                       >
                         Dismiss
                       </button>
@@ -160,7 +167,13 @@ export default async function AnnouncementsPage({
               <input type="checkbox" name="pinned" defaultChecked />
               <span className="text-[color:var(--sb-muted)]">Pin</span>
             </label>
-            <button type="submit" className="sb-btn h-11 px-5 text-sm font-extrabold">
+            <button
+              type="submit"
+              className={sbButtonClass({
+                variant: "primary",
+                className: "h-11 px-5 text-sm font-extrabold",
+              })}
+            >
               Post announcement
             </button>
           </form>

@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
+import { sbButtonClass } from "@starbeam/shared";
 
 import { prisma } from "@starbeam/db";
 
@@ -90,7 +91,13 @@ export default async function IntegrationsPage({
 
           <div className="mt-6 flex flex-wrap items-center gap-3">
             <form action={startGoogleConnect.bind(null, membership.workspace.slug)}>
-              <button type="submit" className="sb-btn h-11 px-5 text-sm font-extrabold">
+              <button
+                type="submit"
+                className={sbButtonClass({
+                  variant: "primary",
+                  className: "h-11 px-5 text-sm font-extrabold",
+                })}
+              >
                 Connect Google
               </button>
             </form>
@@ -126,7 +133,13 @@ export default async function IntegrationsPage({
                           c.id,
                         )}
                       >
-                        <button type="submit" className="sb-btn px-4 py-2 text-xs font-semibold">
+                        <button
+                          type="submit"
+                          className={sbButtonClass({
+                            variant: "secondary",
+                            className: "px-4 py-2 text-xs font-semibold",
+                          })}
+                        >
                           Disconnect
                         </button>
                       </form>
@@ -193,7 +206,13 @@ export default async function IntegrationsPage({
               GitHub until you list one or more repos.
             </div>
             <div>
-              <button type="submit" className="sb-btn h-11 px-5 text-sm font-extrabold">
+              <button
+                type="submit"
+                className={sbButtonClass({
+                  variant: "primary",
+                  className: "h-11 px-5 text-sm font-extrabold",
+                })}
+              >
                 Connect GitHub
               </button>
             </div>
@@ -262,7 +281,10 @@ export default async function IntegrationsPage({
                         <div className="flex gap-2">
                           <button
                             type="submit"
-                            className="sb-btn px-4 py-2 text-xs font-semibold"
+                            className={sbButtonClass({
+                              variant: "secondary",
+                              className: "px-4 py-2 text-xs font-semibold",
+                            })}
                           >
                             Save scope
                           </button>
@@ -275,7 +297,13 @@ export default async function IntegrationsPage({
                           c.id,
                         )}
                       >
-                        <button type="submit" className="sb-btn px-4 py-2 text-xs font-semibold">
+                        <button
+                          type="submit"
+                          className={sbButtonClass({
+                            variant: "secondary",
+                            className: "px-4 py-2 text-xs font-semibold",
+                          })}
+                        >
                           Disconnect
                         </button>
                       </form>
@@ -316,7 +344,13 @@ export default async function IntegrationsPage({
               />
             </label>
             <div>
-              <button type="submit" className="sb-btn h-11 px-5 text-sm font-extrabold">
+              <button
+                type="submit"
+                className={sbButtonClass({
+                  variant: "primary",
+                  className: "h-11 px-5 text-sm font-extrabold",
+                })}
+              >
                 Connect Linear
               </button>
             </div>
@@ -349,7 +383,13 @@ export default async function IntegrationsPage({
                           c.id,
                         )}
                       >
-                        <button type="submit" className="sb-btn px-4 py-2 text-xs font-semibold">
+                        <button
+                          type="submit"
+                          className={sbButtonClass({
+                            variant: "secondary",
+                            className: "px-4 py-2 text-xs font-semibold",
+                          })}
+                        >
                           Disconnect
                         </button>
                       </form>
@@ -390,7 +430,13 @@ export default async function IntegrationsPage({
               />
             </label>
             <div>
-              <button type="submit" className="sb-btn h-11 px-5 text-sm font-extrabold">
+              <button
+                type="submit"
+                className={sbButtonClass({
+                  variant: "primary",
+                  className: "h-11 px-5 text-sm font-extrabold",
+                })}
+              >
                 Connect Notion
               </button>
             </div>
@@ -423,7 +469,13 @@ export default async function IntegrationsPage({
                           c.id,
                         )}
                       >
-                        <button type="submit" className="sb-btn px-4 py-2 text-xs font-semibold">
+                        <button
+                          type="submit"
+                          className={sbButtonClass({
+                            variant: "secondary",
+                            className: "px-4 py-2 text-xs font-semibold",
+                          })}
+                        >
                           Disconnect
                         </button>
                       </form>

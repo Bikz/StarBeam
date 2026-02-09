@@ -3,6 +3,7 @@
 /* eslint-disable @next/next/no-img-element -- Favicon from arbitrary domains; Next/Image would require remotePatterns. */
 
 import { useEffect, useMemo, useState } from "react";
+import { sbButtonClass } from "@starbeam/shared";
 
 import { IconArrowUpRight, IconCheck, IconCopy } from "@/components/sb-icons";
 import { useToast } from "@/components/toast-provider";
@@ -202,7 +203,7 @@ export default function PulseReader({
                       <div className="sb-pill">{c.kind}</div>
                       <button
                         type="button"
-                        className="sb-btn inline-flex h-9 w-9 items-center justify-center"
+                        className={sbButtonClass({ className: "h-9 w-9" })}
                         aria-label="Copy card"
                         title="Copy"
                         onClick={() => {
@@ -223,7 +224,7 @@ export default function PulseReader({
                       {citations[0]?.url ? (
                         <button
                           type="button"
-                          className="sb-btn inline-flex h-9 w-9 items-center justify-center"
+                          className={sbButtonClass({ className: "h-9 w-9" })}
                           aria-label="Open first source"
                           title="Open source"
                           onClick={() => {
@@ -237,10 +238,12 @@ export default function PulseReader({
                       ) : null}
                       <button
                         type="button"
-                        className={[
-                          "sb-btn inline-flex h-9 w-9 items-center justify-center",
-                          isDone ? "border-black/15 dark:border-white/25" : "",
-                        ].join(" ")}
+                        className={sbButtonClass({
+                          className: [
+                            "h-9 w-9",
+                            isDone ? "border-black/15 dark:border-white/25" : "",
+                          ].join(" "),
+                        })}
                         aria-label={isDone ? "Mark not done" : "Mark done"}
                         title={isDone ? "Undo" : "Done"}
                         onClick={() => {

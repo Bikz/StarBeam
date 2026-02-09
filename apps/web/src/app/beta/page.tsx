@@ -2,6 +2,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
+import { sbButtonClass } from "@starbeam/shared";
 
 import { prisma } from "@starbeam/db";
 
@@ -71,7 +72,13 @@ export default async function BetaPage({
                   autoComplete="off"
                   spellCheck={false}
                 />
-                <button type="submit" className="sb-btn sb-btn-primary h-11 px-5 text-sm font-extrabold">
+                <button
+                  type="submit"
+                  className={sbButtonClass({
+                    variant: "primary",
+                    className: "h-11 px-5 text-sm font-extrabold",
+                  })}
+                >
                   Unlock access
                 </button>
               </form>

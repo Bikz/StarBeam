@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
+import { sbButtonClass } from "@starbeam/shared";
 
 import { prisma } from "@starbeam/db";
 
@@ -103,7 +104,10 @@ export default async function WorkspaceProfilePage({
 
           <button
             type="submit"
-            className="sb-btn h-11 px-5 text-sm font-extrabold"
+            className={sbButtonClass({
+              variant: "primary",
+              className: "h-11 px-5 text-sm font-extrabold",
+            })}
             disabled={!manageable}
             title={!manageable ? "Managers/Admins only" : undefined}
           >

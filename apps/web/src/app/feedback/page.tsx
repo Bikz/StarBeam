@@ -2,6 +2,7 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
+import { sbButtonClass } from "@starbeam/shared";
 
 import { submitFeedback } from "@/app/feedback/actions";
 import AppShell from "@/components/app-shell";
@@ -84,10 +85,22 @@ export default async function FeedbackPage({
               </div>
 
               <div className="mt-5 flex flex-wrap items-center gap-3">
-                <Link href="/dashboard" className="sb-btn sb-btn-primary h-11 px-6 text-sm font-extrabold">
+                <Link
+                  href="/dashboard"
+                  className={sbButtonClass({
+                    variant: "primary",
+                    className: "h-11 px-6 text-sm font-extrabold",
+                  })}
+                >
                   Back to dashboard
                 </Link>
-                <Link href="/feedback" className="sb-btn h-11 px-6 text-sm font-semibold">
+                <Link
+                  href="/feedback"
+                  className={sbButtonClass({
+                    variant: "secondary",
+                    className: "h-11 px-6 text-sm font-semibold",
+                  })}
+                >
                   Send more
                 </Link>
               </div>
@@ -117,7 +130,13 @@ export default async function FeedbackPage({
             </label>
 
             <div className="flex flex-wrap items-center gap-3">
-              <button type="submit" className="sb-btn sb-btn-primary h-11 px-6 text-sm font-extrabold">
+              <button
+                type="submit"
+                className={sbButtonClass({
+                  variant: "primary",
+                  className: "h-11 px-6 text-sm font-extrabold",
+                })}
+              >
                 Send
               </button>
               <Link href="/dashboard" className="text-sm text-[color:var(--sb-muted)] hover:underline">

@@ -1,5 +1,6 @@
 "use client";
 
+import { sbButtonClass } from "@starbeam/shared";
 import { useUiMode } from "@/components/ui-mode";
 
 export default function UiModeToggle() {
@@ -17,11 +18,13 @@ export default function UiModeToggle() {
       <button
         type="button"
         onClick={toggle}
-        className="sb-btn sb-btn-primary h-11 px-5 text-sm font-extrabold"
+        className={sbButtonClass({
+          variant: "primary",
+          className: "h-11 px-5 text-sm font-extrabold",
+        })}
       >
         {isAdvanced ? "Disable advanced mode" : "Enable advanced mode"}
       </button>
     </div>
   );
 }
-

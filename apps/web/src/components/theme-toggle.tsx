@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useSyncExternalStore } from "react";
+import { sbButtonClass } from "@starbeam/shared";
 
 import { IconMonitor, IconMoon, IconSun } from "@/components/sb-icons";
 
@@ -80,7 +81,7 @@ export default function ThemeToggle(
       <button
         type="button"
         onClick={() => applyPref(next)}
-        className="sb-btn inline-flex h-10 w-10 items-center justify-center"
+        className={sbButtonClass({ size: "icon" })}
         aria-label={`Theme: ${label}`}
         title={`Theme: ${label}`}
       >

@@ -5,6 +5,7 @@ import crypto from "node:crypto";
 import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { notFound } from "next/navigation";
+import { sbButtonClass } from "@starbeam/shared";
 
 import { prisma } from "@starbeam/db";
 
@@ -69,7 +70,10 @@ export default async function InvitePage({
               <div className="mt-4">
                 <Link
                   href={`/login?callbackUrl=${encodeURIComponent(`/invite/${token}`)}`}
-                  className="sb-btn sb-btn-primary inline-flex h-11 items-center px-6 text-sm font-extrabold"
+                  className={sbButtonClass({
+                    variant: "primary",
+                    className: "h-11 px-6 text-sm font-extrabold",
+                  })}
                 >
                   Sign in
                 </Link>
@@ -91,7 +95,10 @@ export default async function InvitePage({
             <form action={acceptInvite.bind(null, token)} className="mt-6">
               <button
                 type="submit"
-                className="sb-btn h-11 px-5 text-sm font-extrabold"
+                className={sbButtonClass({
+                  variant: "primary",
+                  className: "h-11 px-5 text-sm font-extrabold",
+                })}
               >
                 Accept invite
               </button>

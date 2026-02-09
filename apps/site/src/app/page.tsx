@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import { sbButtonClass } from "@starbeam/shared";
 
 import { siteOrigin } from "@/lib/siteOrigin";
 import { supportEmail } from "@/lib/supportEmail";
@@ -111,7 +112,10 @@ export default async function Home({
                     <input type="hidden" name="callbackUrl" value="/beta" />
                     <button
                       type="submit"
-                      className="sb-btn sb-btn-primary h-12 px-6 text-sm font-extrabold text-[color:var(--sb-fg)]"
+                      className={sbButtonClass({
+                        variant: "primary",
+                        className: "h-12 px-6 text-sm font-extrabold",
+                      })}
                     >
                       Join the waitlist
                     </button>
@@ -248,7 +252,10 @@ export default async function Home({
                 <div className="mt-7 flex flex-wrap items-center gap-4">
                   <a
                     href={`${app}/login?mode=waitlist`}
-                    className="sb-btn sb-btn-primary px-5 py-2.5 text-xs font-extrabold text-[color:var(--sb-fg)]"
+                    className={sbButtonClass({
+                      variant: "primary",
+                      className: "px-5 py-2.5 text-xs font-extrabold",
+                    })}
                   >
                     Join waitlist
                   </a>
@@ -292,7 +299,10 @@ export default async function Home({
                 <div className="flex flex-wrap items-center gap-4 lg:justify-end">
                   <a
                     href="/download"
-                    className="sb-btn sb-btn-primary px-5 py-2.5 text-xs font-extrabold text-[color:var(--sb-fg)]"
+                    className={sbButtonClass({
+                      variant: "primary",
+                      className: "px-5 py-2.5 text-xs font-extrabold",
+                    })}
                   >
                     Download for macOS
                   </a>

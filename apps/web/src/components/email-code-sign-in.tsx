@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { signIn } from "next-auth/react";
+import { sbButtonClass } from "@starbeam/shared";
 
 function normalizeEmail(input: string): string {
   return input.trim().toLowerCase();
@@ -165,7 +166,10 @@ export default function EmailCodeSignIn({
 
           <button
             type="submit"
-            className="sb-btn sb-btn-primary h-11 px-5 text-sm font-extrabold"
+            className={sbButtonClass({
+              variant: "primary",
+              className: "h-11 px-5 text-sm font-extrabold",
+            })}
             disabled={!canContinue}
           >
             {variant === "waitlist" ? "Continue" : "Log in"}
@@ -190,7 +194,10 @@ export default function EmailCodeSignIn({
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              className="sb-btn sb-btn-primary h-11 px-5 text-sm font-extrabold"
+              className={sbButtonClass({
+                variant: "primary",
+                className: "h-11 px-5 text-sm font-extrabold",
+              })}
               onClick={verifyCode}
               disabled={!canVerify}
             >
@@ -198,7 +205,10 @@ export default function EmailCodeSignIn({
             </button>
             <button
               type="button"
-              className="sb-btn h-9 px-4 text-xs font-semibold"
+              className={sbButtonClass({
+                variant: "secondary",
+                className: "h-9 px-4 text-xs font-semibold",
+              })}
               onClick={requestCode}
               disabled={!canResend}
               aria-label="Resend code"
@@ -207,7 +217,10 @@ export default function EmailCodeSignIn({
             </button>
             <button
               type="button"
-              className="sb-btn h-9 px-4 text-xs font-semibold"
+              className={sbButtonClass({
+                variant: "secondary",
+                className: "h-9 px-4 text-xs font-semibold",
+              })}
               onClick={() => {
                 setStep("email");
                 setCode("");

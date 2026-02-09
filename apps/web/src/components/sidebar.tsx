@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useMemo, useState } from "react";
+import { sbButtonClass } from "@starbeam/shared";
 
 import type { ActiveWorkspace, ShellUser, ShellWorkspace } from "@/components/app-shell";
 import type { UiMode } from "@/components/ui-mode";
@@ -294,7 +295,7 @@ export default function Sidebar({
           <button
             type="button"
             onClick={onToggleCollapsed}
-            className="sb-btn inline-flex h-10 w-10 items-center justify-center"
+            className={sbButtonClass({ size: "icon" })}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             title={collapsed ? "Expand" : "Collapse"}
           >
@@ -326,7 +327,7 @@ export default function Sidebar({
           <Link
             href="/workspaces"
             onClick={onNavigate}
-            className="sb-btn inline-flex h-11 w-11 items-center justify-center"
+            className={sbButtonClass({ className: "h-11 w-11" })}
             aria-label="All workspaces"
             title="All workspaces"
           >
@@ -365,7 +366,10 @@ export default function Sidebar({
             <Link
               href="/workspaces"
               onClick={onNavigate}
-              className="sb-btn inline-flex items-center justify-center h-10 px-4 text-xs font-semibold text-[color:var(--sb-fg)]"
+              className={sbButtonClass({
+                variant: "secondary",
+                className: "h-10 px-4 text-xs font-semibold",
+              })}
             >
               All workspaces
             </Link>
@@ -409,7 +413,7 @@ export default function Sidebar({
             <Link
               href={feedbackHref}
               onClick={onNavigate}
-              className="sb-btn inline-flex h-11 w-11 items-center justify-center"
+              className={sbButtonClass({ className: "h-11 w-11" })}
               aria-label="Feedback"
               title="Feedback"
             >
@@ -419,7 +423,10 @@ export default function Sidebar({
             <Link
               href={feedbackHref}
               onClick={onNavigate}
-              className="sb-btn inline-flex items-center justify-center h-10 px-4 text-xs font-semibold text-[color:var(--sb-fg)]"
+              className={sbButtonClass({
+                variant: "secondary",
+                className: "h-10 px-4 text-xs font-semibold",
+              })}
             >
               Feedback
             </Link>
@@ -428,7 +435,10 @@ export default function Sidebar({
           {collapsed ? (
             <Link
               href="/signout?callbackUrl=/login"
-              className="sb-btn sb-btn-primary inline-flex h-11 w-11 items-center justify-center"
+              className={sbButtonClass({
+                variant: "primary",
+                className: "h-11 w-11",
+              })}
               aria-label="Sign out"
               title="Sign out"
             >
@@ -437,7 +447,10 @@ export default function Sidebar({
           ) : (
             <Link
               href="/signout?callbackUrl=/login"
-              className="sb-btn sb-btn-primary inline-flex items-center justify-center h-10 px-4 text-xs font-extrabold text-[color:var(--sb-fg)]"
+              className={sbButtonClass({
+                variant: "primary",
+                className: "h-10 px-4 text-xs font-extrabold",
+              })}
             >
               Sign out
             </Link>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
+import { sbButtonClass } from "@starbeam/shared";
 
 import { prisma } from "@starbeam/db";
 
@@ -92,7 +93,13 @@ export default async function BetaKeysAdminPage({
                 />
               </label>
               <div className="flex items-end">
-                <button type="submit" className="sb-btn sb-btn-primary h-11 px-6 text-sm font-extrabold">
+                <button
+                  type="submit"
+                  className={sbButtonClass({
+                    variant: "primary",
+                    className: "h-11 px-6 text-sm font-extrabold",
+                  })}
+                >
                   Generate
                 </button>
               </div>
@@ -137,13 +144,22 @@ export default async function BetaKeysAdminPage({
                       <div className="mt-3 flex gap-2">
                         <Link
                           href={`/admin/beta-keys/${k.id}`}
-                          className="sb-btn px-4 py-2 text-xs font-semibold"
+                          className={sbButtonClass({
+                            variant: "secondary",
+                            className: "px-4 py-2 text-xs font-semibold",
+                          })}
                         >
                           View redemptions
                         </Link>
                         {!disabled ? (
                           <form action={disableBetaKey.bind(null, k.id)}>
-                            <button type="submit" className="sb-btn px-4 py-2 text-xs font-semibold">
+                            <button
+                              type="submit"
+                              className={sbButtonClass({
+                                variant: "secondary",
+                                className: "px-4 py-2 text-xs font-semibold",
+                              })}
+                            >
                               Disable
                             </button>
                           </form>

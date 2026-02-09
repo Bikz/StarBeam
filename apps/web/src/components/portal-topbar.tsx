@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { sbButtonClass } from "@starbeam/shared";
 import type { ActiveWorkspace, ShellUser } from "@/components/app-shell";
 import { IconSearch } from "@/components/sb-icons";
 
@@ -63,7 +64,10 @@ export default function PortalTopbar({
         <div className="flex items-center gap-3 min-w-0">
           <button
             type="button"
-            className="sb-btn inline-flex h-10 w-10 items-center justify-center lg:hidden"
+            className={sbButtonClass({
+              size: "icon",
+              className: "lg:hidden",
+            })}
             aria-label="Open navigation"
             onClick={onOpenNav}
           >
@@ -88,7 +92,10 @@ export default function PortalTopbar({
             onClick={onOpenCommandPalette}
             aria-label="Search (Cmd+K)"
             aria-keyshortcuts="Meta+K Control+K"
-            className="sb-btn inline-flex items-center gap-2 h-10 px-3 sm:px-4 text-xs font-semibold"
+            className={sbButtonClass({
+              variant: "secondary",
+              className: "h-10 px-3 sm:px-4 text-xs font-semibold",
+            })}
           >
             <IconSearch className="h-4 w-4" />
             <span className="hidden sm:inline">Search</span>

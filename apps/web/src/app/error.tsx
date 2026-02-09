@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
+import { sbButtonClass } from "@starbeam/shared";
 
 export default function ErrorPage({
   error,
@@ -30,13 +31,19 @@ export default function ErrorPage({
             <button
               type="button"
               onClick={reset}
-              className="sb-btn sb-btn-primary px-5 py-2.5 text-xs font-extrabold text-[color:var(--sb-fg)]"
+              className={sbButtonClass({
+                variant: "primary",
+                className: "px-5 py-2.5 text-xs font-extrabold",
+              })}
             >
               Try again
             </button>
             <Link
               href="/dashboard"
-              className="sb-btn px-5 py-2.5 text-xs font-semibold text-[color:var(--sb-fg)]"
+              className={sbButtonClass({
+                variant: "secondary",
+                className: "px-5 py-2.5 text-xs font-semibold",
+              })}
             >
               Go to dashboard
             </Link>

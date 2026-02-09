@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { sbButtonClass } from "@starbeam/shared";
 
 import type { ActiveWorkspace, ShellWorkspace } from "@/components/app-shell";
 import { runNightlyNow } from "@/actions/run-nightly-now";
@@ -398,7 +399,10 @@ export default function CommandPalette({
             </div>
             <button
               type="button"
-              className="sb-btn h-9 px-4 text-xs font-semibold"
+              className={sbButtonClass({
+                variant: "secondary",
+                className: "h-9 px-4 text-xs font-semibold",
+              })}
               onClick={onClose}
             >
               Close

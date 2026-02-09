@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { sbButtonClass } from "@starbeam/shared";
 
 import SiteFooter from "@/components/site-footer";
 import SiteHeader from "@/components/site-header";
@@ -48,7 +49,10 @@ export default async function DownloadPage() {
                   {dl ? (
                     <a
                       href={dl}
-                      className="sb-btn sb-btn-primary h-12 px-8 inline-flex items-center text-sm font-extrabold text-[color:var(--sb-fg)]"
+                      className={sbButtonClass({
+                        variant: "primary",
+                        className: "h-12 px-8 text-sm font-extrabold",
+                      })}
                     >
                       Download for macOS
                     </a>

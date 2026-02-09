@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
+import { sbButtonClass } from "@starbeam/shared";
 
 import { prisma } from "@starbeam/db";
 
@@ -90,7 +91,13 @@ export default async function TracksPage({
                 maxLength={48}
               />
             </label>
-            <button type="submit" className="sb-btn h-11 px-5 text-sm font-extrabold">
+            <button
+              type="submit"
+              className={sbButtonClass({
+                variant: "primary",
+                className: "h-11 px-5 text-sm font-extrabold",
+              })}
+            >
               Create track
             </button>
           </form>
@@ -153,7 +160,13 @@ export default async function TracksPage({
                 minLength={2}
                 maxLength={48}
               />
-              <button type="submit" className="sb-btn h-10 px-4 text-xs font-extrabold">
+              <button
+                type="submit"
+                className={sbButtonClass({
+                  variant: "primary",
+                  className: "h-10 px-4 text-xs font-extrabold",
+                })}
+              >
                 Create
               </button>
             </form>
@@ -206,7 +219,10 @@ export default async function TracksPage({
                 </label>
                 <button
                   type="submit"
-                  className="sb-btn h-10 px-4 text-xs font-extrabold"
+                  className={sbButtonClass({
+                    variant: "primary",
+                    className: "h-10 px-4 text-xs font-extrabold",
+                  })}
                   disabled={!manageable}
                   title={!manageable ? "Managers/Admins only" : undefined}
                 >
@@ -240,7 +256,10 @@ export default async function TracksPage({
                       <form action={toggleGoalActive.bind(null, membership.workspace.slug, g.id)}>
                         <button
                           type="submit"
-                          className="sb-btn px-4 py-2 text-xs font-semibold"
+                          className={sbButtonClass({
+                            variant: "secondary",
+                            className: "px-4 py-2 text-xs font-semibold",
+                          })}
                           disabled={!manageable}
                           title={!manageable ? "Managers/Admins only" : undefined}
                         >
@@ -250,7 +269,10 @@ export default async function TracksPage({
                       <form action={deleteGoal.bind(null, membership.workspace.slug, g.id)}>
                         <button
                           type="submit"
-                          className="sb-btn px-4 py-2 text-xs font-semibold"
+                          className={sbButtonClass({
+                            variant: "secondary",
+                            className: "px-4 py-2 text-xs font-semibold",
+                          })}
                           disabled={!manageable}
                           title={!manageable ? "Managers/Admins only" : undefined}
                         >
@@ -323,7 +345,13 @@ export default async function TracksPage({
                   />
                 </label>
               </div>
-              <button type="submit" className="sb-btn h-11 px-5 text-sm font-extrabold">
+              <button
+                type="submit"
+                className={sbButtonClass({
+                  variant: "primary",
+                  className: "h-11 px-5 text-sm font-extrabold",
+                })}
+              >
                 Create goal
               </button>
             </form>

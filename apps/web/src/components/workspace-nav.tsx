@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { sbButtonClass } from "@starbeam/shared";
 
 type WorkspaceNavItem = {
   href: string;
@@ -29,10 +30,10 @@ function NavLink({
       href={item.href}
       aria-current={active ? "page" : undefined}
       onClick={onNavigate}
-      className={[
-        "sb-btn px-4 py-2 text-xs font-semibold",
-        active ? "sb-btn-primary" : "",
-      ].join(" ")}
+      className={sbButtonClass({
+        variant: active ? "primary" : "secondary",
+        className: "px-4 py-2 text-xs font-semibold",
+      })}
     >
       {item.label}
     </Link>
@@ -82,10 +83,10 @@ export default function WorkspaceNav({
         <div className="relative" ref={menuRef}>
           <button
             type="button"
-            className={[
-              "sb-btn px-4 py-2 text-xs font-semibold",
-              open ? "sb-btn-primary" : "",
-            ].join(" ")}
+            className={sbButtonClass({
+              variant: open ? "primary" : "secondary",
+              className: "px-4 py-2 text-xs font-semibold",
+            })}
             aria-haspopup="menu"
             aria-expanded={open}
             onClick={() => setOpen((v) => !v)}

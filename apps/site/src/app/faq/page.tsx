@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { sbButtonClass } from "@starbeam/shared";
 
 import SiteFooter from "@/components/site-footer";
 import SiteHeader from "@/components/site-header";
@@ -87,13 +88,31 @@ export default async function FAQPage() {
             <div className="sb-card p-7 sm:p-8">
               <div className="sb-title text-xl font-extrabold">Quick links</div>
               <div className="mt-4 grid gap-2 text-sm">
-                <Link href="/download" className="sb-btn px-5 py-2.5 text-xs font-semibold text-[color:var(--sb-fg)]">
+                <Link
+                  href="/download"
+                  className={sbButtonClass({
+                    variant: "secondary",
+                    className: "px-5 py-2.5 text-xs font-semibold",
+                  })}
+                >
                   Download macOS app
                 </Link>
-                <Link href="/waitlist" className="sb-btn sb-btn-primary px-5 py-2.5 text-xs font-extrabold text-[color:var(--sb-fg)]">
+                <Link
+                  href="/waitlist"
+                  className={sbButtonClass({
+                    variant: "primary",
+                    className: "px-5 py-2.5 text-xs font-extrabold",
+                  })}
+                >
                   Join waitlist
                 </Link>
-                <a href={`${app}/login`} className="sb-btn px-5 py-2.5 text-xs font-semibold text-[color:var(--sb-fg)]">
+                <a
+                  href={`${app}/login`}
+                  className={sbButtonClass({
+                    variant: "ghost",
+                    className: "px-5 py-2.5 text-xs font-semibold",
+                  })}
+                >
                   Sign in
                 </a>
               </div>

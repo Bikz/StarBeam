@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { sbButtonClass } from "@starbeam/shared";
 
 import SiteFooter from "@/components/site-footer";
 import SiteHeader from "@/components/site-header";
@@ -46,7 +47,13 @@ export default async function WaitlistPage({
             <input type="hidden" name="ref" value={ref} />
             <input type="hidden" name="callbackUrl" value="/beta" />
 
-            <button type="submit" className="sb-btn sb-btn-primary h-11 px-5 text-sm font-extrabold">
+            <button
+              type="submit"
+              className={sbButtonClass({
+                variant: "primary",
+                className: "h-11 px-5 text-sm font-extrabold",
+              })}
+            >
               Continue
             </button>
           </form>
