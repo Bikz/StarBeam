@@ -18,10 +18,13 @@ export const authOptions: NextAuthOptions = {
     strategy: "database",
   },
   callbacks: {
-    session: async ({ session, user }) => {
+    session: async ({ session, user, token }) => {
       // Expose user ID for server-side authorization checks.
+      // Note: when NextAuth uses JWT sessions, `user` is undefined and the ID
+      // lives in `token.sub`.
       if (session.user) {
-        session.user.id = user.id;
+        const id = user?.id ?? (typeof token?.sub === "string" ? token.sub : "");
+        if (id) session.user.id = id;
       }
       return session;
     },
