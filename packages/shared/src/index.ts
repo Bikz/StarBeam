@@ -7,6 +7,12 @@ export {
   parseAes256GcmKeyFromEnv,
 } from "./tokenCrypto";
 
+export {
+  sbButtonClass,
+  type SbButtonSize,
+  type SbButtonVariant,
+} from "./ui/sb_button";
+
 export const WorkspaceTypeSchema = z.enum(["PERSONAL", "ORG"]);
 export type WorkspaceType = z.infer<typeof WorkspaceTypeSchema>;
 
