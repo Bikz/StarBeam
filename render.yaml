@@ -15,7 +15,7 @@ services:
         sleep $((i*3));
       done;
       pnpm --filter @starbeam/web start
-    healthCheckPath: /
+    healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
