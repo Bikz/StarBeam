@@ -23,7 +23,7 @@ export default async function LoginPage({
   const title = mode === "waitlist" ? "Join waitlist" : "Sign in";
   const subtitle =
     mode === "waitlist"
-      ? "Create your account with a 6-digit code. If you don’t have an invite yet, you’ll unlock via an invite key or 5 referrals."
+      ? "Create your account. If you don’t have an invite yet, you’ll unlock via an invite key or 5 referrals."
       : "We’ll email you a 6-digit code.";
 
   const initialEmail = typeof sp.email === "string" ? sp.email.trim() : "";
