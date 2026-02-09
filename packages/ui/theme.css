@@ -27,6 +27,8 @@
     rgba(255, 255, 255, 0.24)
   );
   --sb-btn-shadow: 0 6px 14px rgba(18, 12, 34, 0.06);
+  --sb-btn-press-shadow: 0 3px 10px rgba(18, 12, 34, 0.10);
+  --sb-btn-ghost-hover-bg: rgba(16, 16, 20, 0.06);
 
   --sb-btn-primary-border: rgba(16, 16, 20, 0.12);
   --sb-btn-primary-bg: linear-gradient(
@@ -34,6 +36,9 @@
     rgba(16, 16, 20, 0.08),
     rgba(16, 16, 20, 0.03)
   );
+  --sb-btn-primary-solid-bg: #101014;
+  --sb-btn-primary-solid-fg: #fbfbfa;
+  --sb-btn-primary-solid-shadow: 0 14px 34px rgba(16, 16, 20, 0.24);
 
   --sb-bg-glow-a: rgba(0, 0, 0, 0.06);
   --sb-bg-glow-b: rgba(0, 0, 0, 0.045);
@@ -77,6 +82,8 @@ html.dark {
     rgba(255, 255, 255, 0.03)
   );
   --sb-btn-shadow: 0 12px 30px rgba(0, 0, 0, 0.24);
+  --sb-btn-press-shadow: 0 10px 22px rgba(0, 0, 0, 0.42);
+  --sb-btn-ghost-hover-bg: rgba(245, 245, 247, 0.10);
 
   --sb-btn-primary-border: rgba(255, 255, 255, 0.12);
   --sb-btn-primary-bg: linear-gradient(
@@ -84,6 +91,9 @@ html.dark {
     rgba(245, 245, 247, 0.10),
     rgba(245, 245, 247, 0.04)
   );
+  --sb-btn-primary-solid-bg: rgba(245, 245, 247, 0.92);
+  --sb-btn-primary-solid-fg: #060607;
+  --sb-btn-primary-solid-shadow: 0 18px 54px rgba(0, 0, 0, 0.55);
 
   --sb-bg-glow-a: rgba(255, 255, 255, 0.08);
   --sb-bg-glow-b: rgba(255, 255, 255, 0.06);
@@ -253,17 +263,39 @@ body[data-sb-surface="marketing"] .sb-title {
 }
 
 .sb-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   border-radius: 999px;
   border: 1px solid var(--sb-card-border);
   background: var(--sb-btn-bg);
   box-shadow: var(--sb-btn-shadow);
-  transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+  cursor: pointer;
+  user-select: none;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    filter 180ms ease,
+    background 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    opacity 180ms ease;
 }
 
-.sb-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--sb-shadow);
-  filter: saturate(1.05);
+.sb-btn:active {
+  transform: translateY(0);
+  box-shadow: var(--sb-btn-press-shadow);
+  filter: brightness(0.985);
+}
+
+.sb-btn[aria-pressed="true"] {
+  transform: translateY(0);
+  box-shadow: var(--sb-btn-press-shadow);
+  filter: brightness(0.99) saturate(1.02);
 }
 
 .sb-btn:focus-visible {
@@ -272,12 +304,59 @@ body[data-sb-surface="marketing"] .sb-title {
 }
 
 .sb-btn-primary {
-  border-color: var(--sb-btn-primary-border);
-  background: var(--sb-btn-primary-bg);
+  border-color: transparent;
+  background: var(--sb-btn-primary-solid-bg);
+  color: var(--sb-btn-primary-solid-fg);
+  box-shadow: var(--sb-btn-primary-solid-shadow);
 }
 
-.sb-btn-primary:hover {
-  filter: saturate(1.08);
+.sb-btn-ghost {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+.sb-btn:disabled,
+.sb-btn[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  filter: none;
+}
+
+.sb-btn[aria-disabled="true"] {
+  pointer-events: none;
+}
+
+.sb-btn[aria-busy="true"],
+.sb-btn[data-loading="true"] {
+  cursor: progress;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .sb-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--sb-shadow);
+    filter: saturate(1.05);
+  }
+
+  .sb-btn-primary:hover {
+    filter: brightness(1.03);
+  }
+
+  .sb-btn-ghost:hover {
+    transform: none;
+    box-shadow: none;
+    filter: none;
+    background: var(--sb-btn-ghost-hover-bg);
+  }
+}
+
+.sb-btn-ghost:active {
+  background: var(--sb-btn-ghost-hover-bg);
+  box-shadow: none;
+  filter: none;
 }
 
 .sb-kbd {
@@ -468,7 +547,8 @@ body[data-sb-surface="app"] .sb-card {
     transition: none;
   }
 
-  .sb-btn:hover {
+  .sb-btn:hover,
+  .sb-btn:active {
     transform: none;
   }
 }
