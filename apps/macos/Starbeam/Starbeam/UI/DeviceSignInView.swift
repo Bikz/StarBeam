@@ -2,6 +2,8 @@ import AppKit
 import SwiftUI
 
 struct DeviceSignInView: View {
+  let onDismiss: (() -> Void)?
+
   @Environment(AppModel.self) private var model
   @Environment(\.dismiss) private var dismiss
 
@@ -14,6 +16,10 @@ struct DeviceSignInView: View {
   @State private var didOpenVerificationURL = false
 
   @State private var pollTask: Task<Void, Never>?
+
+  init(onDismiss: (() -> Void)? = nil) {
+    self.onDismiss = onDismiss
+  }
 
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
@@ -155,8 +161,9 @@ struct DeviceSignInView: View {
 
           Spacer()
 
-          if verificationURL == nil {
-            Button("Start sign-in") {
+          // Auto-starts on appear; keep this as a manual retry affordance if start fails.
+          if verificationURL == nil, lastError != nil {
+            Button("Try again") {
               Task { await start() }
             }
             .buttonStyle(.borderedProminent)
@@ -170,8 +177,7 @@ struct DeviceSignInView: View {
     .onAppear {
       if !didStart {
         didStart = true
-        // Do not auto-open browser on appear; it can cause multiple windows
-        // if the sheet is presented repeatedly. User explicitly clicks "Start sign-in".
+        Task { await start() }
       }
     }
     .onDisappear {
@@ -248,7 +254,7 @@ struct DeviceSignInView: View {
         }
 
         await model.refresh()
-        dismiss()
+        dismissSelf()
         return
       } catch let apiError as APIClient.APIError {
         switch apiError {
@@ -264,7 +270,11 @@ struct DeviceSignInView: View {
             return
           } else if code == "access_denied" {
             await MainActor.run {
-              lastError = AppError(title: "Sign-in denied", message: "Please retry.", debugDetails: String(describing: apiError))
+              lastError = AppError(
+                title: "Access denied",
+                message: "This account doesn’t have access yet. Ask for an invite, then try again.",
+                debugDetails: String(describing: apiError)
+              )
             }
             return
           } else {
@@ -304,6 +314,14 @@ struct DeviceSignInView: View {
   private func cancelAndDismiss() {
     pollTask?.cancel()
     pollTask = nil
+    dismissSelf()
+  }
+
+  private func dismissSelf() {
+    if let onDismiss {
+      onDismiss()
+      return
+    }
     dismiss()
   }
 }

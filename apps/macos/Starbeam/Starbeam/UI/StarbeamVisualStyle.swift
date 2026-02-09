@@ -86,18 +86,9 @@ struct StarbeamRootBackgroundView: View {
           .ignoresSafeArea()
       } else {
         ZStack {
+          // Intentionally keep the background clear so system materials sample what's behind the window.
+          // (If we paint a "nice" background here, light mode will look opaque.)
           Color.clear
-
-          // Subtle depth without a branded hue.
-          LinearGradient(
-            colors: [
-              Color(nsColor: .windowBackgroundColor).opacity(scheme == .dark ? 0.35 : 0.85),
-              Color(nsColor: .windowBackgroundColor).opacity(scheme == .dark ? 0.20 : 0.65),
-            ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-          )
-          .blendMode(.plusLighter)
 
           RadialGradient(
             colors: [
@@ -109,7 +100,7 @@ struct StarbeamRootBackgroundView: View {
             endRadius: 520
           )
           .blendMode(.multiply)
-          .opacity(scheme == .dark ? 0.22 : 0.12)
+          .opacity(scheme == .dark ? 0.18 : 0.06)
         }
         .ignoresSafeArea()
       }
@@ -145,6 +136,14 @@ struct StarbeamSurfaceModifier: ViewModifier {
       }
     }()
 
+    let strokeColor: Color = {
+      // White strokes look "off" in light mode; use dark hairlines instead.
+      if scheme == .dark {
+        return .white.opacity(strokeOpacity)
+      }
+      return .black.opacity(style == .glass ? 0.08 : 0.10)
+    }()
+
     let fill: AnyShapeStyle = {
       if reduceTransparency {
         return AnyShapeStyle(Color(nsColor: .windowBackgroundColor))
@@ -154,7 +153,7 @@ struct StarbeamSurfaceModifier: ViewModifier {
 
     return content
       .background(shape.fill(fill))
-      .overlay(shape.strokeBorder(.white.opacity(strokeOpacity), lineWidth: 1))
+      .overlay(shape.strokeBorder(strokeColor, lineWidth: 1))
       .clipShape(shape)
       .modifier(StarbeamShadowModifier(shadow: shadow))
       .modifier(StarbeamLiquidGlassModifier(shape: shape))

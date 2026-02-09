@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 @main
 struct StarbeamApp: App {
@@ -8,13 +9,19 @@ struct StarbeamApp: App {
     MenuBarExtra {
       ContentView()
         .environment(model)
-        .environment(\.starbeamVisualStyle, model.settings.visualStyleEnum)
-        .preferredColorScheme(model.settings.preferredColorScheme)
         .frame(width: 460, height: 760)
     } label: {
       Image(systemName: "sparkles")
         .accessibilityLabel("Starbeam")
     }
     .menuBarExtraStyle(.window)
+    .commands {
+      CommandGroup(replacing: .appTermination) {
+        Button("Quit Starbeam") {
+          NSApp.terminate(nil)
+        }
+        .keyboardShortcut("q")
+      }
+    }
   }
 }

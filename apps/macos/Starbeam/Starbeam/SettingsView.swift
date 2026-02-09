@@ -1,7 +1,19 @@
 import SwiftUI
+import AppKit
 
 struct SettingsView: View {
+  let onRequestSignIn: () -> Void
+  let onSignedOut: () -> Void
+
   @Environment(AppModel.self) private var model
+
+  init(
+    onRequestSignIn: @escaping () -> Void = {},
+    onSignedOut: @escaping () -> Void = {}
+  ) {
+    self.onRequestSignIn = onRequestSignIn
+    self.onSignedOut = onSignedOut
+  }
 
   var body: some View {
     @Bindable var model = model
@@ -50,13 +62,14 @@ struct SettingsView: View {
 
           Button("Sign out") {
             model.signOut()
+            onSignedOut()
           }
         } else {
           Text("Not signed in")
             .foregroundStyle(.secondary)
 
           Button("Sign in") {
-            model.showingSignInSheet = true
+            onRequestSignIn()
           }
           .keyboardShortcut(.defaultAction)
         }
@@ -94,6 +107,23 @@ struct SettingsView: View {
           Text("These links open in your default browser.")
             .font(.footnote)
             .foregroundStyle(.secondary)
+
+          HStack(spacing: 10) {
+            Button("Open web pulse") {
+              if let url = model.dashboardURL(kind: .pulse) {
+                NSWorkspace.shared.open(url)
+              }
+            }
+            .disabled(model.dashboardURL(kind: .pulse) == nil)
+
+            Button("Submit idea…") {
+              let raw = settings.submitIdeaURL.trimmingCharacters(in: .whitespacesAndNewlines)
+              if let url = URL(string: raw) {
+                NSWorkspace.shared.open(url)
+              }
+            }
+          }
+          .padding(.top, 4)
         }
       }
 
@@ -160,10 +190,6 @@ struct SettingsView: View {
     }
     .formStyle(.grouped)
     .padding(20)
-    .sheet(isPresented: $model.showingSignInSheet) {
-      DeviceSignInView()
-        .frame(width: 420, height: 420)
-    }
     .onChange(of: settings.notificationsEnabled) { _, _ in
       model.handleNotificationSettingsChanged()
     }

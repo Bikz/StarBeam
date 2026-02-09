@@ -1,8 +1,16 @@
 import SwiftUI
+import AppKit
 
 struct PopoverRootView: View {
   @Environment(AppModel.self) private var model
-  @State private var showingSettings = false
+
+  private enum Route {
+    case home
+    case settings
+    case signIn
+  }
+
+  @State private var route: Route = .home
   @State private var expandedPulseCardID: String?
 
   var body: some View {
@@ -14,14 +22,38 @@ struct PopoverRootView: View {
 
       StarbeamGlassGroup {
         VStack(spacing: 0) {
+          switch route {
+          case .home:
+            homeContent
+          case .settings:
+            settingsContent
+          case .signIn:
+            signInContent
+          }
+        }
+        .starbeamSurface(cornerRadius: StarbeamTheme.outerCorner, material: .ultraThinMaterial, shadow: .window)
+        .padding(10)
+      }
+    }
+    .environment(\.starbeamVisualStyle, style)
+    .onDisappear {
+      // MenuBarExtra closes when focus changes; ensure we don't "stick" on Settings/Sign-in.
+      route = .home
+    }
+  }
+
+  private var homeContent: some View {
+    Group {
+      if !model.auth.isSignedIn {
+        signedOutContent
+      } else {
+        VStack(spacing: 0) {
           ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-              header
-              bumpBanner
+              headerFlat
+
               if let error = model.lastError {
-                ErrorCardView(error: error) {
-                  Task { await model.refresh() }
-                }
+                errorBanner(error)
               }
 
               Text("Your Pulse")
@@ -57,6 +89,13 @@ struct PopoverRootView: View {
             .padding(18)
           }
           .scrollIndicators(.hidden)
+          .refreshable {
+            guard model.canSync else { return }
+            await model.refresh()
+          }
+          // Workspace switching: swipe left/right anywhere in the popover.
+          // Keep it strict to avoid interfering with normal vertical scrolling.
+          .simultaneousGesture(workspaceSwipeGesture())
 
           WorkspacePagerView(
             workspaces: model.auth.session?.workspaces ?? [],
@@ -66,34 +105,200 @@ struct PopoverRootView: View {
               model.selectWorkspace(id: id, shouldRefresh: true)
             }
           )
-
-          Divider().opacity(0.6)
-
-          footer
         }
-        .starbeamSurface(cornerRadius: StarbeamTheme.outerCorner, material: .ultraThinMaterial, shadow: .window)
-        .padding(10)
       }
     }
-    .environment(\.starbeamVisualStyle, style)
-    // Workspace switching: swipe left/right anywhere in the popover.
-    // Keep it strict to avoid interfering with normal vertical scrolling.
-    .simultaneousGesture(workspaceSwipeGesture())
-    .sheet(isPresented: $model.showingSignInSheet) {
-      DeviceSignInView()
-        .frame(width: 420, height: 420)
+  }
+
+  private var signedOutContent: some View {
+    VStack(spacing: 0) {
+      headerFlat
+        .padding(.horizontal, 18)
+        .padding(.top, 18)
+
+      VStack(spacing: 14) {
+        Spacer(minLength: 0)
+
+        if let notice = model.signedOutNotice {
+          VStack(alignment: .leading, spacing: 6) {
+            Text(notice.title)
+              .font(.system(size: 14, weight: .bold, design: .rounded))
+            Text(notice.message)
+              .font(.system(size: 12, weight: .medium, design: .rounded))
+              .foregroundStyle(.secondary)
+              .fixedSize(horizontal: false, vertical: true)
+          }
+          .frame(maxWidth: 360, alignment: .leading)
+          .padding(12)
+          .starbeamSurface(cornerRadius: 14, material: .thinMaterial, shadow: .card)
+        } else {
+          Text("Sign in to get a calm daily pulse in your menu bar.")
+            .font(.system(size: 13, weight: .medium, design: .rounded))
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: 360, alignment: .center)
+        }
+
+        Button("Sign in") { route = .signIn }
+          .buttonStyle(.borderedProminent)
+          .controlSize(.large)
+          .accessibilityLabel("Sign in")
+
+        Spacer(minLength: 0)
+      }
+      .frame(maxWidth: .infinity)
+      .padding(18)
     }
-    .sheet(isPresented: $showingSettings) {
-      SettingsSheetView()
+  }
+
+  private var settingsContent: some View {
+    VStack(spacing: 0) {
+      HStack(spacing: 10) {
+        Button {
+          route = .home
+        } label: {
+          Image(systemName: "chevron.left")
+            .font(.system(size: 12, weight: .semibold))
+            .frame(width: 28, height: 28)
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.secondary)
+        .accessibilityLabel("Back")
+
+        Text("Settings")
+          .font(.system(size: 14, weight: .bold, design: .rounded))
+
+        Spacer()
+      }
+      .padding(.horizontal, 18)
+      .padding(.vertical, 12)
+
+      Divider().opacity(0.6)
+
+      SettingsView(
+        onRequestSignIn: { route = .signIn },
+        onSignedOut: { route = .home }
+      )
         .environment(model)
-        .frame(width: 560, height: 520)
+    }
+  }
+
+  private var signInContent: some View {
+    VStack(spacing: 0) {
+      HStack(spacing: 10) {
+        Button {
+          // Prefer returning to Settings if that's where the user came from.
+          route = .settings
+        } label: {
+          Image(systemName: "chevron.left")
+            .font(.system(size: 12, weight: .semibold))
+            .frame(width: 28, height: 28)
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.secondary)
+        .accessibilityLabel("Back")
+
+        Text("Sign in")
+          .font(.system(size: 14, weight: .bold, design: .rounded))
+
+        Spacer()
+      }
+      .padding(.horizontal, 18)
+      .padding(.vertical, 12)
+
+      Divider().opacity(0.6)
+
+      DeviceSignInView(onDismiss: { route = .home })
+        .environment(model)
+        .padding(18)
     }
   }
 
   private var header: some View {
-    let style = model.settings.visualStyleEnum
+    let canOpenDashboard = model.auth.isSignedIn && model.dashboardURL(kind: .dashboardHome) != nil
 
-    return HStack(alignment: .top, spacing: 12) {
+    return StarbeamHeaderBar(
+      style: model.settings.visualStyleEnum,
+      workspaceName: model.workspaceName,
+      signedIn: model.auth.isSignedIn,
+      canOpenDashboard: canOpenDashboard,
+      canSync: model.canSync,
+      isRefreshing: model.isRefreshing,
+      onOpenDashboard: openDashboard,
+      onOpenSettings: { route = .settings },
+      onRefresh: { Task { await model.refresh() } }
+    )
+  }
+
+  private var headerFlat: some View {
+    VStack(alignment: .leading, spacing: 10) {
+      header
+      Divider().opacity(0.35)
+    }
+  }
+
+  private struct StarbeamHeaderBar: View {
+    let style: StarbeamVisualStyle
+    let workspaceName: String
+    let signedIn: Bool
+    let canOpenDashboard: Bool
+    let canSync: Bool
+    let isRefreshing: Bool
+    let onOpenDashboard: () -> Void
+    let onOpenSettings: () -> Void
+    let onRefresh: () -> Void
+
+    var body: some View {
+      HStack(alignment: .center, spacing: 12) {
+        appMark
+
+        VStack(alignment: .leading, spacing: 2) {
+          Text("Starbeam")
+            .font(StarbeamTheme.headerTitleFont)
+            .lineLimit(1)
+
+          Text("Your Pulse for \(workspaceName)")
+            .font(StarbeamTheme.headerSubtitleFont)
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+        }
+        .layoutPriority(1)
+
+        Spacer(minLength: 0)
+
+        HStack(spacing: 10) {
+          HeaderIconButton(
+            systemImage: "house",
+            accessibilityLabel: "Open pulse on web",
+            enabled: canOpenDashboard,
+            action: onOpenDashboard
+          )
+
+          HeaderIconButton(
+            systemImage: "gearshape",
+            accessibilityLabel: "Settings",
+            enabled: true,
+            action: onOpenSettings
+          )
+
+          HeaderIconButton(
+            accessibilityLabel: "Refresh",
+            enabled: signedIn && canSync,
+            action: onRefresh,
+            accessibilityHint: canSync ? "Sync now" : "Sign in and set a workspace in settings to enable sync"
+          ) {
+            if isRefreshing {
+              ProgressView()
+                .controlSize(.small)
+            } else {
+              Image(systemName: "arrow.clockwise")
+                .font(.system(size: 13, weight: .semibold))
+            }
+          }
+        }
+      }
+    }
+
+    private var appMark: some View {
       ZStack {
         if style == .chroma {
           RoundedRectangle(cornerRadius: 14, style: .continuous)
@@ -126,120 +331,70 @@ struct PopoverRootView: View {
         }
       }
       .accessibilityHidden(true)
+    }
+  }
 
-      VStack(alignment: .leading, spacing: 3) {
-        Text("Starbeam")
-          .font(StarbeamTheme.headerTitleFont)
+  private struct HeaderIconButton: View {
+    let accessibilityLabel: String
+    let accessibilityHint: String?
+    let enabled: Bool
+    let action: () -> Void
+    let content: AnyView
 
-        Text("Your Pulse for \(model.workspaceName)")
-          .font(StarbeamTheme.headerSubtitleFont)
-          .foregroundStyle(.secondary)
-      }
+    init(
+      systemImage: String,
+      accessibilityLabel: String,
+      enabled: Bool,
+      action: @escaping () -> Void,
+      accessibilityHint: String? = nil
+    ) {
+      self.accessibilityLabel = accessibilityLabel
+      self.accessibilityHint = accessibilityHint
+      self.enabled = enabled
+      self.action = action
+      self.content = AnyView(Image(systemName: systemImage).font(.system(size: 13, weight: .semibold)))
+    }
 
-      Spacer()
+    init(
+      accessibilityLabel: String,
+      enabled: Bool,
+      action: @escaping () -> Void,
+      accessibilityHint: String? = nil,
+      @ViewBuilder content: () -> some View
+    ) {
+      self.accessibilityLabel = accessibilityLabel
+      self.accessibilityHint = accessibilityHint
+      self.enabled = enabled
+      self.action = action
+      self.content = AnyView(content())
+    }
 
-      Button {
-        Task { await model.refresh() }
-      } label: {
-        HStack(spacing: 8) {
-          Group {
-            if model.isRefreshing {
-              ProgressView()
-                .controlSize(.small)
-            } else {
-              Image(systemName: "arrow.clockwise")
-            }
-          }
-          .font(.system(size: 13, weight: .semibold))
-          Text("Refresh")
-            .font(.system(size: 13, weight: .semibold, design: .rounded))
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 9)
-        .background(
-          Capsule(style: .continuous)
-            .fill(.thinMaterial)
-        )
-        .overlay(
-          Capsule(style: .continuous)
-            .strokeBorder(.white.opacity(0.20), lineWidth: 1)
-        )
+    var body: some View {
+      let button = Button(action: action) {
+        content.frame(width: 28, height: 28)
       }
       .buttonStyle(.plain)
-      .disabled(!model.canSync)
-      .opacity(model.canSync ? 1 : 0.5)
-      .accessibilityLabel("Refresh")
-      .accessibilityHint(model.canSync ? "Sync now" : "Sign in and set a workspace in settings to enable sync")
-    }
-  }
+      .foregroundStyle(.secondary)
+      .disabled(!enabled)
+      .opacity(enabled ? 1 : 0.4)
+      .accessibilityLabel(accessibilityLabel)
 
-  private var bumpBanner: some View {
-    let style = model.settings.visualStyleEnum
-
-    return HStack(spacing: 12) {
-      ZStack {
-        Circle()
-          .fill(Color.orange.opacity(0.22))
-          .frame(width: 34, height: 34)
-
-        Image(systemName: "bell.fill")
-          .font(.system(size: 14, weight: .semibold))
-          .foregroundStyle(Color.orange)
-      }
-      .accessibilityHidden(true)
-
-      Text(bumpText)
-        .font(.system(size: 14, weight: .semibold, design: .rounded))
-        .foregroundStyle(.primary)
-        .lineLimit(2)
-
-      Spacer(minLength: 0)
-
-      if !model.auth.isSignedIn {
-        if style == .chroma {
-          Button("Sign in") {
-            model.showingSignInSheet = true
-          }
-          .buttonStyle(.borderedProminent)
-          .tint(Color.blue.opacity(0.75))
-          .controlSize(.small)
-          .accessibilityLabel("Sign in")
-        } else {
-          Button("Sign in") {
-            model.showingSignInSheet = true
-          }
-          .buttonStyle(.borderedProminent)
-          .controlSize(.small)
-          .accessibilityLabel("Sign in")
-        }
+      if let accessibilityHint {
+        button.accessibilityHint(accessibilityHint)
       } else {
-        Image(systemName: model.auth.session?.workspaces.count ?? 0 > 1 ? "chevron.left.slash.chevron.right" : "sparkle")
-          .foregroundStyle(.secondary)
-          .opacity(0.8)
-          .accessibilityHidden(true)
+        button
       }
     }
-    .padding(14)
-    .starbeamCard()
-    .accessibilityElement(children: .contain)
-    .accessibilityLabel("Pulse bump")
   }
 
-  private var bumpText: String {
-    if let msg = model.overview?.bumpMessage, !msg.isEmpty {
-      return msg
-    }
-
-    if model.auth.isSignedIn {
-      // Avoid cheerleader copy; keep it concise and contextual.
-      let name = model.workspaceName
-      if let generatedAt = model.overview?.generatedAt, Calendar.current.isDateInToday(generatedAt) {
-        return "Today’s pulse bump for \(name)."
+  private func errorBanner(_ error: AppError) -> some View {
+    VStack(alignment: .leading, spacing: 0) {
+      ErrorBannerView(error: error) {
+        Task { await model.refresh() }
       }
-      return "Syncing today’s pulse bump for \(name)…"
     }
-
-    return "Sign in to get your daily pulse bump, focus, and agenda."
+    .padding(12)
+    .starbeamSurface(cornerRadius: 14, material: .thinMaterial, shadow: .card)
   }
 
   private var pulseSection: some View {
@@ -281,7 +436,7 @@ struct PopoverRootView: View {
         .foregroundStyle(.secondary)
         .fixedSize(horizontal: false, vertical: true)
 
-      if model.auth.isSignedIn, !workspaceID.isEmpty, model.dashboardURL(kind: .dashboardHome) != nil {
+      if !workspaceID.isEmpty, model.dashboardURL(kind: .pulse) != nil {
         Button {
           openDashboard()
         } label: {
@@ -304,7 +459,7 @@ struct PopoverRootView: View {
     if workspaceID.isEmpty {
       return "Add your Workspace ID in Settings to enable sync."
     }
-    return "We’ll show your daily pulse cards here once your workspace starts generating pulses."
+    return "Starbeam runs overnight and will drop your pulse cards here when they’re ready."
   }
 
   private var splitPanels: some View {
@@ -332,50 +487,8 @@ struct PopoverRootView: View {
     }
   }
 
-  private var footer: some View {
-    HStack(spacing: 18) {
-      Button {
-        showingSettings = true
-      } label: {
-        Label("Settings", systemImage: "gearshape")
-      }
-      .buttonStyle(.plain)
-      .accessibilityLabel("Settings")
-
-      Spacer()
-
-      Button {
-        openSubmitIdea()
-      } label: {
-        Label("Submit idea…", systemImage: "bubble.left")
-      }
-      .buttonStyle(.plain)
-      .accessibilityLabel("Submit idea")
-
-      Button {
-        openDashboard()
-      } label: {
-        Label("Open dashboard", systemImage: "plus.circle")
-      }
-      .buttonStyle(.plain)
-      .accessibilityLabel("Open dashboard")
-
-      Button {
-        NSApp.terminate(nil)
-      } label: {
-        Label("Quit", systemImage: "power")
-      }
-      .buttonStyle(.plain)
-      .accessibilityLabel("Quit Starbeam")
-    }
-    .font(.system(size: 12, weight: .semibold, design: .rounded))
-    .foregroundStyle(.secondary)
-    .padding(.horizontal, 18)
-    .padding(.vertical, 12)
-  }
-
   private func openDashboard() {
-    guard let url = model.dashboardURL(kind: .dashboardHome) else { return }
+    guard let url = model.dashboardURL(kind: .pulse) else { return }
     NSWorkspace.shared.open(url)
   }
 

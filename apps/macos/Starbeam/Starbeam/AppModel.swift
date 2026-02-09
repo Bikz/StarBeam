@@ -12,6 +12,8 @@ final class AppModel {
   var overview: Overview?
   var isRefreshing: Bool = false
   var lastError: AppError?
+  /// Used for signed-out UX (e.g., when the server denies access for beta gating).
+  var signedOutNotice: AppError?
   var cachedAt: Date?
 
   var showingSignInSheet: Bool = false
@@ -206,6 +208,7 @@ final class AppModel {
   enum DashboardLinkKind {
     case dashboardHome
     case pulse
+    case settings
   }
 
   func dashboardURL(kind: DashboardLinkKind) -> URL? {
@@ -221,6 +224,8 @@ final class AppModel {
       return base.appendingPathComponent("w").appendingPathComponent(slug)
     case .pulse:
       return base.appendingPathComponent("w").appendingPathComponent(slug).appendingPathComponent("pulse")
+    case .settings:
+      return base.appendingPathComponent("w").appendingPathComponent(slug).appendingPathComponent("settings")
     }
   }
 
@@ -283,6 +288,44 @@ final class AppModel {
       try applyRefreshedSession(refreshed)
     }
 
+    func maybeHandleAuthGate(_ error: Error) -> Bool {
+      // If the server is enforcing private beta access, treat it as a hard auth failure:
+      // clear cached pulses, sign out, and show a signed-out notice.
+      guard case APIClient.APIError.http(let statusCode, let body) = error else { return false }
+      guard statusCode == 403 || statusCode == 401 else { return false }
+
+      if let data = body.data(using: .utf8) {
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        if let payload = try? decoder.decode(APIClient.APIErrorPayload.self, from: data),
+         payload.error == "access_denied"
+        {
+          let msg = payload.errorDescription ?? "Access denied."
+          let notice = AppError(
+            title: "Access required",
+            message: msg,
+            debugDetails: "HTTP \(statusCode): \(body)"
+          )
+          signOut(notice: notice)
+          return true
+        }
+      }
+
+      // Fallback: heuristics when the body isn't JSON.
+      let lower = body.lowercased()
+      if lower.contains("private beta") || lower.contains("beta access") {
+        let notice = AppError(
+          title: "Access required",
+          message: "This account doesn’t have beta access. Sign in with an invited account.",
+          debugDetails: "HTTP \(statusCode): \(body)"
+        )
+        signOut(notice: notice)
+        return true
+      }
+
+      return false
+    }
+
     do {
       try await refreshIfNeeded()
       let result = try await client.fetchOverview(
@@ -321,6 +364,8 @@ final class AppModel {
         startFirstPulseBoostIfNeeded()
       }
     } catch {
+      if maybeHandleAuthGate(error) { return }
+
       // If the access token expired early, refresh and retry once.
       if case APIClient.APIError.http(let statusCode, _) = error, statusCode == 401 {
         do {
@@ -362,6 +407,7 @@ final class AppModel {
           }
           return
         } catch {
+          if maybeHandleAuthGate(error) { return }
           // Fallthrough to error surface below.
         }
       }
@@ -374,7 +420,7 @@ final class AppModel {
     }
   }
 
-  func signOut() {
+  func signOut(notice: AppError? = nil) {
     autoRefreshTask?.cancel()
     autoRefreshTask = nil
     cancelFirstPulseBoost()
@@ -384,6 +430,7 @@ final class AppModel {
     overview = nil
     cachedAt = nil
     lastError = nil
+    signedOutNotice = notice
   }
 }
 

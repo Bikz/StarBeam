@@ -1,8 +1,13 @@
 import SwiftUI
 
 struct ContentView: View {
+  @Environment(AppModel.self) private var model
+
   var body: some View {
     PopoverRootView()
+      // Apply here (not in StarbeamApp) so changes to SettingsStore trigger SwiftUI updates.
+      .environment(\.starbeamVisualStyle, model.settings.visualStyleEnum)
+      .preferredColorScheme(model.settings.preferredColorScheme)
   }
 }
 
