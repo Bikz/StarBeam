@@ -95,8 +95,8 @@ export default function EmailCodeSignIn({
     step === "code" && sentAt
       ? `We sent a 6-digit code to ${emailValue || "your email"}.`
       : variant === "waitlist"
-        ? "Enter your email and we’ll send a 6-digit code to continue."
-        : "Enter your email and we’ll email you a 6-digit code.";
+        ? "Enter your email to continue."
+        : "Enter your email to continue.";
 
   return (
     <div className="grid gap-4">
