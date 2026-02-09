@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMemo, useState } from "react";
 
-import ThemeToggle from "@/components/theme-toggle";
 import type { ActiveWorkspace, ShellUser, ShellWorkspace } from "@/components/app-shell";
 import type { UiMode } from "@/components/ui-mode";
 import { useUiMode } from "@/components/ui-mode";
@@ -401,8 +400,6 @@ export default function Sidebar({
       <div className="mt-5">
         <div className="h-px bg-[color:var(--sb-divider)]" />
         <div className={collapsed ? "mt-4 grid gap-2 justify-items-center" : "mt-4 grid gap-2"}>
-          <ThemeToggle variant={collapsed ? "compact" : "full"} />
-
           {collapsed ? (
             <Link
               href={feedbackHref}
@@ -425,7 +422,7 @@ export default function Sidebar({
 
           {collapsed ? (
             <Link
-              href="/api/auth/signout?callbackUrl=/login"
+              href="/signout?callbackUrl=/login"
               className="sb-btn sb-btn-primary inline-flex h-11 w-11 items-center justify-center"
               aria-label="Sign out"
               title="Sign out"
@@ -434,7 +431,7 @@ export default function Sidebar({
             </Link>
           ) : (
             <Link
-              href="/api/auth/signout?callbackUrl=/login"
+              href="/signout?callbackUrl=/login"
               className="sb-btn sb-btn-primary inline-flex items-center justify-center h-10 px-4 text-xs font-extrabold text-[color:var(--sb-fg)]"
             >
               Sign out

@@ -6,30 +6,25 @@ export default function ThemeScript() {
   const script = `
   (function () {
     try {
-      var pref = localStorage.getItem("sb_theme") || "system";
       var mql = window.matchMedia("(prefers-color-scheme: dark)");
-
-      function computeIsDark() {
-        if (pref === "dark") return true;
-        if (pref === "light") return false;
-        return !!mql.matches;
-      }
 
       function apply() {
         var root = document.documentElement;
-        var isDark = computeIsDark();
-        root.dataset.sbTheme = pref;
+        // We always follow the OS preference. (No theme toggle.)
+        var isDark = !!mql.matches;
+        root.dataset.sbTheme = "system";
         root.classList.toggle("dark", isDark);
         root.style.colorScheme = isDark ? "dark" : "light";
       }
 
       apply();
 
-      if (pref === "system") {
-        var handler = function () { apply(); };
-        if (mql.addEventListener) mql.addEventListener("change", handler);
-        else mql.addListener(handler);
-      }
+      // Clear any legacy preference so auth pages match system immediately.
+      try { localStorage.removeItem("sb_theme"); } catch (e) {}
+
+      var handler = function () { apply(); };
+      if (mql.addEventListener) mql.addEventListener("change", handler);
+      else mql.addListener(handler);
     } catch (e) {}
   })();
   `;
