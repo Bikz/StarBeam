@@ -96,10 +96,16 @@ export default function EmailCodeSignIn({
         email: emailValue,
         code: normalized,
         callbackUrl,
-        redirect: true,
+        redirect: false,
       });
 
-      if (resp?.error) setError("Invalid code. Try again.");
+      if (resp?.error) {
+        setError("Invalid code. Try again.");
+        return;
+      }
+
+      // Use a hard navigation so NextAuth cookies/session are applied consistently.
+      window.location.href = resp?.url ?? callbackUrl;
     } catch {
       setError("Sign-in failed. Try again.");
     } finally {
