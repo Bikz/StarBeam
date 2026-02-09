@@ -23,18 +23,18 @@ type Step = "email" | "code";
 
 export default function EmailCodeSignIn({
   callbackUrl = "/beta",
-  initialReferralCode = "",
+  initialEmail = "",
+  variant = "signin",
 }: {
   callbackUrl?: string;
-  initialReferralCode?: string;
+  initialEmail?: string;
+  variant?: "signin" | "waitlist";
 }) {
   const { status } = useSession();
   const disabled = status === "loading";
 
   const [step, setStep] = useState<Step>("email");
-  const [email, setEmail] = useState("");
-  const [ref, setRef] = useState(() => initialReferralCode.trim());
-  const [refOpen, setRefOpen] = useState(() => Boolean(initialReferralCode.trim()));
+  const [email, setEmail] = useState(() => initialEmail);
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +42,6 @@ export default function EmailCodeSignIn({
 
   const emailValue = useMemo(() => normalizeEmail(email), [email]);
   const canContinue = Boolean(emailValue) && !busy && !disabled;
-  const refValue = ref.trim();
 
   async function requestCode() {
     setError(null);
@@ -56,7 +55,7 @@ export default function EmailCodeSignIn({
       await fetch("/api/auth/email/code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: emailValue, ...(refValue ? { ref: refValue } : {}) }),
+        body: JSON.stringify({ email: emailValue }),
       });
       setSentAt(Date.now());
       setStep("code");
@@ -95,7 +94,9 @@ export default function EmailCodeSignIn({
   const sentHint =
     step === "code" && sentAt
       ? `We sent a 6-digit code to ${emailValue || "your email"}.`
-      : "Enter your email and we’ll email you a 6-digit code.";
+      : variant === "waitlist"
+        ? "Enter your email and we’ll send a 6-digit code to continue."
+        : "Enter your email and we’ll email you a 6-digit code.";
 
   return (
     <div className="grid gap-4">
@@ -127,39 +128,12 @@ export default function EmailCodeSignIn({
             />
           </label>
 
-          <div className="grid gap-2">
-            <button
-              type="button"
-              className="text-left text-xs font-semibold text-[color:var(--sb-muted)] hover:text-[color:var(--sb-fg)]"
-              onClick={() => setRefOpen((v) => !v)}
-              disabled={busy || disabled}
-              aria-expanded={refOpen}
-            >
-              Have a referral code?{" "}
-              <span className="text-[color:var(--sb-muted)]">(optional)</span>
-            </button>
-            {refOpen ? (
-              <label className="grid gap-2">
-                <div className="text-xs font-extrabold sb-title">Referral code</div>
-                <input
-                  value={ref}
-                  onChange={(e) => setRef(e.target.value)}
-                  placeholder="Paste code (or open a referral link)"
-                  autoComplete="off"
-                  spellCheck={false}
-                  className="sb-input"
-                  disabled={busy || disabled}
-                />
-              </label>
-            ) : null}
-          </div>
-
           <button
             type="submit"
             className="sb-btn sb-btn-primary h-11 px-5 text-sm font-extrabold"
             disabled={!canContinue}
           >
-            Log in
+            {variant === "waitlist" ? "Continue" : "Log in"}
           </button>
         </form>
       ) : (
@@ -185,7 +159,7 @@ export default function EmailCodeSignIn({
               onClick={verifyCode}
               disabled={busy || disabled}
             >
-              Log in
+              {variant === "waitlist" ? "Continue" : "Log in"}
             </button>
             <button
               type="button"

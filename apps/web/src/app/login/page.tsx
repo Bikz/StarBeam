@@ -1,8 +1,8 @@
 import { getServerSession } from "next-auth";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import EmailCodeSignIn from "@/components/email-code-sign-in";
-import SignInButton from "@/components/sign-in-button";
 import { authOptions } from "@/lib/auth";
 import { ensureBetaEligibilityProcessed } from "@/lib/betaAccess";
 import { siteOrigin } from "@/lib/siteOrigin";
@@ -10,7 +10,7 @@ import { siteOrigin } from "@/lib/siteOrigin";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ callbackUrl?: string; ref?: string }>;
+  searchParams: Promise<{ callbackUrl?: string; ref?: string; mode?: string; email?: string }>;
 }) {
   const session = await getServerSession(authOptions);
   if (session?.user?.id) {
@@ -18,13 +18,16 @@ export default async function LoginPage({
     redirect(status.hasAccess ? `/w/personal-${session.user.id}` : "/beta");
   }
 
-  const hasGoogleAuth =
-    typeof process.env.GOOGLE_CLIENT_ID === "string" &&
-    process.env.GOOGLE_CLIENT_ID.length > 0 &&
-    typeof process.env.GOOGLE_CLIENT_SECRET === "string" &&
-    process.env.GOOGLE_CLIENT_SECRET.length > 0;
-
   const sp = await searchParams;
+  const mode = (sp.mode ?? "").trim().toLowerCase() === "waitlist" ? "waitlist" : "signin";
+  const title = mode === "waitlist" ? "Join waitlist" : "Sign in";
+  const subtitle =
+    mode === "waitlist"
+      ? "Create your account with a 6-digit code. If you don’t have an invite yet, you’ll unlock via an invite key or 5 referrals."
+      : "We’ll email you a 6-digit code.";
+
+  const initialEmail = typeof sp.email === "string" ? sp.email.trim() : "";
+
   const callbackUrlRaw = (sp.callbackUrl ?? "/beta").trim() || "/beta";
   const safeNext = callbackUrlRaw.startsWith("/") ? callbackUrlRaw : "/beta";
   const referralCode = typeof sp.ref === "string" ? sp.ref.trim() : "";
@@ -36,39 +39,32 @@ export default async function LoginPage({
     <div className="sb-bg">
       <div className="mx-auto max-w-xl px-6 py-16">
         <div className="sb-card p-8">
-          <div className="sb-title text-2xl">Sign in</div>
-          <p className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
-            Starbeam is a daily pulse for founders and startup teams.
-          </p>
+          <div className="sb-title text-2xl">{title}</div>
+          <p className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">{subtitle}</p>
 
           <div className="mt-6">
             <EmailCodeSignIn
               callbackUrl={callbackUrl}
-              initialReferralCode={referralCode}
+              initialEmail={initialEmail}
+              variant={mode === "waitlist" ? "waitlist" : "signin"}
             />
           </div>
 
-          {hasGoogleAuth ? (
-            <div className="mt-6">
-              <div className="text-[11px] font-semibold tracking-wide uppercase text-[color:var(--sb-muted)]">
-                Or
-              </div>
-              <div className="mt-3">
-                <SignInButton
-                  provider="google"
-                  label="Sign in with Google"
-                  callbackUrl={callbackUrl}
-                />
-              </div>
-            </div>
-          ) : null}
-
           <div className="mt-8 flex flex-wrap gap-3 text-sm">
-            <a
-              href={`${siteOrigin()}/waitlist`}
-              className="text-[color:var(--sb-fg)] hover:underline"
-            >
-              No invite yet? Join the waitlist
+            {mode === "waitlist" ? (
+              <Link href="/login" className="text-[color:var(--sb-fg)] hover:underline">
+                Already have an invite? Sign in
+              </Link>
+            ) : (
+              <Link
+                href="/login?mode=waitlist"
+                className="text-[color:var(--sb-fg)] hover:underline"
+              >
+                New here? Join waitlist
+              </Link>
+            )}
+            <a href={siteOrigin()} className="text-[color:var(--sb-muted)] hover:underline">
+              Learn more
             </a>
           </div>
         </div>
