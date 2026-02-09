@@ -115,16 +115,16 @@ export default function EmailCodeSignIn({
 
   const sentHint =
     step === "code" && sentAt
-      ? `We sent a 6-digit code to ${emailValue || "your email"}.`
-      : variant === "waitlist"
-        ? "Enter your email to continue."
-        : "Enter your email to continue.";
+      ? `We sent a code to ${emailValue || "your email"}.`
+      : "";
 
   return (
     <div className="grid gap-4">
-      <div className="text-sm text-[color:var(--sb-muted)] leading-relaxed">
-        {sentHint}
-      </div>
+      {sentHint ? (
+        <div className="text-sm text-[color:var(--sb-muted)] leading-relaxed">
+          {sentHint}
+        </div>
+      ) : null}
 
       {step === "email" ? (
         <form
