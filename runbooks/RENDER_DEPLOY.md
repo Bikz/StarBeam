@@ -34,6 +34,16 @@ pnpm install
 pnpm --filter @starbeam/db prisma:migrate
 ```
 
+## Quick Verification (Auto-Deploy + Migrations)
+
+After pushing a commit to `main`, verify the deploy ran migrations in pre-deploy and the service started quickly.
+
+1. In the Render deploy logs for `starbeam-web`, confirm you see:
+   - `Starting pre-deploy: ... prisma migrate deploy`
+   - `Pre-deploy complete!`
+2. In the Prisma output, confirm it either applies migrations or prints `No pending migrations to apply.`
+3. Confirm the service is `live` and `GET /api/health` returns `200`.
+
 ## Required Environment Variables
 
 Web (`starbeam-web`):
