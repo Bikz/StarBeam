@@ -52,13 +52,13 @@ export default async function LoginPage({
       <a href="#main" className="sb-skip-link">
         Skip to content
       </a>
-      <div className="mx-auto max-w-5xl px-6 py-16">
-        <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
-          <section className="relative">
-            <div className="pointer-events-none absolute -top-16 -left-16 h-72 w-72 rounded-full bg-[color:var(--sb-bg-glow-a)] blur-3xl opacity-70" />
-            <div className="pointer-events-none absolute top-28 -right-10 h-64 w-64 rounded-full bg-[color:var(--sb-bg-glow-b)] blur-3xl opacity-70" />
-            <div className="pointer-events-none absolute -bottom-10 left-10 h-72 w-72 rounded-full bg-[color:var(--sb-bg-glow-c)] blur-3xl opacity-70" />
+      <div className="min-h-[100dvh] lg:grid lg:grid-cols-2">
+        <section className="relative flex items-center px-6 py-14 sm:px-10 sm:py-16 lg:px-14">
+          <div className="pointer-events-none absolute -top-16 -left-16 h-72 w-72 rounded-full bg-[color:var(--sb-bg-glow-a)] blur-3xl opacity-70" />
+          <div className="pointer-events-none absolute top-28 -right-10 h-64 w-64 rounded-full bg-[color:var(--sb-bg-glow-b)] blur-3xl opacity-70" />
+          <div className="pointer-events-none absolute -bottom-10 left-10 h-72 w-72 rounded-full bg-[color:var(--sb-bg-glow-c)] blur-3xl opacity-70" />
 
+          <div className="relative w-full max-w-xl">
             <div className="inline-flex items-center gap-2">
               <span className="sb-pill text-[11px] font-extrabold tracking-wide uppercase text-[color:var(--sb-muted)]">
                 Starbeam
@@ -122,71 +122,75 @@ export default async function LoginPage({
               Tip: if you don’t see the code, check spam or search for{" "}
               <span className="font-semibold text-[color:var(--sb-fg)]">Starbeam</span>.
             </p>
-          </section>
+          </div>
+        </section>
 
-          <main id="main" className="sb-card p-8 sm:p-9">
-            <div className="sb-card-inset inline-flex flex-wrap items-center gap-1 p-1">
-              <Link
-                href={signInHref}
-                className={[
-                  "rounded-full px-4 py-2 text-xs font-extrabold transition",
-                  mode === "signin"
-                    ? "bg-[color:var(--sb-card)] text-[color:var(--sb-fg)] shadow-[var(--sb-shadow-soft)]"
-                    : "text-[color:var(--sb-muted)] hover:text-[color:var(--sb-fg)]",
-                ].join(" ")}
-                aria-current={mode === "signin" ? "page" : undefined}
-              >
-                Sign in
-              </Link>
-              <Link
-                href={waitlistHref}
-                className={[
-                  "rounded-full px-4 py-2 text-xs font-extrabold transition",
-                  mode === "waitlist"
-                    ? "bg-[color:var(--sb-card)] text-[color:var(--sb-fg)] shadow-[var(--sb-shadow-soft)]"
-                    : "text-[color:var(--sb-muted)] hover:text-[color:var(--sb-fg)]",
-                ].join(" ")}
-                aria-current={mode === "waitlist" ? "page" : undefined}
-              >
-                Join waitlist
-              </Link>
-            </div>
-
-            <div className="flex items-start justify-between gap-6">
-              <div>
-                <div className="sb-title text-2xl">{title}</div>
-                <p className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
-                  {subtitle}
-                </p>
+        <section className="relative flex items-center justify-center px-6 py-14 sm:px-10 sm:py-16 lg:px-14 lg:border-l lg:border-[color:var(--sb-divider)]">
+          <div className="w-full max-w-md">
+            <main id="main" className="sb-card p-8 sm:p-9">
+              <div className="sb-card-inset inline-flex flex-wrap items-center gap-1 p-1">
+                <Link
+                  href={signInHref}
+                  className={[
+                    "rounded-full px-4 py-2 text-xs font-extrabold transition",
+                    mode === "signin"
+                      ? "bg-[color:var(--sb-card)] text-[color:var(--sb-fg)] shadow-[var(--sb-shadow-soft)]"
+                      : "text-[color:var(--sb-muted)] hover:text-[color:var(--sb-fg)]",
+                  ].join(" ")}
+                  aria-current={mode === "signin" ? "page" : undefined}
+                >
+                  Sign in
+                </Link>
+                <Link
+                  href={waitlistHref}
+                  className={[
+                    "rounded-full px-4 py-2 text-xs font-extrabold transition",
+                    mode === "waitlist"
+                      ? "bg-[color:var(--sb-card)] text-[color:var(--sb-fg)] shadow-[var(--sb-shadow-soft)]"
+                      : "text-[color:var(--sb-muted)] hover:text-[color:var(--sb-fg)]",
+                  ].join(" ")}
+                  aria-current={mode === "waitlist" ? "page" : undefined}
+                >
+                  Join waitlist
+                </Link>
               </div>
-              <div className="hidden sm:flex h-11 w-11 items-center justify-center rounded-2xl border border-[color:var(--sb-card-border)] bg-[color:var(--sb-inset-bg)] shadow-[var(--sb-shadow-soft)]">
-                <span className="sb-title text-sm font-extrabold">sb</span>
+
+              <div className="mt-6 flex items-start justify-between gap-6">
+                <div>
+                  <div className="sb-title text-2xl">{title}</div>
+                  <p className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
+                    {subtitle}
+                  </p>
+                </div>
+                <div className="hidden sm:flex h-11 w-11 items-center justify-center rounded-2xl border border-[color:var(--sb-card-border)] bg-[color:var(--sb-inset-bg)] shadow-[var(--sb-shadow-soft)]">
+                  <span className="sb-title text-sm font-extrabold">sb</span>
+                </div>
               </div>
-            </div>
 
-            {authError ? (
-              <div className="mt-5 sb-alert">
-                {authError === "CredentialsSignin"
-                  ? "That code didn’t work. Please try again."
-                  : "Could not sign in. Please try again."}
+              {authError ? (
+                <div className="mt-5 sb-alert">
+                  {authError === "CredentialsSignin"
+                    ? "That code didn’t work. Please try again."
+                    : "Could not sign in. Please try again."}
+                </div>
+              ) : null}
+
+              <div className="mt-6">
+                <EmailCodeSignIn
+                  callbackUrl={callbackUrl}
+                  initialEmail={initialEmail}
+                  variant={mode === "waitlist" ? "waitlist" : "signin"}
+                />
               </div>
-            ) : null}
 
-            <div className="mt-6">
-              <EmailCodeSignIn
-                callbackUrl={callbackUrl}
-                initialEmail={initialEmail}
-                variant={mode === "waitlist" ? "waitlist" : "signin"}
-              />
-            </div>
-
-            <div className="mt-8 flex flex-wrap gap-3 text-sm">
-              <a href={siteOrigin()} className="text-[color:var(--sb-muted)] hover:underline">
-                Learn more
-              </a>
-            </div>
-          </main>
-        </div>
+              <div className="mt-8 flex flex-wrap gap-3 text-sm">
+                <a href={siteOrigin()} className="text-[color:var(--sb-muted)] hover:underline">
+                  Learn more
+                </a>
+              </div>
+            </main>
+          </div>
+        </section>
       </div>
     </div>
   );
