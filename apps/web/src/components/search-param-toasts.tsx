@@ -31,6 +31,33 @@ export default function SearchParamToasts() {
       changed = true;
     }
 
+    const notice = (params.get("notice") ?? "").trim().toLowerCase();
+    if (notice === "created") {
+      push({
+        kind: "success",
+        title: "Posted",
+        message: "Announcement posted.",
+      });
+      params.delete("notice");
+      changed = true;
+    } else if (notice === "updated") {
+      push({
+        kind: "success",
+        title: "Saved",
+        message: "Announcement updated.",
+      });
+      params.delete("notice");
+      changed = true;
+    } else if (notice === "deleted") {
+      push({
+        kind: "success",
+        title: "Deleted",
+        message: "Announcement deleted.",
+      });
+      params.delete("notice");
+      changed = true;
+    }
+
     if (changed) {
       const next = params.toString();
       router.replace(next ? `${pathname}?${next}` : pathname);

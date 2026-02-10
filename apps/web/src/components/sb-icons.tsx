@@ -326,3 +326,62 @@ export function IconCheck(props: SvgProps) {
     </svg>
   );
 }
+
+export function IconPlus(props: SvgProps) {
+  return (
+    <svg
+      aria-hidden="true"
+      role="presentation"
+      focusable="false"
+      {...baseProps(props)}
+    >
+      <path d="M12 5v14" />
+      <path d="M5 12h14" />
+    </svg>
+  );
+}
+
+export function IconPencil(props: SvgProps) {
+  return (
+    <svg
+      aria-hidden="true"
+      role="presentation"
+      focusable="false"
+      {...baseProps(props)}
+    >
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+    </svg>
+  );
+}
+
+export function IconX(props: SvgProps) {
+  return (
+    <svg
+      aria-hidden="true"
+      role="presentation"
+      focusable="false"
+      {...baseProps(props)}
+    >
+      <path d="M18 6 6 18" />
+      <path d="M6 6l12 12" />
+    </svg>
+  );
+}
+
+export function IconTrash(props: SvgProps) {
+  return (
+    <svg
+      aria-hidden="true"
+      role="presentation"
+      focusable="false"
+      {...baseProps(props)}
+    >
+      <path d="M3 6h18" />
+      <path d="M8 6V4h8v2" />
+      <path d="M19 6l-1 16H6L5 6" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+    </svg>
+  );
+}

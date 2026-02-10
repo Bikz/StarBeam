@@ -18,6 +18,7 @@ const NightlyWorkspaceRunPayloadSchema = z.object({
   workspaceId: z.string().min(1),
   jobRunId: z.string().min(1),
   userId: z.string().min(1).optional(),
+  includeInactive: z.boolean().optional(),
 });
 
 function isTruthyEnv(value: string | undefined): boolean {
@@ -37,6 +38,7 @@ export async function nightly_workspace_run(payload: unknown) {
 
   const { workspaceId, jobRunId } = parsed.data;
   const targetUserId = parsed.data.userId ?? null;
+  const includeInactive = parsed.data.includeInactive ?? false;
 
   const jobRun = await prisma.jobRun.findFirst({
     where: { id: jobRunId, workspaceId, kind: "NIGHTLY_WORKSPACE_RUN" },
@@ -158,7 +160,11 @@ export async function nightly_workspace_run(payload: unknown) {
 
     const activeMemberUserIds = allMemberUserIds.filter(isActiveUserId);
 
-    const memberUserIds = targetUserId ? [targetUserId] : activeMemberUserIds;
+    const memberUserIds = targetUserId
+      ? [targetUserId]
+      : includeInactive
+        ? allMemberUserIds
+        : activeMemberUserIds;
     if (targetUserId && !membershipByUserId.has(targetUserId)) {
       throw new Error("Target user is not a workspace member");
     }
