@@ -4,10 +4,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
-  // Use a direct (non-pooler) connection for Prisma CLI operations like
-  // migrations, even if DATABASE_URL points at a pooled endpoint.
-  directUrl = env("DIRECT_DATABASE_URL")
 }
 
 // Auth.js (Prisma Adapter) baseline tables + Starbeam domain tables.

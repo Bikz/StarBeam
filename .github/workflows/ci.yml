@@ -60,6 +60,7 @@ jobs:
           --health-retries=20
     env:
       DATABASE_URL: postgresql://starbeam:starbeam@localhost:5432/starbeam
+      DIRECT_DATABASE_URL: postgresql://starbeam:starbeam@localhost:5432/starbeam
       AUTH_SECRET: ci_only_change_me
       AUTH_URL: http://localhost:3000
       NEXT_PUBLIC_WEB_ORIGIN: http://localhost:3000
@@ -83,7 +84,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Migrate
-        run: pnpm --filter @starbeam/db exec prisma migrate deploy
+        run: pnpm --filter @starbeam/db prisma:migrate
 
       - name: Install Playwright Browsers
         run: pnpm exec playwright install --with-deps chromium

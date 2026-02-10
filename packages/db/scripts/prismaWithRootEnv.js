@@ -22,6 +22,14 @@ if (
     process.env.DATABASE_URL ?? process.env.STARB_DATABASE_URL;
 }
 
+if (!process.env.DIRECT_DATABASE_URL && !process.env.DATABASE_URL) {
+  // eslint-disable-next-line no-console
+  console.error(
+    "Missing DATABASE_URL/DIRECT_DATABASE_URL. Set DIRECT_DATABASE_URL for Prisma CLI operations.",
+  );
+  process.exit(1);
+}
+
 const args = process.argv.slice(2);
 if (args.length === 0) {
   // eslint-disable-next-line no-console
