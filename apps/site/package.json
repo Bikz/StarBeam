@@ -17,8 +17,8 @@
     "@starbeam/ui": "workspace:*",
     "dotenv": "^17.2.4",
     "next": "16.1.6",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
     "zod": "^4.3.6"
   },
   "devDependencies": {
