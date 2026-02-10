@@ -13,6 +13,13 @@ export {
   type SbButtonVariant,
 } from "./ui/sb_button";
 
+export {
+  activeWindowCutoff,
+  isActiveWithinWindow,
+  lastActiveUpdateCutoff,
+  shouldUpdateLastActiveAt,
+} from "./activity";
+
 export const WorkspaceTypeSchema = z.enum(["PERSONAL", "ORG"]);
 export type WorkspaceType = z.infer<typeof WorkspaceTypeSchema>;
 

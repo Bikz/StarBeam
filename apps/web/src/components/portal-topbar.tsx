@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { sbButtonClass } from "@starbeam/shared";
 import type { ActiveWorkspace, ShellUser } from "@/components/app-shell";
 import { IconSearch } from "@/components/sb-icons";
+import ProfileMenu from "@/components/profile-menu";
 
 function sectionLabel(
   pathname: string,
@@ -18,8 +19,9 @@ function sectionLabel(
     const base = `/w/${activeWorkspace.slug}`;
     const map: Array<{ label: string; href: string }> = [
       { label: "Pulse", href: `${base}/pulse` },
+      { label: "Profile", href: `${base}/profile` },
       { label: "Settings", href: `${base}/settings` },
-      { label: "Tracks", href: `${base}/tracks` },
+      { label: "Goals", href: `${base}/tracks` },
       { label: "Announcements", href: `${base}/announcements` },
       { label: "People", href: `${base}/members` },
       { label: "Integrations", href: `${base}/integrations` },
@@ -33,17 +35,12 @@ function sectionLabel(
 
     // Legacy / auxiliary routes that still matter to core journeys.
     if (
-      pathname === `${base}/profile` ||
-      pathname.startsWith(`${base}/profile/`)
-    )
-      return "Settings";
-    if (
       pathname === `${base}/goals` ||
       pathname.startsWith(`${base}/goals/`) ||
       pathname === `${base}/departments` ||
       pathname.startsWith(`${base}/departments/`)
     ) {
-      return "Tracks";
+      return "Goals";
     }
     if (pathname === `${base}/google` || pathname.startsWith(`${base}/google/`))
       return "Integrations";
@@ -58,16 +55,21 @@ function sectionLabel(
 export default function PortalTopbar({
   user,
   activeWorkspace,
+  workspacesCount,
   onOpenNav,
   onOpenCommandPalette,
 }: {
   user: ShellUser;
   activeWorkspace: ActiveWorkspace;
+  workspacesCount: number;
   onOpenNav: () => void;
   onOpenCommandPalette: () => void;
 }) {
   const pathname = usePathname() ?? "/";
   const label = sectionLabel(pathname, activeWorkspace);
+  const settingsHref = activeWorkspace
+    ? `/w/${activeWorkspace.slug}/settings`
+    : null;
 
   return (
     <header className="sb-card px-4 py-3 sm:px-5 sm:py-4">
@@ -115,12 +117,11 @@ export default function PortalTopbar({
             </span>
           </button>
 
-          <div className="hidden sm:block text-sm text-[color:var(--sb-muted)] truncate">
-            Signed in as{" "}
-            <span className="font-semibold text-[color:var(--sb-fg)]">
-              {user.email}
-            </span>
-          </div>
+          <ProfileMenu
+            email={user.email}
+            settingsHref={settingsHref}
+            showWorkspaces={workspacesCount > 1}
+          />
         </div>
       </div>
     </header>

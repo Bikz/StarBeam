@@ -161,6 +161,10 @@ export async function enqueue_due_daily_pulses(): Promise<void> {
 
   const startHour = parseIntEnv("STARB_DAILY_PULSE_WINDOW_START_HOUR", 2);
   const endHour = parseIntEnv("STARB_DAILY_PULSE_WINDOW_END_HOUR", 5);
+  const activeWindowDays = Math.max(
+    0,
+    parseIntEnv("STARB_ACTIVE_WINDOW_DAYS", 7),
+  );
   const batch = Math.min(
     500,
     Math.max(1, parseIntEnv("STARB_DAILY_PULSE_ENQUEUE_BATCH", 200)),
@@ -176,6 +180,9 @@ export async function enqueue_due_daily_pulses(): Promise<void> {
   );
 
   const now = new Date();
+  const activeCutoff = new Date(
+    now.getTime() - activeWindowDays * 24 * 60 * 60 * 1000,
+  );
 
   const haveLock = await tryAcquireSchedulerLock();
   if (!haveLock) return;
@@ -189,15 +196,24 @@ export async function enqueue_due_daily_pulses(): Promise<void> {
     let looped = false;
 
     for (let page = 0; page < maxPages && Date.now() < deadline; page += 1) {
+      const cursorWhere = membershipCursorWhere(cursor);
+      const where: Prisma.MembershipWhereInput = {
+        AND: [
+          ...(cursorWhere ? [cursorWhere] : []),
+          { lastActiveAt: { gte: activeCutoff } },
+        ],
+      };
+
       const memberships = await prisma.membership.findMany({
         select: {
           id: true,
           createdAt: true,
           workspaceId: true,
           userId: true,
+          lastActiveAt: true,
           user: { select: { timezone: true } },
         },
-        where: membershipCursorWhere(cursor),
+        where,
         orderBy: [{ createdAt: "asc" }, { id: "asc" }],
         take: batch,
       });

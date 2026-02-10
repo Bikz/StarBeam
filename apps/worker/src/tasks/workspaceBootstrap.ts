@@ -217,6 +217,7 @@ export async function workspace_bootstrap(payload: unknown) {
 
     const openaiApiKey = process.env.OPENAI_API_KEY ?? "";
     const codexExecEnabled = isTruthyEnv(process.env.STARB_CODEX_EXEC_ENABLED);
+    const codexApiKey = (process.env.CODEX_API_KEY ?? openaiApiKey).trim();
     const codexModel = process.env.STARB_CODEX_MODEL_DEFAULT ?? "gpt-5.2-codex";
     const codexReasoningEffortRaw = (
       process.env.STARB_CODEX_REASONING_EFFORT ?? "medium"
@@ -239,19 +240,35 @@ export async function workspace_bootstrap(payload: unknown) {
       process.env.STARB_CODEX_WEB_SEARCH_ENABLED === undefined
         ? true
         : isTruthyEnv(process.env.STARB_CODEX_WEB_SEARCH_ENABLED);
-    const codexAvailable =
-      codexExecEnabled && openaiApiKey ? await isCodexInstalled() : false;
+    const codexDetect =
+      codexExecEnabled && codexApiKey ? await isCodexInstalled() : null;
+    const codexAvailable = Boolean(codexDetect?.ok);
 
-    const bootstrap = await bootstrapWorkspaceConfigIfNeeded({
-      workspaceId,
-      triggeredByUserId: userId,
-      codex: {
-        available: codexAvailable,
-        model: codexModel,
-        reasoningEffort: codexReasoningEffort,
-        enableWebSearch: codexWebSearchEnabled,
-      },
-    });
+    if (codexExecEnabled && !codexApiKey) {
+      onPartialError("CODEX_API_KEY missing; workspace bootstrap skipped.");
+    } else if (codexExecEnabled && codexApiKey && !codexAvailable) {
+      onPartialError(
+        "Codex unavailable; workspace bootstrap skipped (see logs).",
+      );
+      console.warn("[workspace_bootstrap] Codex unavailable", {
+        workspaceId,
+        jobRunId: jobRun.id,
+        codexDetect,
+      });
+    }
+
+    const bootstrap = codexAvailable
+      ? await bootstrapWorkspaceConfigIfNeeded({
+          workspaceId,
+          triggeredByUserId: userId,
+          codex: {
+            available: codexAvailable,
+            model: codexModel,
+            reasoningEffort: codexReasoningEffort,
+            enableWebSearch: codexWebSearchEnabled,
+          },
+        })
+      : { didBootstrap: false, wroteProfile: false, wroteGoals: 0 };
 
     await prisma.jobRun.update({
       where: { id: jobRun.id },
@@ -269,6 +286,7 @@ export async function workspace_bootstrap(payload: unknown) {
             model: codexModel,
             reasoningEffort: codexReasoningEffort,
             webSearch: codexWebSearchEnabled,
+            ...(codexDetect ? { detect: codexDetect } : {}),
           },
         },
       },

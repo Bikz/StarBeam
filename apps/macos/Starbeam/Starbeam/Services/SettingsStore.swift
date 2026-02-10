@@ -91,14 +91,22 @@ final class SettingsStore {
         t.hasPrefix("https://starbeam-web") || t.hasPrefix("http://starbeam-web")
     }
 
+    var didMigrateOrigin = false
     if shouldMigrate(serverBaseURL) {
       serverBaseURL = prod
+      didMigrateOrigin = true
     }
     if shouldMigrate(dashboardBaseURL) {
       dashboardBaseURL = prod
+      didMigrateOrigin = true
     }
     if shouldMigrate(submitIdeaURL) {
       submitIdeaURL = prodSubmitIdea
+    }
+
+    // Guardrail: a workspace id from a different environment is guaranteed to 404 in prod.
+    if didMigrateOrigin {
+      workspaceID = ""
     }
   }
 

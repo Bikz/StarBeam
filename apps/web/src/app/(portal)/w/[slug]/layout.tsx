@@ -3,10 +3,21 @@ import { notFound, redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 
 import { prisma } from "@starbeam/db";
+import {
+  lastActiveUpdateCutoff,
+  shouldUpdateLastActiveAt,
+} from "@starbeam/shared";
 
 import { authOptions } from "@/lib/auth";
 import { requireBetaAccessOrRedirect } from "@/lib/betaAccess";
 import AppShell from "@/components/app-shell";
+
+function parseIntEnv(name: string, fallback: number): number {
+  const raw = (process.env[name] ?? "").trim();
+  const n = raw ? Number(raw) : NaN;
+  if (!Number.isFinite(n)) return fallback;
+  return Math.floor(n);
+}
 
 export default async function WorkspaceLayout({
   children,
@@ -39,6 +50,27 @@ export default async function WorkspaceLayout({
   ]);
 
   if (!membership) notFound();
+
+  const now = new Date();
+  const throttleMins = parseIntEnv("STARB_ACTIVE_UPDATE_THROTTLE_MINS", 60);
+  if (
+    shouldUpdateLastActiveAt({
+      lastActiveAt: membership.lastActiveAt,
+      now,
+      throttleMins,
+    })
+  ) {
+    const cutoff = lastActiveUpdateCutoff(now, throttleMins);
+    await prisma.membership
+      .updateMany({
+        where: {
+          id: membership.id,
+          OR: [{ lastActiveAt: null }, { lastActiveAt: { lt: cutoff } }],
+        },
+        data: { lastActiveAt: now },
+      })
+      .catch(() => undefined);
+  }
 
   return (
     <AppShell

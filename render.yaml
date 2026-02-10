@@ -43,16 +43,23 @@ services:
     runtime: node
     plan: starter
     autoDeploy: true
-    buildCommand: npm i -g @openai/codex@latest && codex --version && pnpm install --frozen-lockfile && pnpm turbo run build --filter=@starbeam/worker...
+    buildCommand: pnpm install --frozen-lockfile && pnpm --filter @starbeam/worker exec codex --version && pnpm turbo run build --filter=@starbeam/worker...
+    preDeployCommand: >-
+      export DATABASE_URL=${DIRECT_DATABASE_URL:?Missing DIRECT_DATABASE_URL (Neon direct/non-pooler connection string)};
+      pnpm --filter @starbeam/db exec prisma migrate deploy
     startCommand: pnpm --filter @starbeam/worker start
     envVars:
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL
         sync: false
+      - key: DIRECT_DATABASE_URL
+        sync: false
       - key: STARB_TOKEN_ENC_KEY_B64
         sync: false
       - key: OPENAI_API_KEY
+        sync: false
+      - key: CODEX_API_KEY
         sync: false
       - key: STARB_CODEX_EXEC_ENABLED
         value: "1"

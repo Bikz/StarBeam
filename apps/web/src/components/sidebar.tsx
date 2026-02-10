@@ -20,12 +20,12 @@ import {
   IconGrid,
   IconHome,
   IconList,
-  IconLogout,
   IconMegaphone,
   IconMessage,
   IconPlug,
   IconSettings,
   IconSpark,
+  IconUser,
   IconUsers,
 } from "@/components/sb-icons";
 
@@ -33,6 +33,7 @@ type NavIcon =
   | "dashboard"
   | "workspaces"
   | "pulse"
+  | "profile"
   | "settings"
   | "tracks"
   | "announcements"
@@ -56,6 +57,7 @@ function iconFor(icon: NavIcon, className: string) {
   if (icon === "dashboard") return <IconHome className={className} />;
   if (icon === "workspaces") return <IconGrid className={className} />;
   if (icon === "pulse") return <IconSpark className={className} />;
+  if (icon === "profile") return <IconUser className={className} />;
   if (icon === "settings") return <IconSettings className={className} />;
   if (icon === "tracks") return <IconList className={className} />;
   if (icon === "announcements") return <IconMegaphone className={className} />;
@@ -107,28 +109,23 @@ function navFor(
   const base = `/w/${activeWorkspace.slug}`;
   const workspace: NavItem[] = [
     { href: `${base}/pulse`, label: "Pulse", icon: "pulse" },
-    { href: `${base}/settings`, label: "Settings", icon: "settings" },
+    { href: `${base}/profile`, label: "Profile", icon: "profile" },
+    { href: `${base}/tracks`, label: "Goals", icon: "tracks" },
+    {
+      href: `${base}/integrations`,
+      label: "Integrations",
+      icon: "integrations",
+    },
+    { href: `${base}/members`, label: "People", icon: "people" },
   ];
 
-  if (mode === "simple") return { global, workspace };
-
-  // Advanced mode: reveal additional surfaces, but avoid showing admin-only pages
-  // to non-managers by default.
-  workspace.push({
-    href: `${base}/integrations`,
-    label: "Integrations",
-    icon: "integrations",
-  });
-
-  if (isManageRole(activeWorkspace.role)) {
+  if (mode === "advanced" && isManageRole(activeWorkspace.role)) {
     workspace.push(
-      { href: `${base}/tracks`, label: "Tracks", icon: "tracks" },
       {
         href: `${base}/announcements`,
         label: "Announcements",
         icon: "announcements",
       },
-      { href: `${base}/members`, label: "People", icon: "people" },
       { href: `${base}/jobs`, label: "Runs", icon: "runs" },
     );
   }
@@ -238,9 +235,11 @@ function WorkspaceLink({
       <span className="min-w-0 truncate font-semibold text-[color:var(--sb-fg)]">
         {w.name}
       </span>
-      <span className="text-[11px] font-semibold tracking-wide uppercase text-[color:var(--sb-muted)]">
-        {w.type}
-      </span>
+      {w.type === "PERSONAL" ? null : (
+        <span className="text-[11px] font-semibold tracking-wide uppercase text-[color:var(--sb-muted)]">
+          {w.type}
+        </span>
+      )}
     </Link>
   );
 }
@@ -278,9 +277,10 @@ export default function Sidebar({
     () => navFor(activeWorkspace, mode),
     [activeWorkspace, mode],
   );
-  const showWorkspaceSearch = workspaces.length > 8;
+  const showWorkspaceSearch = mode === "advanced" && workspaces.length > 8;
   const globalHasWorkspaces = nav.global.some((i) => i.href === "/workspaces");
-  const showAllWorkspacesLink = workspaces.length > 8 && !globalHasWorkspaces;
+  const showAllWorkspacesLink =
+    mode === "advanced" && workspaces.length > 8 && !globalHasWorkspaces;
   const workspaceMatches = useMemo(() => {
     const q = workspaceQuery.trim().toLowerCase();
     if (!q) return workspaces.slice(0, 8);
@@ -292,6 +292,14 @@ export default function Sidebar({
       })
       .slice(0, 12);
   }, [workspaces, workspaceQuery]);
+
+  const settingsHref = activeWorkspace
+    ? `/w/${activeWorkspace.slug}/settings`
+    : null;
+
+  const workspacePrimaryNav =
+    mode === "simple" ? nav.workspace.slice(0, 1) : [];
+  const workspaceSecondaryNav = mode === "simple" ? nav.workspace.slice(1) : [];
 
   const content = (
     <nav aria-label="Primary" className="sb-card p-4">
@@ -318,6 +326,7 @@ export default function Sidebar({
               alt=""
               width={28}
               height={28}
+              unoptimized
               priority
               className="block dark:hidden"
             />
@@ -326,6 +335,7 @@ export default function Sidebar({
               alt=""
               width={28}
               height={28}
+              unoptimized
               priority
               className="hidden dark:block"
             />
@@ -364,26 +374,32 @@ export default function Sidebar({
       </div>
 
       {collapsed ? (
-        <div className="mt-5 grid gap-2 justify-items-center">
+        <>
+          <div className="mt-5 grid gap-2 justify-items-center">
+            {activeWorkspace ? (
+              <Link
+                href={`/w/${activeWorkspace.slug}`}
+                onClick={onNavigate}
+                className={[
+                  "grid h-11 w-11 place-items-center rounded-xl border border-black/10 dark:border-white/10",
+                  "bg-black/[0.03] dark:bg-white/[0.05]",
+                  "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]",
+                ].join(" ")}
+                aria-label={`Open ${activeWorkspace.name}`}
+                title={activeWorkspace.name}
+              >
+                <span className="text-xs font-extrabold text-[color:var(--sb-fg)]">
+                  {workspaceInitials(activeWorkspace.name)}
+                </span>
+              </Link>
+            ) : null}
+          </div>
+
           {activeWorkspace ? (
-            <Link
-              href={`/w/${activeWorkspace.slug}`}
-              onClick={onNavigate}
-              className={[
-                "grid h-11 w-11 place-items-center rounded-xl border border-black/10 dark:border-white/10",
-                "bg-black/[0.03] dark:bg-white/[0.05]",
-                "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]",
-              ].join(" ")}
-              aria-label={`Open ${activeWorkspace.name}`}
-              title={activeWorkspace.name}
-            >
-              <span className="text-xs font-extrabold text-[color:var(--sb-fg)]">
-                {workspaceInitials(activeWorkspace.name)}
-              </span>
-            </Link>
+            <div className="mt-4 h-px w-10 bg-[color:var(--sb-divider)] mx-auto" />
           ) : null}
-        </div>
-      ) : (
+        </>
+      ) : mode === "advanced" ? (
         <div className="mt-5 grid gap-2">
           <SectionLabel>Workspaces</SectionLabel>
           {showWorkspaceSearch ? (
@@ -424,10 +440,13 @@ export default function Sidebar({
             </Link>
           ) : null}
         </div>
-      )}
+      ) : null}
 
       <div className="mt-5 grid gap-2">
-        {!collapsed ? <SectionLabel>Navigate</SectionLabel> : null}
+        {!collapsed && mode === "advanced" ? (
+          <SectionLabel>Navigate</SectionLabel>
+        ) : null}
+
         <div
           className={
             collapsed ? "grid gap-1 justify-items-center" : "grid gap-1"
@@ -444,7 +463,59 @@ export default function Sidebar({
           ))}
         </div>
 
-        {nav.workspace.length ? (
+        {collapsed && nav.global.length > 0 && nav.workspace.length > 0 ? (
+          <div className="my-2 h-px w-10 bg-[color:var(--sb-divider)] mx-auto" />
+        ) : null}
+
+        {mode === "simple" ? (
+          <>
+            {workspacePrimaryNav.length ? (
+              <div
+                className={
+                  collapsed
+                    ? "mt-2 grid gap-1 justify-items-center"
+                    : "mt-2 grid gap-1"
+                }
+              >
+                {workspacePrimaryNav.map((item) => (
+                  <SidebarLink
+                    key={item.href}
+                    item={item}
+                    active={isActivePathname(pathname, item)}
+                    collapsed={collapsed}
+                    onNavigate={onNavigate}
+                  />
+                ))}
+              </div>
+            ) : null}
+
+            {workspaceSecondaryNav.length ? (
+              <>
+                <div
+                  className={[
+                    collapsed ? "my-2 h-px w-10 mx-auto" : "my-2 h-px",
+                    "bg-[color:var(--sb-divider)]",
+                  ].join(" ")}
+                />
+                <div
+                  className={
+                    collapsed ? "grid gap-1 justify-items-center" : "grid gap-1"
+                  }
+                >
+                  {workspaceSecondaryNav.map((item) => (
+                    <SidebarLink
+                      key={item.href}
+                      item={item}
+                      active={isActivePathname(pathname, item)}
+                      collapsed={collapsed}
+                      onNavigate={onNavigate}
+                    />
+                  ))}
+                </div>
+              </>
+            ) : null}
+          </>
+        ) : nav.workspace.length ? (
           <div
             className={
               collapsed
@@ -511,29 +582,33 @@ export default function Sidebar({
             </Link>
           )}
 
-          {collapsed ? (
-            <Link
-              href="/signout?callbackUrl=/login"
-              className={sbButtonClass({
-                variant: "primary",
-                className: "h-11 w-11",
-              })}
-              aria-label="Sign out"
-              title="Sign out"
-            >
-              <IconLogout className="h-5 w-5" />
-            </Link>
-          ) : (
-            <Link
-              href="/signout?callbackUrl=/login"
-              className={sbButtonClass({
-                variant: "primary",
-                className: "h-10 px-4 text-xs font-extrabold",
-              })}
-            >
-              Sign out
-            </Link>
-          )}
+          {settingsHref ? (
+            collapsed ? (
+              <Link
+                href={settingsHref}
+                onClick={onNavigate}
+                className={sbButtonClass({
+                  variant: "primary",
+                  className: "h-11 w-11",
+                })}
+                aria-label="Settings"
+                title="Settings"
+              >
+                <IconSettings className="h-5 w-5" />
+              </Link>
+            ) : (
+              <Link
+                href={settingsHref}
+                onClick={onNavigate}
+                className={sbButtonClass({
+                  variant: "primary",
+                  className: "h-10 px-4 text-xs font-extrabold",
+                })}
+              >
+                Settings
+              </Link>
+            )
+          ) : null}
         </div>
       </div>
     </nav>

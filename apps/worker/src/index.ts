@@ -97,8 +97,8 @@ async function main() {
   );
   const connectorPollIntervalMins = pollIntervalMinsFromEnv();
   const codexExecEnabled = isTruthyEnv(process.env.STARB_CODEX_EXEC_ENABLED);
-  const openaiApiKeyPresent = Boolean(
-    (process.env.OPENAI_API_KEY ?? "").trim(),
+  const codexApiKeyPresent = Boolean(
+    (process.env.CODEX_API_KEY ?? process.env.OPENAI_API_KEY ?? "").trim(),
   );
   const blobStoreConfigured = isBlobStoreConfigured();
   const blobVerifyEnabled =
@@ -119,7 +119,7 @@ async function main() {
     },
     codex: {
       execEnabled: codexExecEnabled,
-      hasOpenAiKey: openaiApiKeyPresent,
+      hasCodexKey: codexApiKeyPresent,
       hasBlobStore: blobStoreConfigured,
     },
     blobStore: { verifyOnBoot: blobVerifyEnabled },
@@ -131,7 +131,7 @@ async function main() {
   // Hosted hardening: if we're going to run Codex exec (which relies on
   // materialized contexts and (often) encrypted blobs), fail fast if R2/S3
   // isn't configured. In local dev, warn instead to keep the UX flexible.
-  if (codexExecEnabled && openaiApiKeyPresent && !blobStoreConfigured) {
+  if (codexExecEnabled && codexApiKeyPresent && !blobStoreConfigured) {
     const msg =
       "[starbeam-worker] fatal: STARB_CODEX_EXEC_ENABLED=1 but S3/R2 env vars are missing (S3_ENDPOINT/S3_ACCESS_KEY_ID/S3_SECRET_ACCESS_KEY/S3_BUCKET).";
     if ((env.NODE_ENV ?? "development") === "production") {

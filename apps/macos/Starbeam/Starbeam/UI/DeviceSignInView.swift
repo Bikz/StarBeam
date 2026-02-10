@@ -249,10 +249,8 @@ struct DeviceSignInView: View {
         )
 
         try model.auth.saveSession(session)
-
-        if model.settings.workspaceID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-          model.settings.workspaceID = session.workspaces.first?.id ?? ""
-        }
+        _ = model.ensureSelectedWorkspaceIsValid()
+        model.configureAutoRefreshLoop()
 
         await model.refresh()
         dismissSelf()

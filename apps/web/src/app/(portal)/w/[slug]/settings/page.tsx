@@ -16,10 +16,6 @@ import {
   disconnectGoogleConnection,
 } from "@/app/(portal)/w/[slug]/integrations/googleActions";
 
-function canManage(role: string): boolean {
-  return role === "ADMIN" || role === "MANAGER";
-}
-
 function statusLabel(status: string | null | undefined): string {
   const s = (status ?? "").trim();
   if (!s) return "not queued";
@@ -51,7 +47,6 @@ export default async function SettingsPage({
   });
   if (!membership) notFound();
 
-  const manageable = canManage(membership.role);
   const base = `/w/${membership.workspace.slug}`;
   const dl = `${siteOrigin()}/download`;
   const isAdmin = isAdminEmail(session.user.email);
@@ -59,6 +54,9 @@ export default async function SettingsPage({
   const [
     edition,
     googleConnections,
+    githubConnections,
+    linearConnections,
+    notionConnections,
     deviceTokens,
     bootstrapJobRun,
     autoFirstJobRun,
@@ -81,6 +79,45 @@ export default async function SettingsPage({
       },
       orderBy: { createdAt: "desc" },
       take: 3,
+    }),
+    prisma.gitHubConnection.findMany({
+      where: {
+        workspaceId: membership.workspace.id,
+        ownerUserId: session.user.id,
+      },
+      select: { id: true, githubLogin: true, status: true, createdAt: true },
+      orderBy: { createdAt: "desc" },
+      take: 1,
+    }),
+    prisma.linearConnection.findMany({
+      where: {
+        workspaceId: membership.workspace.id,
+        ownerUserId: session.user.id,
+      },
+      select: {
+        id: true,
+        linearUserEmail: true,
+        linearUserId: true,
+        status: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: "desc" },
+      take: 1,
+    }),
+    prisma.notionConnection.findMany({
+      where: {
+        workspaceId: membership.workspace.id,
+        ownerUserId: session.user.id,
+      },
+      select: {
+        id: true,
+        notionWorkspaceName: true,
+        notionBotId: true,
+        status: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: "desc" },
+      take: 1,
     }),
     prisma.apiRefreshToken.count({
       where: {
@@ -145,6 +182,12 @@ export default async function SettingsPage({
   const googleConnected = googleConnections.some(
     (c) => c.status === "CONNECTED",
   );
+  const github = githubConnections[0] ?? null;
+  const githubConnected = github?.status === "CONNECTED";
+  const linear = linearConnections[0] ?? null;
+  const linearConnected = linear?.status === "CONNECTED";
+  const notion = notionConnections[0] ?? null;
+  const notionConnected = notion?.status === "CONNECTED";
 
   return (
     <div className="grid gap-6">
@@ -381,92 +424,110 @@ export default async function SettingsPage({
             </div>
           </div>
 
-          <details className="sb-card-inset p-5">
-            <summary className="cursor-pointer text-sm font-semibold text-[color:var(--sb-fg)]">
-              Advanced tools
-            </summary>
-            <div className="mt-3 grid gap-3 text-sm text-[color:var(--sb-muted)] leading-relaxed">
+          <div className="sb-card-inset p-5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                GitHub, Linear, and Notion connectors are available, but
-                optional. Use them when you want tighter context.
+                <div className="sb-title text-base font-extrabold">GitHub</div>
+                <div className="mt-1 text-sm text-[color:var(--sb-muted)]">
+                  {!github
+                    ? "Not connected"
+                    : github.githubLogin
+                      ? `Connected as ${github.githubLogin}`
+                      : "Connected"}
+                </div>
               </div>
-              <div>
-                <Link
-                  href={`${base}/integrations`}
-                  className={sbButtonClass({
-                    variant: "primary",
-                    className: "h-11 px-5 text-sm font-extrabold",
-                  })}
-                >
-                  Open integrations
-                </Link>
-              </div>
-            </div>
-          </details>
-        </div>
-      </section>
 
-      <section className="sb-card p-7">
-        <PageHeader
-          title="Context"
-          description="A little context goes a long way. Keep it lightweight."
-        />
+              <Link
+                href={`${base}/integrations#github`}
+                className={sbButtonClass({
+                  variant: githubConnected ? "secondary" : "primary",
+                  className: githubConnected
+                    ? "h-11 px-5 text-sm font-semibold"
+                    : "h-11 px-5 text-sm font-extrabold",
+                })}
+              >
+                {githubConnected ? "Manage" : "Connect"}
+              </Link>
+            </div>
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-2">
-          <Link href={`${base}/profile`} className="sb-card-inset p-5">
-            <div className="sb-title text-base font-extrabold">Profile</div>
-            <div className="mt-1 text-sm text-[color:var(--sb-muted)]">
-              Company or project description
+            <div className="mt-4 text-xs text-[color:var(--sb-muted)] leading-relaxed">
+              Pull requests, issues, and commits can show up in your daily
+              pulse.
             </div>
-            <div className="mt-4 inline-flex sb-btn px-4 py-2 text-xs font-semibold">
-              Open
-            </div>
-          </Link>
-          <Link href={`${base}/tracks`} className="sb-card-inset p-5">
-            <div className="sb-title text-base font-extrabold">
-              Tracks and goals
-            </div>
-            <div className="mt-1 text-sm text-[color:var(--sb-muted)]">
-              Up to 5 active goals per track
-            </div>
-            <div className="mt-4 inline-flex sb-btn px-4 py-2 text-xs font-semibold">
-              Open
-            </div>
-          </Link>
-          <Link href={`${base}/announcements`} className="sb-card-inset p-5">
-            <div className="sb-title text-base font-extrabold">
-              Announcements
-            </div>
-            <div className="mt-1 text-sm text-[color:var(--sb-muted)]">
-              Pinned notes that show up in pulses
-            </div>
-            <div className="mt-4 inline-flex sb-btn px-4 py-2 text-xs font-semibold">
-              Open
-            </div>
-          </Link>
-          <Link href={`${base}/members`} className="sb-card-inset p-5">
-            <div className="sb-title text-base font-extrabold">People</div>
-            <div className="mt-1 text-sm text-[color:var(--sb-muted)]">
-              Members and invites
-            </div>
-            <div className="mt-4 inline-flex sb-btn px-4 py-2 text-xs font-semibold">
-              Open
-            </div>
-          </Link>
-        </div>
-
-        {!manageable ? (
-          <div className="mt-4 text-xs text-[color:var(--sb-muted)]">
-            Note: some context is manager/admin-only in v0. You can still
-            connect your own tools and get personal pulses.
           </div>
-        ) : null}
+
+          <div className="sb-card-inset p-5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <div className="sb-title text-base font-extrabold">Linear</div>
+                <div className="mt-1 text-sm text-[color:var(--sb-muted)]">
+                  {!linear
+                    ? "Not connected"
+                    : linear.linearUserEmail
+                      ? `Connected as ${linear.linearUserEmail}`
+                      : linear.linearUserId
+                        ? `Connected as ${linear.linearUserId}`
+                        : "Connected"}
+                </div>
+              </div>
+
+              <Link
+                href={`${base}/integrations#linear`}
+                className={sbButtonClass({
+                  variant: linearConnected ? "secondary" : "primary",
+                  className: linearConnected
+                    ? "h-11 px-5 text-sm font-semibold"
+                    : "h-11 px-5 text-sm font-extrabold",
+                })}
+              >
+                {linearConnected ? "Manage" : "Connect"}
+              </Link>
+            </div>
+
+            <div className="mt-4 text-xs text-[color:var(--sb-muted)] leading-relaxed">
+              Assigned issues and recent updates can show up in your pulse.
+            </div>
+          </div>
+
+          <div className="sb-card-inset p-5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <div className="sb-title text-base font-extrabold">Notion</div>
+                <div className="mt-1 text-sm text-[color:var(--sb-muted)]">
+                  {!notion
+                    ? "Not connected"
+                    : notion.notionWorkspaceName
+                      ? `Connected to ${notion.notionWorkspaceName}`
+                      : notion.notionBotId
+                        ? `Connected as ${notion.notionBotId}`
+                        : "Connected"}
+                </div>
+              </div>
+
+              <Link
+                href={`${base}/integrations#notion`}
+                className={sbButtonClass({
+                  variant: notionConnected ? "secondary" : "primary",
+                  className: notionConnected
+                    ? "h-11 px-5 text-sm font-semibold"
+                    : "h-11 px-5 text-sm font-extrabold",
+                })}
+              >
+                {notionConnected ? "Manage" : "Connect"}
+              </Link>
+            </div>
+
+            <div className="mt-4 text-xs text-[color:var(--sb-muted)] leading-relaxed">
+              Bring wiki/docs context into your workspace pulse.
+            </div>
+          </div>
+        </div>
       </section>
 
       <section className="sb-card p-7">
         <PageHeader
           title="Advanced mode"
-          description="Advanced mode reveals additional pages (Integrations, Tracks, Runs). Keep it off unless you’re actively tuning."
+          description="Advanced mode reveals additional pages (Dashboard, Workspaces, Announcements, Runs). Keep it off unless you’re actively tuning."
         />
 
         <div className="mt-6 grid gap-4">

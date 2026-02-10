@@ -25,6 +25,7 @@ export default function SiteHeader({
               alt=""
               width={34}
               height={34}
+              unoptimized
               priority
               className="block dark:hidden"
             />
@@ -33,6 +34,7 @@ export default function SiteHeader({
               alt=""
               width={34}
               height={34}
+              unoptimized
               priority
               className="hidden dark:block"
             />

@@ -213,6 +213,11 @@ export async function generatePulseCardsWithCodexExec(args: {
     approxInputTokens: number;
     approxOutputTokens: number;
     durationMs: number;
+    usage?: {
+      inputTokens: number;
+      cachedInputTokens: number;
+      outputTokens: number;
+    };
   };
 }> {
   const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "starbeam-codex-run-"));
@@ -285,6 +290,7 @@ export async function generatePulseCardsWithCodexExec(args: {
           approxInputTokens,
           approxOutputTokens,
           durationMs,
+          ...(res.usage ? { usage: res.usage } : {}),
         },
       };
     } finally {

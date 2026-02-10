@@ -12,6 +12,7 @@
     "test": "node --import tsx --test test/*.test.ts"
   },
   "dependencies": {
+    "@openai/codex": "0.98.0",
     "@sentry/node": "^10.11.0",
     "@starbeam/db": "workspace:*",
     "@starbeam/shared": "workspace:*",

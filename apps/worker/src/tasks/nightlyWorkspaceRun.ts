@@ -1,5 +1,6 @@
 import type { Prisma } from "@starbeam/db";
 import { prisma } from "@starbeam/db";
+import { isActiveWithinWindow } from "@starbeam/shared";
 import { z } from "zod";
 
 import { isCodexInstalled } from "../lib/codex/exec";
@@ -21,6 +22,13 @@ const NightlyWorkspaceRunPayloadSchema = z.object({
 
 function isTruthyEnv(value: string | undefined): boolean {
   return ["1", "true", "yes"].includes((value ?? "").trim().toLowerCase());
+}
+
+function parseIntEnv(name: string, fallback: number): number {
+  const raw = (process.env[name] ?? "").trim();
+  const n = raw ? Number(raw) : NaN;
+  if (!Number.isFinite(n)) return fallback;
+  return Math.floor(n);
 }
 
 export async function nightly_workspace_run(payload: unknown) {
@@ -50,6 +58,16 @@ export async function nightly_workspace_run(payload: unknown) {
 
   try {
     const runAt = new Date();
+    const jobMeta =
+      typeof jobRun.meta === "object" && jobRun.meta
+        ? (jobRun.meta as Record<string, unknown>)
+        : null;
+    const runSource =
+      jobMeta && typeof jobMeta.source === "string" ? jobMeta.source : null;
+    const metaTriggeredByUserId =
+      jobMeta && typeof jobMeta.triggeredByUserId === "string"
+        ? jobMeta.triggeredByUserId
+        : null;
 
     const [
       workspace,
@@ -73,7 +91,11 @@ export async function nightly_workspace_run(payload: unknown) {
       }),
       prisma.membership.findMany({
         where: { workspaceId },
-        select: { userId: true, user: { select: { timezone: true } } },
+        select: {
+          userId: true,
+          lastActiveAt: true,
+          user: { select: { timezone: true } },
+        },
       }),
       prisma.goal.findMany({
         where: { workspaceId, active: true },
@@ -115,15 +137,40 @@ export async function nightly_workspace_run(payload: unknown) {
     let profile = initialProfile;
     let goals = initialGoals;
 
-    const membershipByUserId = new Map<string, { timezone: string }>();
+    const membershipByUserId = new Map<
+      string,
+      { timezone: string; lastActiveAt: Date | null }
+    >();
     for (const m of memberships)
-      membershipByUserId.set(m.userId, { timezone: m.user.timezone });
+      membershipByUserId.set(m.userId, {
+        timezone: m.user.timezone,
+        lastActiveAt: m.lastActiveAt,
+      });
 
     const allMemberUserIds = memberships.map((m) => m.userId);
-    const memberUserIds = targetUserId ? [targetUserId] : allMemberUserIds;
+    const activeWindowDays = parseIntEnv("STARB_ACTIVE_WINDOW_DAYS", 7);
+    const isActiveUserId = (userId: string): boolean =>
+      isActiveWithinWindow({
+        lastActiveAt: membershipByUserId.get(userId)?.lastActiveAt ?? null,
+        now: runAt,
+        windowDays: activeWindowDays,
+      });
+
+    const activeMemberUserIds = allMemberUserIds.filter(isActiveUserId);
+
+    const memberUserIds = targetUserId ? [targetUserId] : activeMemberUserIds;
     if (targetUserId && !membershipByUserId.has(targetUserId)) {
       throw new Error("Target user is not a workspace member");
     }
+    const treatTargetAsActive =
+      Boolean(targetUserId) &&
+      (runSource === "web" || runSource === "auto-first");
+    const activeRunUserIds = memberUserIds.filter(
+      (userId) =>
+        isActiveUserId(userId) ||
+        (treatTargetAsActive && userId === targetUserId),
+    );
+    const activeRunUserIdSet = new Set(activeRunUserIds);
 
     const [
       googleConnections,
@@ -213,6 +260,7 @@ export async function nightly_workspace_run(payload: unknown) {
     const openaiModel = process.env.OPENAI_MODEL_DEFAULT ?? "gpt-5";
 
     const codexExecEnabled = isTruthyEnv(process.env.STARB_CODEX_EXEC_ENABLED);
+    const codexApiKey = (process.env.CODEX_API_KEY ?? openaiApiKey).trim();
     const codexModel = process.env.STARB_CODEX_MODEL_DEFAULT ?? "gpt-5.2-codex";
     const codexReasoningEffortRaw = (
       process.env.STARB_CODEX_REASONING_EFFORT ?? "medium"
@@ -235,70 +283,82 @@ export async function nightly_workspace_run(payload: unknown) {
       process.env.STARB_CODEX_WEB_SEARCH_ENABLED === undefined
         ? true
         : isTruthyEnv(process.env.STARB_CODEX_WEB_SEARCH_ENABLED);
-    const codexAvailable =
-      codexExecEnabled && openaiApiKey ? await isCodexInstalled() : false;
+    const codexDetect =
+      codexExecEnabled && codexApiKey && activeRunUserIds.length
+        ? await isCodexInstalled()
+        : null;
+    const codexAvailable = Boolean(codexDetect?.ok);
 
-    if (codexExecEnabled && openaiApiKey && !codexAvailable) {
-      onPartialError("codex binary not found; Codex pulse generation skipped.");
+    if (codexExecEnabled && !codexApiKey && activeRunUserIds.length) {
+      onPartialError("CODEX_API_KEY missing; Codex pulse generation skipped.");
+    } else if (
+      codexExecEnabled &&
+      codexApiKey &&
+      activeRunUserIds.length &&
+      !codexAvailable
+    ) {
+      onPartialError("Codex unavailable; pulse generation skipped (see logs).");
+      console.warn("[nightly_workspace_run] Codex unavailable", {
+        workspaceId,
+        jobRunId: jobRun.id,
+        codexDetect,
+      });
     }
 
     // "Wow from day one": when running the first pulse (auto-first or explicit run),
     // try to auto-bootstrap a profile + starter goals to give Codex clearer direction.
     try {
-      const meta =
-        typeof jobRun.meta === "object" && jobRun.meta ? jobRun.meta : null;
-      const source =
-        meta &&
-        "source" in meta &&
-        typeof (meta as { source?: unknown }).source === "string"
-          ? String((meta as { source: string }).source)
-          : null;
       const triggeredByUserId =
-        meta &&
-        "triggeredByUserId" in meta &&
-        typeof (meta as { triggeredByUserId?: unknown }).triggeredByUserId ===
-          "string"
-          ? String((meta as { triggeredByUserId: string }).triggeredByUserId)
-          : (memberUserIds[0] ?? null);
-
-      const isFirstRunSource = source === "auto-first" || source === "web";
+        metaTriggeredByUserId ??
+        targetUserId ??
+        activeRunUserIds[0] ??
+        allMemberUserIds[0] ??
+        null;
+      const isFirstRunSource =
+        runSource === "auto-first" || runSource === "web";
       const needsBootstrap = !profile || goals.length === 0;
 
       if (isFirstRunSource && needsBootstrap && triggeredByUserId) {
-        await bootstrapWorkspaceConfigIfNeeded({
-          workspaceId,
-          triggeredByUserId,
-          codex: {
-            available: codexAvailable,
-            model: codexModel,
-            reasoningEffort: codexReasoningEffort,
-            enableWebSearch: codexWebSearchEnabled,
-          },
-        });
+        if (!codexAvailable) {
+          onPartialError("Workspace bootstrap skipped (Codex unavailable).");
+        } else if (!isActiveUserId(triggeredByUserId)) {
+          onPartialError("Workspace bootstrap skipped (user inactive).");
+        } else {
+          await bootstrapWorkspaceConfigIfNeeded({
+            workspaceId,
+            triggeredByUserId,
+            codex: {
+              available: codexAvailable,
+              model: codexModel,
+              reasoningEffort: codexReasoningEffort,
+              enableWebSearch: codexWebSearchEnabled,
+            },
+          });
 
-        // Refresh in-memory context for the remainder of this job.
-        [profile, goals] = await Promise.all([
-          prisma.workspaceProfile.findUnique({
-            where: { workspaceId },
-            select: {
-              websiteUrl: true,
-              description: true,
-              competitorDomains: true,
-            },
-          }),
-          prisma.goal.findMany({
-            where: { workspaceId, active: true },
-            select: {
-              id: true,
-              title: true,
-              body: true,
-              priority: true,
-              departmentId: true,
-            },
-            orderBy: [{ priority: "asc" }, { createdAt: "desc" }],
-            take: 10,
-          }),
-        ]);
+          // Refresh in-memory context for the remainder of this job.
+          [profile, goals] = await Promise.all([
+            prisma.workspaceProfile.findUnique({
+              where: { workspaceId },
+              select: {
+                websiteUrl: true,
+                description: true,
+                competitorDomains: true,
+              },
+            }),
+            prisma.goal.findMany({
+              where: { workspaceId, active: true },
+              select: {
+                id: true,
+                title: true,
+                body: true,
+                priority: true,
+                departmentId: true,
+              },
+              orderBy: [{ priority: "asc" }, { createdAt: "desc" }],
+              take: 10,
+            }),
+          ]);
+        }
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -314,18 +374,23 @@ export async function nightly_workspace_run(payload: unknown) {
       ? isTruthyEnv(legacyOverride)
       : !codexAvailable;
 
-    if (!openaiApiKey) {
-      onPartialError("OPENAI_API_KEY missing; web research skipped.");
+    const legacyWillRun =
+      legacyDeptWebResearchEnabled && activeRunUserIds.length > 0;
+    if (legacyWillRun && !openaiApiKey) {
+      onPartialError("OPENAI_API_KEY missing; legacy web research skipped.");
     }
 
+    const legacyResearchDepartments = departments.filter((d) =>
+      d.memberships.some((m) => activeRunUserIdSet.has(m.userId)),
+    );
     const deptCardsByDeptId = await generateLegacyDepartmentWebResearchCards({
-      enabled: Boolean(openaiApiKey) && legacyDeptWebResearchEnabled,
+      enabled: Boolean(openaiApiKey) && legacyWillRun,
       openaiApiKey,
       model: openaiModel,
       workspace,
       profile,
       goals,
-      departments,
+      departments: legacyResearchDepartments,
       onPartialError,
     });
 
@@ -335,6 +400,9 @@ export async function nightly_workspace_run(payload: unknown) {
       contextBytes: 0,
       approxInputTokens: 0,
       approxOutputTokens: 0,
+      inputTokens: 0,
+      cachedInputTokens: 0,
+      outputTokens: 0,
       durationMs: 0,
     };
 
@@ -343,6 +411,7 @@ export async function nightly_workspace_run(payload: unknown) {
         (membershipByUserId.get(userId)?.timezone ?? "UTC").trim() || "UTC";
       const timezone = isValidIanaTimeZone(tzRaw) ? tzRaw : "UTC";
       const editionDate = startOfDayKeyUtcForTimeZone(runAt, timezone);
+      const isActiveForRun = activeRunUserIdSet.has(userId);
 
       const codexPulse = await syncUserConnectorsAndMaybeCodex({
         workspaceId,
@@ -355,10 +424,10 @@ export async function nightly_workspace_run(payload: unknown) {
         githubConnections: githubConnectionsByUser.get(userId) ?? [],
         linearConnections: linearConnectionsByUser.get(userId) ?? [],
         notionConnections: notionConnectionsByUser.get(userId) ?? [],
-        codexAvailable,
+        codexAvailable: codexAvailable && isActiveForRun,
         codexModel,
         codexReasoningEffort,
-        codexWebSearchEnabled,
+        codexWebSearchEnabled: codexWebSearchEnabled && isActiveForRun,
         editionDate,
         onPartialError,
       });
@@ -371,6 +440,12 @@ export async function nightly_workspace_run(payload: unknown) {
           codexPulse.estimate.approxInputTokens;
         codexEstimates.approxOutputTokens +=
           codexPulse.estimate.approxOutputTokens;
+        if (codexPulse.estimate.usage) {
+          codexEstimates.inputTokens += codexPulse.estimate.usage.inputTokens;
+          codexEstimates.cachedInputTokens +=
+            codexPulse.estimate.usage.cachedInputTokens;
+          codexEstimates.outputTokens += codexPulse.estimate.usage.outputTokens;
+        }
         codexEstimates.durationMs += codexPulse.estimate.durationMs;
       }
 
@@ -529,6 +604,9 @@ export async function nightly_workspace_run(payload: unknown) {
             model: codexModel,
             reasoningEffort: codexReasoningEffort,
             webSearch: codexWebSearchEnabled,
+            activeWindowDays,
+            activeRunUsers: activeRunUserIds.length,
+            ...(codexDetect ? { detect: codexDetect } : {}),
             estimates: codexEstimates,
           },
         },

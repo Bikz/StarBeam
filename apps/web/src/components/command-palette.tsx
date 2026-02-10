@@ -110,49 +110,32 @@ export default function CommandPalette({
             },
           },
           {
-            id: "nav:settings",
+            id: "nav:profile",
             section: "Workspace",
-            label: "Settings",
-            keywords: "setup tools context advanced",
+            label: "Profile",
+            keywords: "context company description",
             perform: () => {
-              router.push(`/w/${w.slug}/settings`);
+              router.push(`/w/${w.slug}/profile`);
               onClose();
             },
           },
-        ]
-      : [];
-
-    if (w && advanced) {
-      workspaceNav.push({
-        id: "nav:integrations",
-        section: "Workspace",
-        label: "Integrations",
-        keywords: "google github linear notion",
-        perform: () => {
-          router.push(`/w/${w.slug}/integrations`);
-          onClose();
-        },
-      });
-
-      if (isManageRole(w.role)) {
-        workspaceNav.push(
           {
-            id: "nav:tracks",
+            id: "nav:goals",
             section: "Workspace",
-            label: "Tracks",
-            keywords: "goals departments",
+            label: "Goals",
+            keywords: "goals tracks departments",
             perform: () => {
               router.push(`/w/${w.slug}/tracks`);
               onClose();
             },
           },
           {
-            id: "nav:announcements",
+            id: "nav:integrations",
             section: "Workspace",
-            label: "Announcements",
-            keywords: "pinned updates",
+            label: "Integrations",
+            keywords: "google github linear notion",
             perform: () => {
-              router.push(`/w/${w.slug}/announcements`);
+              router.push(`/w/${w.slug}/integrations`);
               onClose();
             },
           },
@@ -167,17 +150,41 @@ export default function CommandPalette({
             },
           },
           {
-            id: "nav:runs",
+            id: "nav:settings",
             section: "Workspace",
-            label: "Runs",
-            keywords: "jobs nightly history",
+            label: "Settings",
+            keywords: "setup tools advanced",
             perform: () => {
-              router.push(`/w/${w.slug}/jobs`);
+              router.push(`/w/${w.slug}/settings`);
               onClose();
             },
           },
-        );
-      }
+        ]
+      : [];
+
+    if (w && advanced && isManageRole(w.role)) {
+      workspaceNav.push(
+        {
+          id: "nav:announcements",
+          section: "Workspace",
+          label: "Announcements",
+          keywords: "pinned updates",
+          perform: () => {
+            router.push(`/w/${w.slug}/announcements`);
+            onClose();
+          },
+        },
+        {
+          id: "nav:runs",
+          section: "Workspace",
+          label: "Runs",
+          keywords: "jobs nightly history",
+          perform: () => {
+            router.push(`/w/${w.slug}/jobs`);
+            onClose();
+          },
+        },
+      );
     }
 
     const actions: Item[] =

@@ -1,4 +1,8 @@
 import { prisma } from "@starbeam/db";
+import {
+  lastActiveUpdateCutoff,
+  shouldUpdateLastActiveAt,
+} from "@starbeam/shared";
 import { NextResponse } from "next/server";
 
 import { parseAccessToken, sha256Hex } from "@/lib/apiTokens";
@@ -41,6 +45,13 @@ function getBearerToken(request: Request): string | null {
   const header = request.headers.get("authorization") ?? "";
   const match = header.match(/^Bearer\\s+(.+)$/i);
   return match?.[1] ?? null;
+}
+
+function parseIntEnv(name: string, fallback: number): number {
+  const raw = (process.env[name] ?? "").trim();
+  const n = raw ? Number(raw) : NaN;
+  if (!Number.isFinite(n)) return fallback;
+  return Math.floor(n);
 }
 
 async function userIdFromRefreshToken(
@@ -116,24 +127,71 @@ export async function GET(request: Request) {
   }
 
   const url = new URL(request.url);
-  const workspaceId = url.searchParams.get("workspace_id") ?? "";
-  if (!workspaceId) {
+  const requestedWorkspaceId = url.searchParams.get("workspace_id") ?? "";
+  if (!requestedWorkspaceId) {
     return NextResponse.json(
       { error: "invalid_request", errorDescription: "Missing workspace_id" },
       { status: 400, headers: { "Cache-Control": "no-store" } },
     );
   }
 
-  const membership = await prisma.membership.findFirst({
-    where: { workspaceId, userId },
+  let membership = await prisma.membership.findFirst({
+    where: { workspaceId: requestedWorkspaceId, userId },
     include: { workspace: true },
   });
+  if (!membership) {
+    // Backwards-compatible recovery: older/stale macOS clients can end up with an
+    // invalid workspace id persisted in settings. If the user only has one workspace,
+    // default to it rather than hard-failing.
+    const memberships = await prisma.membership.findMany({
+      where: { userId },
+      include: { workspace: true },
+      orderBy: { createdAt: "asc" },
+      take: 2,
+    });
+
+    const only = memberships[0] ?? null;
+    if (memberships.length === 1 && only) {
+      membership = only;
+    } else {
+      return NextResponse.json(
+        { error: "not_found" },
+        { status: 404, headers: { "Cache-Control": "no-store" } },
+      );
+    }
+  }
+
   if (!membership) {
     return NextResponse.json(
       { error: "not_found" },
       { status: 404, headers: { "Cache-Control": "no-store" } },
     );
   }
+
+  const workspaceId = membership.workspaceId;
+
+  const now = new Date();
+  const throttleMins = parseIntEnv("STARB_ACTIVE_UPDATE_THROTTLE_MINS", 60);
+  const touchMembership = shouldUpdateLastActiveAt({
+    lastActiveAt: membership.lastActiveAt,
+    now,
+    throttleMins,
+  })
+    ? prisma.membership
+        .updateMany({
+          where: {
+            id: membership.id,
+            OR: [
+              { lastActiveAt: null },
+              {
+                lastActiveAt: { lt: lastActiveUpdateCutoff(now, throttleMins) },
+              },
+            ],
+          },
+          data: { lastActiveAt: now },
+        })
+        .catch(() => undefined)
+    : Promise.resolve();
 
   const edition = await prisma.pulseEdition.findFirst({
     where: { workspaceId, userId },
@@ -157,7 +215,6 @@ export async function GET(request: Request) {
     sources: extractCitations(c.sources),
   }));
 
-  const now = new Date();
   const [tasks, events] = await Promise.all([
     prisma.task.findMany({
       where: {
@@ -184,6 +241,7 @@ export async function GET(request: Request) {
       take: 10,
     }),
   ]);
+  await touchMembership;
 
   const focus = tasks
     .slice()

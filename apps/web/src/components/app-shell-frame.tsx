@@ -89,6 +89,7 @@ export default function AppShellFrame({
               <PortalTopbar
                 user={user}
                 activeWorkspace={activeWorkspace}
+                workspacesCount={workspaces.length}
                 onOpenNav={() => setDrawerOpen(true)}
                 onOpenCommandPalette={() => setPaletteForPath(pathname)}
               />

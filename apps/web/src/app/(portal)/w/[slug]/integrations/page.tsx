@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { sbButtonClass } from "@starbeam/shared";
@@ -86,10 +87,24 @@ export default async function IntegrationsPage({
     }),
   ]);
 
+  const base = `/w/${membership.workspace.slug}`;
+
   return (
     <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
       <div className="grid gap-6">
-        <div className="sb-card p-7">
+        <div>
+          <Link
+            href={`${base}/settings`}
+            className={sbButtonClass({
+              variant: "ghost",
+              className: "h-9 px-3 text-xs font-semibold",
+            })}
+          >
+            Back to Settings
+          </Link>
+        </div>
+
+        <div className="sb-card p-7" id="google">
           <PageHeader
             title="Google (OAuth, read-only)"
             description="Connect Gmail, Calendar, and Drive. Tokens are stored encrypted. Drive file snapshots are stored encrypted for processing, and raw contents are not logged."
@@ -171,7 +186,7 @@ export default async function IntegrationsPage({
           </div>
         </div>
 
-        <div className="sb-card p-7">
+        <div className="sb-card p-7" id="github">
           <PageHeader
             title="GitHub (token)"
             description="Paste a GitHub personal access token. This is the quickest way to connect without configuring an OAuth app."
@@ -351,7 +366,7 @@ export default async function IntegrationsPage({
           </div>
         </div>
 
-        <div className="sb-card p-7">
+        <div className="sb-card p-7" id="linear">
           <PageHeader
             title="Linear (token)"
             description="Paste a Linear API key. Starbeam will ingest assigned issues and recent updates for your workspace pulse."
@@ -436,7 +451,7 @@ export default async function IntegrationsPage({
           </div>
         </div>
 
-        <div className="sb-card p-7">
+        <div className="sb-card p-7" id="notion">
           <PageHeader
             title="Notion (token)"
             description="Paste a Notion integration token. Make sure to share the relevant pages/databases with the integration, otherwise Notion search will return nothing."

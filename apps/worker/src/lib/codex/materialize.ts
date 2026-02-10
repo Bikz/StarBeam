@@ -53,6 +53,13 @@ function extForContentType(contentType: string | null | undefined): string {
   return ".bin";
 }
 
+function parseIntEnv(name: string, fallback: number): number {
+  const raw = (process.env[name] ?? "").trim();
+  const n = raw ? Number(raw) : NaN;
+  if (!Number.isFinite(n)) return fallback;
+  return Math.floor(n);
+}
+
 export async function materializeWorkspaceContextForCodex(args: {
   workspace: WorkspaceSummary;
   profile: WorkspaceProfileSummary;
@@ -169,6 +176,27 @@ export async function materializeWorkspaceContextForCodex(args: {
   const cutoff = baseBlob
     ? new Date(Date.now() - 24 * 60 * 60 * 1000)
     : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const maxSourceItems = Math.min(
+    1000,
+    Math.max(1, parseIntEnv("STARB_CODEX_MAX_SOURCE_ITEMS", 150)),
+  );
+  const maxContentTextChars = Math.min(
+    50_000,
+    Math.max(0, parseIntEnv("STARB_CODEX_MAX_CONTENT_TEXT_CHARS", 6000)),
+  );
+  const maxBlobCount = Math.min(
+    50,
+    Math.max(0, parseIntEnv("STARB_CODEX_MAX_BLOB_COUNT", 6)),
+  );
+  const maxBlobFileBytes = Math.min(
+    50 * 1024 * 1024,
+    Math.max(0, parseIntEnv("STARB_CODEX_MAX_BLOB_FILE_BYTES", 5_242_880)),
+  );
+  const maxBlobTotalBytes = Math.min(
+    250 * 1024 * 1024,
+    Math.max(0, parseIntEnv("STARB_CODEX_MAX_BLOB_TOTAL_BYTES", 10_485_760)),
+  );
+
   const sourceItems = await prisma.sourceItem.findMany({
     where: {
       workspaceId: args.workspace.id,
@@ -187,23 +215,21 @@ export async function materializeWorkspaceContextForCodex(args: {
       },
     },
     orderBy: { occurredAt: "desc" },
-    take: 250,
+    take: maxSourceItems,
   });
 
   const blobsDir = path.join(dir, "blobs");
   await fs.mkdir(blobsDir, { recursive: true });
 
   const blobPathBySourceItemId = new Map<string, string>();
-  const maxFileBytes = 10 * 1024 * 1024;
-  const maxTotalBytes = 30 * 1024 * 1024;
   let downloadedBytes = 0;
   let downloadedCount = 0;
 
   for (const si of sourceItems) {
     if (!si.contentBlob) continue;
-    if (downloadedCount >= 12) break;
-    if (si.contentBlob.sizeBytes > maxFileBytes) continue;
-    if (downloadedBytes + si.contentBlob.sizeBytes > maxTotalBytes) break;
+    if (downloadedCount >= maxBlobCount) break;
+    if (si.contentBlob.sizeBytes > maxBlobFileBytes) continue;
+    if (downloadedBytes + si.contentBlob.sizeBytes > maxBlobTotalBytes) break;
 
     try {
       const { plaintext } = await getDecryptedObject({
@@ -233,7 +259,7 @@ export async function materializeWorkspaceContextForCodex(args: {
     const materializedBlobPath = blobPathBySourceItemId.get(si.id) ?? null;
     const contentText =
       typeof si.contentText === "string"
-        ? si.contentText.trim().slice(0, 12_000)
+        ? si.contentText.trim().slice(0, maxContentTextChars)
         : null;
 
     lines.push(

@@ -97,19 +97,37 @@ final class AppModel {
     }
   }
 
-  /// Keep the app usable for the common demo case:
+  /// Keep the app usable without requiring manual Settings tweaks:
   /// - If there's exactly one workspace, auto-select it.
-  /// - If multiple, default to the first if none is selected (or selection is stale).
-  private func ensureSelectedWorkspaceIsValid() {
-    guard let session = auth.session, !session.workspaces.isEmpty else { return }
+  /// - If multiple, prefer PERSONAL, otherwise pick a deterministic default if the selection is stale.
+  @discardableResult
+  func ensureSelectedWorkspaceIsValid() -> Bool {
+    guard let session = auth.session, !session.workspaces.isEmpty else { return false }
 
     let selected = settings.workspaceID.trimmingCharacters(in: .whitespacesAndNewlines)
     let isSelectedValid = session.workspaces.contains(where: { $0.id == selected })
 
-    if isSelectedValid { return }
+    if isSelectedValid { return false }
 
-    // Prefer deterministic default (first workspace returned by the API).
-    settings.workspaceID = session.workspaces.first?.id ?? ""
+    // If the selection is stale (common when switching between environments or accounts),
+    // fall back deterministically. Prefer PERSONAL when available.
+    let choice: AuthStore.Workspace?
+    if session.workspaces.count == 1 {
+      choice = session.workspaces.first
+    } else {
+      let personal = session.workspaces.first(where: { $0.type.uppercased() == "PERSONAL" }) ??
+        session.workspaces.first(where: { $0.slug.lowercased() == "personal" || $0.name.lowercased() == "personal" })
+
+      choice = personal ?? session.workspaces.sorted {
+        $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+      }.first
+    }
+
+    let next = choice?.id ?? ""
+    if next == selected { return false }
+
+    settings.workspaceID = next
+    return true
   }
 
   func selectWorkspace(id: String, shouldRefresh: Bool = true) {
@@ -230,16 +248,22 @@ final class AppModel {
   }
 
   func refresh() async {
-    let workspaceID = settings.workspaceID.trimmingCharacters(in: .whitespacesAndNewlines)
     guard auth.isSignedIn else {
       lastError = nil
       return
     }
-    guard !workspaceID.isEmpty else {
+    guard let session = auth.session else {
       lastError = nil
       return
     }
-    guard let session = auth.session else {
+
+    // Self-heal stale workspace selections before we make any request.
+    if ensureSelectedWorkspaceIsValid() {
+      configureAutoRefreshLoop()
+    }
+
+    let workspaceID = settings.workspaceID.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !workspaceID.isEmpty else {
       lastError = nil
       return
     }
@@ -426,6 +450,7 @@ final class AppModel {
     cancelFirstPulseBoost()
     Task { await notifications.cancelScheduledPulseNotification() }
     auth.signOut()
+    settings.workspaceID = ""
     try? cacheStore.clear()
     overview = nil
     cachedAt = nil

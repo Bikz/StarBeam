@@ -14,6 +14,15 @@ async function writeFakeCodexBin(args: { dir: string }) {
   const script = `#!/usr/bin/env node
 const fs = require("node:fs");
 
+if (!process.env.CODEX_HOME) {
+  console.error("expected CODEX_HOME to be set");
+  process.exit(2);
+}
+if (!process.env.CODEX_API_KEY) {
+  console.error("expected CODEX_API_KEY to be set");
+  process.exit(2);
+}
+
 const argv = process.argv.slice(2);
 const execIndex = argv.indexOf("exec");
 if (execIndex < 0) {
@@ -84,12 +93,18 @@ process.stdin.resume();
 
 test("runCodexExec passes approval policy before subcommand (no web search)", async () => {
   const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "starbeam-fake-codex-"));
-  const oldPath = process.env.PATH;
+  const oldBin = process.env.STARB_CODEX_BIN;
+  const oldOpenaiKey = process.env.OPENAI_API_KEY;
 
   try {
     const { binDir } = await writeFakeCodexBin({ dir: tmp });
-    process.env.PATH = `${binDir}${path.delimiter}${oldPath ?? ""}`;
+    process.env.STARB_CODEX_BIN =
+      process.platform === "win32"
+        ? path.join(binDir, "codex.cmd")
+        : path.join(binDir, "codex");
     process.env.FAKE_CODEX_EXPECT_SEARCH = "0";
+    process.env.OPENAI_API_KEY = "sk-test";
+    delete process.env.STARB_CODEX_JSON_EVENTS;
 
     const outSchema = path.join(tmp, "schema.json");
     const outMsg = path.join(tmp, "out.json");
@@ -106,7 +121,10 @@ test("runCodexExec passes approval policy before subcommand (no web search)", as
     assert.equal(res.exitCode, 0);
     assert.match(res.stdout, /ok/);
   } finally {
-    process.env.PATH = oldPath;
+    if (oldBin === undefined) delete process.env.STARB_CODEX_BIN;
+    else process.env.STARB_CODEX_BIN = oldBin;
+    if (oldOpenaiKey === undefined) delete process.env.OPENAI_API_KEY;
+    else process.env.OPENAI_API_KEY = oldOpenaiKey;
     delete process.env.FAKE_CODEX_EXPECT_SEARCH;
     await fs.rm(tmp, { recursive: true, force: true }).catch(() => undefined);
   }
@@ -114,12 +132,18 @@ test("runCodexExec passes approval policy before subcommand (no web search)", as
 
 test("runCodexExec passes web search flag before subcommand", async () => {
   const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "starbeam-fake-codex-"));
-  const oldPath = process.env.PATH;
+  const oldBin = process.env.STARB_CODEX_BIN;
+  const oldOpenaiKey = process.env.OPENAI_API_KEY;
 
   try {
     const { binDir } = await writeFakeCodexBin({ dir: tmp });
-    process.env.PATH = `${binDir}${path.delimiter}${oldPath ?? ""}`;
+    process.env.STARB_CODEX_BIN =
+      process.platform === "win32"
+        ? path.join(binDir, "codex.cmd")
+        : path.join(binDir, "codex");
     process.env.FAKE_CODEX_EXPECT_SEARCH = "1";
+    process.env.OPENAI_API_KEY = "sk-test";
+    delete process.env.STARB_CODEX_JSON_EVENTS;
 
     const outSchema = path.join(tmp, "schema.json");
     const outMsg = path.join(tmp, "out.json");
@@ -136,7 +160,10 @@ test("runCodexExec passes web search flag before subcommand", async () => {
     assert.equal(res.exitCode, 0);
     assert.match(res.stdout, /ok/);
   } finally {
-    process.env.PATH = oldPath;
+    if (oldBin === undefined) delete process.env.STARB_CODEX_BIN;
+    else process.env.STARB_CODEX_BIN = oldBin;
+    if (oldOpenaiKey === undefined) delete process.env.OPENAI_API_KEY;
+    else process.env.OPENAI_API_KEY = oldOpenaiKey;
     delete process.env.FAKE_CODEX_EXPECT_SEARCH;
     await fs.rm(tmp, { recursive: true, force: true }).catch(() => undefined);
   }

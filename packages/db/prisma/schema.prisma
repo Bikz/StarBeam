@@ -226,6 +226,7 @@ model Membership {
   workspaceId String
   userId      String
   role        Role   @default(MEMBER)
+  lastActiveAt DateTime?
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)

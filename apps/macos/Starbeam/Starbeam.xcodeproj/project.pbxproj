@@ -32,10 +32,11 @@
 		F1D4B256B9EB67455208C893 /* PulseSkeletonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66E27822CB59C5FFE27F134F /* PulseSkeletonView.swift */; };
 		F48094D3F79A7C794546F633 /* PulseCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EED07B4A08362D143A2CE85 /* PulseCardView.swift */; };
 		F76CABECEA7CCE21B5D66ED9 /* FocusAndCalendarViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CD36A21A8C4F7ADF5C9159A /* FocusAndCalendarViews.swift */; };
-			FA3F6D6CB5541B322825DF1F /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FFD0DF58CEE638C3AA2EE6C /* KeychainStore.swift */; };
-			1E0C0A9B6A6B9E7C3B71B5C2 /* empty_state_pulse_glass_orb.png in Resources */ = {isa = PBXBuildFile; fileRef = 8D1B7A8E6F3C4B1A9C2D3E4F /* empty_state_pulse_glass_orb.png */; };
+		FA3F6D6CB5541B322825DF1F /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FFD0DF58CEE638C3AA2EE6C /* KeychainStore.swift */; };
+		1E0C0A9B6A6B9E7C3B71B5C2 /* empty_state_pulse_glass_orb.png in Resources */ = {isa = PBXBuildFile; fileRef = 8D1B7A8E6F3C4B1A9C2D3E4F /* empty_state_pulse_glass_orb.png */; };
 		5B0B0B0B0B0B0B0B0B0B0B0B /* empty_state_pulse_glass_orb_dark.png in Resources */ = {isa = PBXBuildFile; fileRef = 6B0B0B0B0B0B0B0B0B0B0B0B /* empty_state_pulse_glass_orb_dark.png */; };
 		A9C0B1D2E3F405162738495A /* starbeam-menu-template-64.png in Resources */ = {isa = PBXBuildFile; fileRef = B9C8D7E6F5A4031223344556 /* starbeam-menu-template-64.png */; };
+		E062B5CF8BCEC175AF9B7DB3 /* starbeam_menu_bar_template.pdf in Resources */ = {isa = PBXBuildFile; fileRef = 0AC02B884E93B878CB48C9F6 /* starbeam_menu_bar_template.pdf */; };
 	/* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -70,6 +71,7 @@
 		8D1B7A8E6F3C4B1A9C2D3E4F /* empty_state_pulse_glass_orb.png */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = image.png; name = empty_state_pulse_glass_orb.png; path = Resources/EmptyState/empty_state_pulse_glass_orb.png; sourceTree = "<group>"; };
 		6B0B0B0B0B0B0B0B0B0B0B0B /* empty_state_pulse_glass_orb_dark.png */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = image.png; name = empty_state_pulse_glass_orb_dark.png; path = Resources/EmptyState/empty_state_pulse_glass_orb_dark.png; sourceTree = "<group>"; };
 		B9C8D7E6F5A4031223344556 /* starbeam-menu-template-64.png */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = image.png; name = starbeam-menu-template-64.png; path = Resources/Brand/starbeam-menu-template-64.png; sourceTree = "<group>"; };
+		0AC02B884E93B878CB48C9F6 /* starbeam_menu_bar_template.pdf */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = image.pdf; name = starbeam_menu_bar_template.pdf; path = Resources/MenuBar/starbeam_menu_bar_template.pdf; sourceTree = "<group>"; };
 	/* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -115,6 +117,7 @@
 					8D1B7A8E6F3C4B1A9C2D3E4F /* empty_state_pulse_glass_orb.png */,
 					6B0B0B0B0B0B0B0B0B0B0B0B /* empty_state_pulse_glass_orb_dark.png */,
 					B9C8D7E6F5A4031223344556 /* starbeam-menu-template-64.png */,
+					0AC02B884E93B878CB48C9F6 /* starbeam_menu_bar_template.pdf */,
 					573AACCB3728A1F04D6D7E56 /* Info.plist */,
 					3D1598C3E6ACFF599BE47717 /* Starbeam.entitlements */,
 				);
@@ -221,6 +224,7 @@
 					1E0C0A9B6A6B9E7C3B71B5C2 /* empty_state_pulse_glass_orb.png in Resources */,
 					5B0B0B0B0B0B0B0B0B0B0B0B /* empty_state_pulse_glass_orb_dark.png in Resources */,
 					A9C0B1D2E3F405162738495A /* starbeam-menu-template-64.png in Resources */,
+					E062B5CF8BCEC175AF9B7DB3 /* starbeam_menu_bar_template.pdf in Resources */,
 				);
 				runOnlyForDeploymentPostprocessing = 0;
 			};
@@ -294,9 +298,11 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				COPY_PHASE_STRIP = NO;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				ENABLE_NS_ASSERTIONS = NO;
+					COPY_PHASE_STRIP = YES;
+					DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+					DEAD_CODE_STRIPPING = YES;
+					ENABLE_USER_SCRIPT_SANDBOXING = YES;
+					ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -327,7 +333,10 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 6;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = AJ78LTXSBJ;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				INFOPLIST_FILE = Starbeam/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
@@ -371,9 +380,10 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				COPY_PHASE_STRIP = NO;
-				DEBUG_INFORMATION_FORMAT = dwarf;
-				ENABLE_STRICT_OBJC_MSGSEND = YES;
+					COPY_PHASE_STRIP = NO;
+					DEBUG_INFORMATION_FORMAT = dwarf;
+					ENABLE_USER_SCRIPT_SANDBOXING = YES;
+					ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
@@ -412,6 +422,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = AJ78LTXSBJ;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				INFOPLIST_FILE = Starbeam/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 15.0;

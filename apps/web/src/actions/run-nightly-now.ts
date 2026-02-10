@@ -1,6 +1,10 @@
 "use server";
 
 import { prisma } from "@starbeam/db";
+import {
+  lastActiveUpdateCutoff,
+  shouldUpdateLastActiveAt,
+} from "@starbeam/shared";
 import { makeWorkerUtils, runMigrations } from "graphile-worker";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
@@ -14,6 +18,13 @@ import { consumeRateLimit } from "@/lib/rateLimit";
 
 function canManage(role: string): boolean {
   return role === "ADMIN" || role === "MANAGER";
+}
+
+function parseIntEnv(name: string, fallback: number): number {
+  const raw = (process.env[name] ?? "").trim();
+  const n = raw ? Number(raw) : NaN;
+  if (!Number.isFinite(n)) return fallback;
+  return Math.floor(n);
 }
 
 export async function runNightlyNow(workspaceSlug: string) {
@@ -50,6 +61,29 @@ export async function runNightlyNow(workspaceSlug: string) {
   });
   const isFirstPulse = !existingPulse;
 
+  const now = new Date();
+  const throttleMins = parseIntEnv("STARB_ACTIVE_UPDATE_THROTTLE_MINS", 60);
+  if (
+    shouldUpdateLastActiveAt({
+      lastActiveAt: membership.lastActiveAt,
+      now,
+      throttleMins,
+    })
+  ) {
+    await prisma.membership
+      .updateMany({
+        where: {
+          id: membership.id,
+          OR: [
+            { lastActiveAt: null },
+            { lastActiveAt: { lt: lastActiveUpdateCutoff(now, throttleMins) } },
+          ],
+        },
+        data: { lastActiveAt: now },
+      })
+      .catch(() => undefined);
+  }
+
   if (isFirstPulse) {
     // If the user already has an auto-first run queued (e.g. from connecting
     // integrations), reschedule it to "now" rather than enqueueing duplicates.
@@ -79,7 +113,11 @@ export async function runNightlyNow(workspaceSlug: string) {
       workspaceId: membership.workspace.id,
       kind: "NIGHTLY_WORKSPACE_RUN",
       status: "QUEUED",
-      meta: { triggeredByUserId: session.user.id, source: "web" },
+      meta: {
+        triggeredByUserId: session.user.id,
+        userId: session.user.id,
+        source: "web",
+      },
     },
   });
 
@@ -94,7 +132,11 @@ export async function runNightlyNow(workspaceSlug: string) {
     try {
       await workerUtils.addJob(
         "nightly_workspace_run",
-        { workspaceId: membership.workspace.id, jobRunId: jobRun.id },
+        {
+          workspaceId: membership.workspace.id,
+          jobRunId: jobRun.id,
+          userId: session.user.id,
+        },
         // Explicitly set runAt "now" so "Run now" never looks like a nightly schedule.
         { jobKey: `nightly_workspace_run:${jobRun.id}`, runAt: new Date() },
       );

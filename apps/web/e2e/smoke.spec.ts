@@ -13,6 +13,9 @@ test("health check", async ({ request }) => {
   const resp = await request.get("/api/health");
   expect(resp.ok()).toBeTruthy();
   await expect(resp.json()).resolves.toMatchObject({ ok: true });
+
+  const logo = await request.get("/brand/starbeam-logo-light.png");
+  expect(logo.ok()).toBeTruthy();
 });
 
 test("login (email code) and open dashboard", async ({ page, request }) => {
@@ -62,4 +65,14 @@ test("create org workspace and open it", async ({ page, request }) => {
   await page.locator(`a[href="/w/${slug}"]`).first().click();
   await expect(page).toHaveURL(new RegExp(`/w/${slug}/pulse$`));
   await expect(page.getByRole("heading", { name: "Pulse" })).toBeVisible();
+
+  await expect(
+    page.getByRole("button", { name: "Open navigation" }),
+  ).toBeHidden();
+  await expect(
+    page.getByRole("button", { name: "Open profile menu" }),
+  ).toBeVisible();
+  await expect(
+    page.locator(`a[href="/w/${slug}/settings"]`).first(),
+  ).toBeVisible();
 });

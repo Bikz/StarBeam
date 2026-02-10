@@ -155,204 +155,188 @@ export default function PulseReader({
   const rel = relativeDay(editionDate, now);
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr] lg:items-start">
-      <section className="sb-card p-7">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h2 className="sb-title text-xl font-extrabold">Pulse</h2>
-            <div className="mt-1 text-xs text-[color:var(--sb-muted)]">
-              {formatDate(editionDate)}
-              {rel ? ` · ${rel}` : ""} · status {edition.status.toLowerCase()}
-            </div>
+    <section className="sb-card p-7">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="sb-title text-xl font-extrabold">Pulse</h2>
+          <div className="mt-1 text-xs text-[color:var(--sb-muted)]">
+            {formatDate(editionDate)}
+            {rel ? ` · ${rel}` : ""} · status {edition.status.toLowerCase()}
           </div>
         </div>
+      </div>
 
-        {cards.length === 0 ? (
-          <div className="mt-6 sb-alert">This edition has no cards yet.</div>
-        ) : (
-          <div className="mt-6 grid gap-3">
-            {cards.map((c) => {
-              const citations = extractCitations(c.sources);
-              const isDone = done.has(c.id);
+      {cards.length === 0 ? (
+        <div className="mt-6 sb-alert">This edition has no cards yet.</div>
+      ) : (
+        <div className="mt-6 grid gap-3">
+          {cards.map((c) => {
+            const citations = extractCitations(c.sources);
+            const isDone = done.has(c.id);
 
-              const copyText = [
-                c.title,
-                c.body ? `\n\n${c.body}` : "",
-                c.why ? `\n\nWhy: ${c.why}` : "",
-                c.action ? `\n\nAction: ${c.action}` : "",
-                citations.length
-                  ? `\n\nSources:\n${citations.map((s) => `- ${s.title ? `${s.title} - ` : ""}${s.url}`).join("\n")}`
-                  : "",
-              ]
-                .join("")
-                .trim();
+            const copyText = [
+              c.title,
+              c.body ? `\n\n${c.body}` : "",
+              c.why ? `\n\nWhy: ${c.why}` : "",
+              c.action ? `\n\nAction: ${c.action}` : "",
+              citations.length
+                ? `\n\nSources:\n${citations.map((s) => `- ${s.title ? `${s.title} - ` : ""}${s.url}`).join("\n")}`
+                : "",
+            ]
+              .join("")
+              .trim();
 
-              return (
-                <article
-                  key={c.id}
-                  className={[
-                    "sb-card-inset p-5",
-                    isDone ? "opacity-60" : "",
-                  ].join(" ")}
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <h3 className="sb-title text-lg leading-tight">
-                        {c.title}
-                      </h3>
-                      <div className="mt-1 text-xs text-[color:var(--sb-muted)]">
-                        {kindLabel(c.kind)} · priority {c.priority}
-                      </div>
+            return (
+              <article
+                key={c.id}
+                className={[
+                  "sb-card-inset p-5",
+                  isDone ? "opacity-60" : "",
+                ].join(" ")}
+              >
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h3 className="sb-title text-lg leading-tight">
+                      {c.title}
+                    </h3>
+                    <div className="mt-1 text-xs text-[color:var(--sb-muted)]">
+                      {kindLabel(c.kind)} · priority {c.priority}
                     </div>
+                  </div>
 
-                    <div className="flex items-center gap-2">
-                      <div className="sb-pill">{c.kind}</div>
+                  <div className="flex items-center gap-2">
+                    <div className="sb-pill">{c.kind}</div>
+                    <button
+                      type="button"
+                      className={sbButtonClass({ className: "h-9 w-9" })}
+                      aria-label="Copy card"
+                      title="Copy"
+                      onClick={() => {
+                        void navigator.clipboard
+                          .writeText(copyText)
+                          .then(() =>
+                            push({ kind: "success", title: "Copied" }),
+                          )
+                          .catch(() =>
+                            push({
+                              kind: "error",
+                              title: "Copy failed",
+                              message: "Your browser blocked clipboard access.",
+                            }),
+                          );
+                      }}
+                    >
+                      <IconCopy className="h-4 w-4" />
+                    </button>
+                    {citations[0]?.url ? (
                       <button
                         type="button"
                         className={sbButtonClass({ className: "h-9 w-9" })}
-                        aria-label="Copy card"
-                        title="Copy"
+                        aria-label="Open first source"
+                        title="Open source"
                         onClick={() => {
-                          void navigator.clipboard
-                            .writeText(copyText)
-                            .then(() =>
-                              push({ kind: "success", title: "Copied" }),
-                            )
-                            .catch(() =>
-                              push({
-                                kind: "error",
-                                title: "Copy failed",
-                                message:
-                                  "Your browser blocked clipboard access.",
-                              }),
-                            );
+                          const url = citations[0]?.url;
+                          if (!url) return;
+                          window.open(url, "_blank", "noreferrer");
                         }}
                       >
-                        <IconCopy className="h-4 w-4" />
+                        <IconArrowUpRight className="h-4 w-4" />
                       </button>
-                      {citations[0]?.url ? (
-                        <button
-                          type="button"
-                          className={sbButtonClass({ className: "h-9 w-9" })}
-                          aria-label="Open first source"
-                          title="Open source"
-                          onClick={() => {
-                            const url = citations[0]?.url;
-                            if (!url) return;
-                            window.open(url, "_blank", "noreferrer");
-                          }}
-                        >
-                          <IconArrowUpRight className="h-4 w-4" />
-                        </button>
-                      ) : null}
-                      <button
-                        type="button"
-                        className={sbButtonClass({
-                          className: [
-                            "h-9 w-9",
-                            isDone
-                              ? "border-black/15 dark:border-white/25"
-                              : "",
-                          ].join(" "),
-                        })}
-                        aria-label={isDone ? "Mark not done" : "Mark done"}
-                        title={isDone ? "Undo" : "Done"}
-                        onClick={() => {
-                          setDone((prev) => {
-                            const next = new Set(prev);
-                            if (next.has(c.id)) next.delete(c.id);
-                            else next.add(c.id);
-                            writeDoneSet(doneKey, next);
-                            return next;
-                          });
-                        }}
-                      >
-                        <IconCheck className="h-4 w-4" />
-                      </button>
-                    </div>
+                    ) : null}
+                    <button
+                      type="button"
+                      className={sbButtonClass({
+                        className: [
+                          "h-9 w-9",
+                          isDone ? "border-black/15 dark:border-white/25" : "",
+                        ].join(" "),
+                      })}
+                      aria-label={isDone ? "Mark not done" : "Mark done"}
+                      title={isDone ? "Undo" : "Done"}
+                      onClick={() => {
+                        setDone((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(c.id)) next.delete(c.id);
+                          else next.add(c.id);
+                          writeDoneSet(doneKey, next);
+                          return next;
+                        });
+                      }}
+                    >
+                      <IconCheck className="h-4 w-4" />
+                    </button>
                   </div>
+                </div>
 
-                  <div className="mt-3 grid gap-3 max-w-[72ch]">
-                    {c.body ? (
-                      <div className="text-[15px] text-[color:var(--sb-muted)] leading-relaxed whitespace-pre-wrap">
-                        {c.body}
-                      </div>
-                    ) : null}
-
-                    {c.why ? (
-                      <div className="text-[15px] text-[color:var(--sb-muted)] leading-relaxed whitespace-pre-wrap">
-                        <span className="font-semibold text-[color:var(--sb-fg)]">
-                          Why:
-                        </span>{" "}
-                        {c.why}
-                      </div>
-                    ) : null}
-
-                    {c.action ? (
-                      <div className="text-[15px] text-[color:var(--sb-muted)] leading-relaxed whitespace-pre-wrap">
-                        <span className="font-semibold text-[color:var(--sb-fg)]">
-                          Action:
-                        </span>{" "}
-                        {c.action}
-                      </div>
-                    ) : null}
-                  </div>
-
-                  {citations.length ? (
-                    <div className="mt-4">
-                      <div className="text-xs font-semibold text-[color:var(--sb-muted)]">
-                        Sources
-                      </div>
-                      <div className="mt-2 grid gap-1">
-                        {citations.slice(0, 4).map((s) => {
-                          const domain = hostnameFor(s.url);
-                          const title = (s.title ?? "").trim();
-                          return (
-                            <a
-                              key={s.url}
-                              href={s.url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="sb-card-inset px-3 py-2 text-sm hover:underline"
-                              title={s.url}
-                            >
-                              <div className="flex items-center gap-2 min-w-0">
-                                <Favicon domain={domain} />
-                                <span className="sb-pill">
-                                  {domain || "source"}
-                                </span>
-                                <span className="min-w-0 truncate font-semibold text-[color:var(--sb-fg)]">
-                                  {title || s.url}
-                                </span>
-                              </div>
-                            </a>
-                          );
-                        })}
-                        {citations.length > 4 ? (
-                          <div className="text-xs text-[color:var(--sb-muted)]">
-                            +{citations.length - 4} more sources
-                          </div>
-                        ) : null}
-                      </div>
+                <div className="mt-3 grid gap-3 max-w-[72ch]">
+                  {c.body ? (
+                    <div className="text-[15px] text-[color:var(--sb-muted)] leading-relaxed whitespace-pre-wrap">
+                      {c.body}
                     </div>
                   ) : null}
-                </article>
-              );
-            })}
-          </div>
-        )}
-      </section>
 
-      <aside className="sb-card p-7">
-        <h2 className="sb-title text-xl font-extrabold">Reading mode</h2>
-        <div className="mt-3 grid gap-3 text-sm text-[color:var(--sb-muted)] leading-relaxed">
-          <div>Treat this like an inbox. Mark cards done as you act.</div>
-          <div>
-            Open sources to verify quickly; copy cards into Slack, email, or
-            docs.
-          </div>
+                  {c.why ? (
+                    <div className="text-[15px] text-[color:var(--sb-muted)] leading-relaxed whitespace-pre-wrap">
+                      <span className="font-semibold text-[color:var(--sb-fg)]">
+                        Why:
+                      </span>{" "}
+                      {c.why}
+                    </div>
+                  ) : null}
+
+                  {c.action ? (
+                    <div className="text-[15px] text-[color:var(--sb-muted)] leading-relaxed whitespace-pre-wrap">
+                      <span className="font-semibold text-[color:var(--sb-fg)]">
+                        Action:
+                      </span>{" "}
+                      {c.action}
+                    </div>
+                  ) : null}
+                </div>
+
+                {citations.length ? (
+                  <div className="mt-4">
+                    <div className="text-xs font-semibold text-[color:var(--sb-muted)]">
+                      Sources
+                    </div>
+                    <div className="mt-2 grid gap-1">
+                      {citations.slice(0, 4).map((s) => {
+                        const domain = hostnameFor(s.url);
+                        const title = (s.title ?? "").trim();
+                        return (
+                          <a
+                            key={s.url}
+                            href={s.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="sb-card-inset px-3 py-2 text-sm hover:underline"
+                            title={s.url}
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <Favicon domain={domain} />
+                              <span className="sb-pill">
+                                {domain || "source"}
+                              </span>
+                              <span className="min-w-0 truncate font-semibold text-[color:var(--sb-fg)]">
+                                {title || s.url}
+                              </span>
+                            </div>
+                          </a>
+                        );
+                      })}
+                      {citations.length > 4 ? (
+                        <div className="text-xs text-[color:var(--sb-muted)]">
+                          +{citations.length - 4} more sources
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : null}
+              </article>
+            );
+          })}
         </div>
-      </aside>
-    </div>
+      )}
+    </section>
   );
 }

@@ -264,11 +264,15 @@ When Codex is enabled and available, the legacy per-department web research pipe
 - `STARB_LEGACY_DEPT_WEB_RESEARCH_ENABLED=0` to force-disable legacy
 - `STARB_CODEX_WEB_SEARCH_ENABLED=0` to keep Codex on internal-only synthesis
 
-Install the Codex CLI and ensure `codex` is available on PATH for the worker runtime:
+The Codex CLI is bundled in the worker via `@openai/codex` (no global install required).
+To sanity-check your local install:
 
 ```bash
-npm i -g @openai/codex
+pnpm --filter @starbeam/worker exec codex --version
 ```
+
+If you need an escape hatch (CI/host PATH quirks), set `STARB_CODEX_BIN` to an absolute
+path to the Codex executable.
 
 ## Auth Environment Variables (Canonical + Compat)
 

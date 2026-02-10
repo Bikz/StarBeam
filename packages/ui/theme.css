@@ -277,7 +277,7 @@ body[data-sb-surface="marketing"] .sb-title {
   letter-spacing: -0.02em;
 }
 
-.sb-btn {
+:where(.sb-btn) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
