@@ -127,7 +127,9 @@ Assumptions:
 
 ### 1) Create a Neon Postgres Database
 
-- Create a Neon project/database and copy the `DATABASE_URL`.
+- Create a Neon project/database and copy:
+  - `DATABASE_URL` (pooled/pooler is ok for runtime)
+  - `DIRECT_DATABASE_URL` (direct/non-pooler; recommended for Prisma migrations)
 - Apply migrations once (recommended from your local machine):
 
 ```bash

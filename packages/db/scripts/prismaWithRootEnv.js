@@ -11,6 +11,17 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, "../../../.env.local") });
 dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
 
+// Keep local dev/CI resilient: when DIRECT_DATABASE_URL isn't set, default it to
+// DATABASE_URL so Prisma CLI can still run (generate/validate/etc). Hosted
+// environments should set DIRECT_DATABASE_URL explicitly.
+if (
+  !process.env.DIRECT_DATABASE_URL &&
+  (process.env.DATABASE_URL || process.env.STARB_DATABASE_URL)
+) {
+  process.env.DIRECT_DATABASE_URL =
+    process.env.DATABASE_URL ?? process.env.STARB_DATABASE_URL;
+}
+
 const args = process.argv.slice(2);
 if (args.length === 0) {
   // eslint-disable-next-line no-console

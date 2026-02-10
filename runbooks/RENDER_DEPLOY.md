@@ -18,7 +18,12 @@ In the Render dashboard:
 
 ## Database
 
-Bring-your-own Postgres (Neon recommended). Set `DATABASE_URL` for both services.
+Bring-your-own Postgres (Neon recommended).
+
+Set:
+
+- `DATABASE_URL` (may be Neon pooled/pooler; used at runtime)
+- `DIRECT_DATABASE_URL` (Neon direct/non-pooler; used for Prisma migrations on deploy)
 
 Apply Prisma migrations once after provisioning the DB:
 
@@ -33,6 +38,7 @@ pnpm --filter @starbeam/db exec prisma migrate deploy
 Web (`starbeam-web`):
 
 - `DATABASE_URL`
+- `DIRECT_DATABASE_URL` (Neon direct/non-pooler)
 - `AUTH_SECRET`
 - `AUTH_URL`
 - `NEXT_PUBLIC_WEB_ORIGIN`

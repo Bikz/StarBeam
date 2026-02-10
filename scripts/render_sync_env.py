@@ -135,6 +135,11 @@ def main() -> int:
         kv[k] = v
     if not kv.get("DATABASE_URL"):
         raise SystemExit("Missing DATABASE_URL in .env")
+    if not kv.get("DIRECT_DATABASE_URL"):
+        raise SystemExit(
+            "Missing DIRECT_DATABASE_URL in .env (Neon direct/non-pooler connection string). "
+            "This is required for Prisma migrations on Render."
+        )
 
     _ensure_enc_key_in_env(env_path, kv)
 
@@ -211,6 +216,7 @@ def main() -> int:
     # canonical DB URL in STARB_DATABASE_URL and export DATABASE_URL in the
     # service startCommand.
     web_env["STARB_DATABASE_URL"] = kv.get("DATABASE_URL", "")
+    web_env["DIRECT_DATABASE_URL"] = kv.get("DIRECT_DATABASE_URL", "")
     for k in [
         "NEXTAUTH_URL",
         "NEXTAUTH_SECRET",

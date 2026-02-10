@@ -10,14 +10,14 @@
     }
   },
   "scripts": {
-    "dev": "prisma generate && tsup src/index.ts --format esm --dts --watch",
-    "prebuild": "prisma generate",
+    "dev": "node scripts/prismaWithRootEnv.js generate && tsup src/index.ts --format esm --dts --watch",
+    "prebuild": "node scripts/prismaWithRootEnv.js generate",
     "build": "tsup src/index.ts --format esm --dts",
     "lint": "pnpm exec eslint src test --max-warnings 0",
-    "pretypecheck": "prisma generate",
+    "pretypecheck": "node scripts/prismaWithRootEnv.js generate",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --import tsx --test test/*.test.ts",
-    "prisma:generate": "prisma generate",
+    "prisma:generate": "node scripts/prismaWithRootEnv.js generate",
     "prisma:migrate": "node scripts/prismaWithRootEnv.js migrate deploy",
     "prisma:migrate:dev": "node scripts/prismaWithRootEnv.js migrate dev"
   },
