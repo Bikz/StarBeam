@@ -38,6 +38,7 @@ function iconForFocusSource(
 ): string | undefined {
   if (type === "GMAIL_MESSAGE") return "sf:envelope";
   if (type === "CALENDAR_EVENT") return "sf:calendar";
+  if (type === "MANUAL") return "sf:checkmark.circle";
   return "sf:checkmark.circle";
 }
 
@@ -215,7 +216,7 @@ export async function GET(request: Request) {
     sources: extractCitations(c.sources),
   }));
 
-  const [tasks, events] = await Promise.all([
+  const [tasks, completedTasks, events] = await Promise.all([
     prisma.task.findMany({
       where: {
         workspaceId,
@@ -225,7 +226,18 @@ export async function GET(request: Request) {
       },
       include: { sourceItem: true },
       orderBy: [{ createdAt: "desc" }],
-      take: 20,
+      take: 60,
+    }),
+    prisma.task.findMany({
+      where: {
+        workspaceId,
+        userId,
+        status: "DONE",
+        updatedAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+      },
+      include: { sourceItem: true },
+      orderBy: [{ updatedAt: "desc" }],
+      take: 10,
     }),
     prisma.sourceItem.findMany({
       where: {
@@ -243,31 +255,47 @@ export async function GET(request: Request) {
   ]);
   await touchMembership;
 
-  const focus = tasks
-    .slice()
-    .sort((a, b) => {
-      const ad = a.dueAt ? a.dueAt.getTime() : Number.POSITIVE_INFINITY;
-      const bd = b.dueAt ? b.dueAt.getTime() : Number.POSITIVE_INFINITY;
-      if (ad !== bd) return ad - bd;
-      return b.createdAt.getTime() - a.createdAt.getTime();
-    })
-    .slice(0, 5)
-    .map((t) => {
-      const srcType = t.sourceItem?.type ?? null;
-      const subtitle =
-        srcType === "GMAIL_MESSAGE" && t.sourceItem
-          ? `From Gmail · ${formatRelativePast(t.sourceItem.occurredAt, now)}`
-          : srcType === "CALENDAR_EVENT" && t.sourceItem
-            ? `Calendar · ${formatRelativeUntil(t.sourceItem.occurredAt, now)}`
-            : "";
+  const focusItem = (t: (typeof tasks)[number]) => {
+    const srcType =
+      t.sourceItem?.type ?? (t.sourceItemId ? null : ("MANUAL" as const));
+    const subtitle =
+      srcType === "GMAIL_MESSAGE" && t.sourceItem
+        ? `From Gmail · ${formatRelativePast(t.sourceItem.occurredAt, now)}`
+        : srcType === "CALENDAR_EVENT" && t.sourceItem
+          ? `Calendar · ${formatRelativeUntil(t.sourceItem.occurredAt, now)}`
+          : "";
 
-      return {
-        id: t.id,
-        icon: iconForFocusSource(srcType),
-        title: t.title,
-        subtitle: subtitle || null,
-      };
-    });
+    return {
+      id: t.id,
+      icon: iconForFocusSource(srcType),
+      title: t.title,
+      subtitle: subtitle || null,
+    };
+  };
+
+  const sortedOpen = tasks.slice().sort((a, b) => {
+    const ad = a.dueAt ? a.dueAt.getTime() : Number.POSITIVE_INFINITY;
+    const bd = b.dueAt ? b.dueAt.getTime() : Number.POSITIVE_INFINITY;
+    if (ad !== bd) return ad - bd;
+    return b.createdAt.getTime() - a.createdAt.getTime();
+  });
+
+  const manual = sortedOpen.filter((t) => !t.sourceItemId);
+  const derived = sortedOpen.filter((t) => Boolean(t.sourceItemId));
+
+  const focus = [
+    ...manual.slice(0, 3),
+    ...derived.slice(0, Math.max(0, 5 - Math.min(3, manual.length))),
+  ]
+    .slice(0, 5)
+    .map(focusItem);
+
+  const completedFocus = completedTasks.slice(0, 5).map((t) => ({
+    id: t.id,
+    icon: "sf:checkmark.circle.fill",
+    title: t.title,
+    subtitle: "Completed",
+  }));
 
   const calendar = events.slice(0, 5).map((e) => ({
     id: e.id,
@@ -286,6 +314,7 @@ export async function GET(request: Request) {
       bumpMessage: null,
       pulse,
       focus,
+      completedFocus,
       calendar,
       generatedAt: now,
     },
