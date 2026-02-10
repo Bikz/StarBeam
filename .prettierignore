@@ -3,4 +3,5 @@ docs/
 **/.next/
 **/dist/
 **/.turbo/
-
+test-results/
+playwright-report/

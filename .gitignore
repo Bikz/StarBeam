@@ -22,6 +22,10 @@ yarn-error.log*
 .next/
 out/
 
+## Playwright
+test-results/
+playwright-report/
+
 ## Turborepo
 .turbo/
 

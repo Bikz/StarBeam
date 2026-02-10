@@ -18,13 +18,15 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --import tsx --test test/*.test.ts",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev"
+    "prisma:migrate": "node scripts/prismaWithRootEnv.js migrate deploy",
+    "prisma:migrate:dev": "node scripts/prismaWithRootEnv.js migrate dev"
   },
   "dependencies": {
     "@prisma/client": "^6.16.0"
   },
   "devDependencies": {
     "@types/node": "^20.19.32",
+    "dotenv": "^17.2.4",
     "prisma": "^6.16.0",
     "tsup": "^8.5.0",
     "typescript": "^5.9.3"

@@ -2,10 +2,14 @@ import fs from "node:fs";
 import path from "node:path";
 
 import dotenv from "dotenv";
-import { run, runMigrations } from "graphile-worker";
+import { run, runMigrations, type Task, type TaskList } from "graphile-worker";
 import { z } from "zod";
 
-import { isBlobStoreConfigured, verifyBlobStoreRwDelete } from "./lib/blobStore";
+import {
+  isBlobStoreConfigured,
+  verifyBlobStoreRwDelete,
+} from "./lib/blobStore";
+import { captureTaskError, initSentry } from "./lib/sentry";
 import * as tasks from "./tasks";
 
 function isTruthyEnv(value: string | undefined): boolean {
@@ -45,7 +49,11 @@ function blobGcCrontab(env: NodeJS.ProcessEnv = process.env): string {
 }
 
 function makeCrontab(env: NodeJS.ProcessEnv = process.env): string {
-  return [connectorPollCrontab(env), dailyPulseCrontab(env), blobGcCrontab(env)].join("");
+  return [
+    connectorPollCrontab(env),
+    dailyPulseCrontab(env),
+    blobGcCrontab(env),
+  ].join("");
 }
 
 function findUp(filename: string, startDir: string): string | undefined {
@@ -78,14 +86,20 @@ const EnvSchema = z.object({
 const env = EnvSchema.parse(process.env);
 
 async function main() {
+  initSentry();
+
   const concurrency = env.WORKER_CONCURRENCY
     ? Number(env.WORKER_CONCURRENCY)
     : 5;
 
-  const connectorPollEnabled = isTruthyEnv(process.env.STARB_CONNECTOR_POLL_ENABLED ?? "1");
+  const connectorPollEnabled = isTruthyEnv(
+    process.env.STARB_CONNECTOR_POLL_ENABLED ?? "1",
+  );
   const connectorPollIntervalMins = pollIntervalMinsFromEnv();
   const codexExecEnabled = isTruthyEnv(process.env.STARB_CODEX_EXEC_ENABLED);
-  const openaiApiKeyPresent = Boolean((process.env.OPENAI_API_KEY ?? "").trim());
+  const openaiApiKeyPresent = Boolean(
+    (process.env.OPENAI_API_KEY ?? "").trim(),
+  );
   const blobStoreConfigured = isBlobStoreConfigured();
   const blobVerifyEnabled =
     process.env.STARB_BLOB_STORE_VERIFY_ON_BOOT === undefined
@@ -98,8 +112,16 @@ async function main() {
     hasDatabaseUrl: Boolean(env.DATABASE_URL),
     concurrency,
     mode: env.WORKER_MODE ?? "run",
-    connectorPoll: { enabled: connectorPollEnabled, intervalMins: connectorPollIntervalMins, tickMins: 5 },
-    codex: { execEnabled: codexExecEnabled, hasOpenAiKey: openaiApiKeyPresent, hasBlobStore: blobStoreConfigured },
+    connectorPoll: {
+      enabled: connectorPollEnabled,
+      intervalMins: connectorPollIntervalMins,
+      tickMins: 5,
+    },
+    codex: {
+      execEnabled: codexExecEnabled,
+      hasOpenAiKey: openaiApiKeyPresent,
+      hasBlobStore: blobStoreConfigured,
+    },
     blobStore: { verifyOnBoot: blobVerifyEnabled },
   });
 
@@ -147,10 +169,34 @@ async function main() {
   // run on startup.
   await runMigrations({ connectionString: env.DATABASE_URL });
 
+  // Wrap tasks so thrown errors are reported to Sentry (when enabled) with
+  // task name + payload metadata.
+  const taskList: TaskList = Object.fromEntries(
+    Object.entries(tasks).map(([name, fn]) => {
+      if (typeof fn !== "function") return [name, fn] as const;
+
+      const wrapped: Task = async (payload, helpers) => {
+        try {
+          // Most tasks in this repo accept only `payload`. Forward `helpers`
+          // anyway so tasks can opt into it later without refactors.
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+          await (fn as (p: unknown, h: unknown) => unknown)(payload, helpers);
+          return;
+        } catch (err) {
+          captureTaskError({ task: name, error: err, payload });
+          throw err;
+        }
+      };
+
+      return [name, wrapped] as const;
+    }),
+  ) as TaskList;
+
   await run({
     connectionString: env.DATABASE_URL,
     concurrency,
-    taskList: tasks,
+    // Graphile Worker task map.
+    taskList,
     // Avoid relying on a checked-in crontab file; define the schedules in-code.
     crontab: makeCrontab(),
   });

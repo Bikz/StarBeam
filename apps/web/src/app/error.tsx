@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import { sbButtonClass } from "@starbeam/shared";
+import * as Sentry from "@sentry/nextjs";
 
 export default function ErrorPage({
   error,
@@ -11,7 +12,11 @@ export default function ErrorPage({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  useEffect(() => console.error(error), [error]);
+  useEffect(() => {
+    // Keep a console trace for local debugging, but also report in production when enabled.
+    console.error(error);
+    Sentry.captureException(error);
+  }, [error]);
 
   return (
     <div className="sb-bg">

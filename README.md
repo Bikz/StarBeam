@@ -21,6 +21,15 @@ This repository is being built from scratch. The internal planning docs live und
 - `packages/db`: Prisma schema + client
 - `packages/shared`: shared schemas/utilities
 
+## Docs
+
+Committed docs:
+
+- `CONTRIBUTING.md` (dev workflow + commands)
+- `REPO_SETTINGS.md` (branch protection / CODEOWNERS / dependency automation)
+- `SECURITY.md` (reporting + automated scanning)
+- `runbooks/` (deployment, rollback, observability)
+
 ## Local Development
 
 ### Requirements
@@ -28,6 +37,22 @@ This repository is being built from scratch. The internal planning docs live und
 - Node.js >= 20
 - pnpm (see `package.json#packageManager`)
 - Docker (for Postgres + MinIO)
+
+### Ports + Hosts
+
+Default local ports:
+
+- Web dashboard (`apps/web`): `http://localhost:3000`
+- Marketing site (`apps/site`): `http://localhost:3001`
+
+By default we treat the dashboard as an app-subdomain (`app.localhost`) to match production routing:
+
+- `NEXT_PUBLIC_WEB_ORIGIN=http://app.localhost:3000`
+- `AUTH_URL=http://app.localhost:3000`
+- `STARB_APP_HOST=app.localhost`
+
+Most systems resolve `*.localhost` to `127.0.0.1`. If `app.localhost` doesn’t resolve on your machine, you can
+switch to plain `localhost` for all three values above.
 
 ### Setup
 
@@ -37,6 +62,11 @@ cp .env.example .env
 docker compose up -d
 pnpm --filter @starbeam/db prisma:migrate
 ```
+
+Notes:
+
+- `prisma:migrate` runs `prisma migrate deploy` (safe for applying existing migrations).
+- When authoring new schema changes locally, use `pnpm --filter @starbeam/db prisma:migrate:dev` to create a new migration.
 
 ### Run
 
@@ -131,6 +161,7 @@ Minimum required env vars:
 - `GOOGLE_CLIENT_SECRET`
 - `STARB_TOKEN_ENC_KEY_B64` (32-byte base64 AES key)
 - `OPENAI_API_KEY` (used by the worker for web research)
+- `SENTRY_DSN` (optional; enables error reporting for web + worker)
 - `STARB_CODEX_EXEC_ENABLED` (optional: set `1` to run `codex exec` for INTERNAL pulse synthesis)
 - `STARB_CODEX_MODEL_DEFAULT` (optional: defaults to `gpt-5.2-codex`)
 - `STARB_CODEX_REASONING_EFFORT` (optional: defaults to `medium`; set `low` to reduce cost/latency)
@@ -235,6 +266,19 @@ Install the Codex CLI and ensure `codex` is available on PATH for the worker run
 ```bash
 npm i -g @openai/codex
 ```
+
+## Auth Environment Variables (Canonical + Compat)
+
+Canonical names used by this repo:
+
+- `AUTH_SECRET`
+- `AUTH_URL`
+- `NEXT_PUBLIC_WEB_ORIGIN`
+
+Compatibility aliases (supported by the codebase, prefer canonical for new setups):
+
+- `NEXTAUTH_SECRET` (alias of `AUTH_SECRET`)
+- `NEXTAUTH_URL` (alias of `AUTH_URL`)
 
 ### Optional: Sync Local `.env` -> Render Env Vars
 
