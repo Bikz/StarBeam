@@ -29,8 +29,9 @@ Apply Prisma migrations once after provisioning the DB:
 
 ```bash
 export DATABASE_URL="postgresql://..."
+export DIRECT_DATABASE_URL="postgresql://..."
 pnpm install
-pnpm --filter @starbeam/db exec prisma migrate deploy
+pnpm --filter @starbeam/db prisma:migrate
 ```
 
 ## Required Environment Variables

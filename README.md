@@ -134,8 +134,9 @@ Assumptions:
 
 ```bash
 export DATABASE_URL="postgresql://..."
+export DIRECT_DATABASE_URL="postgresql://..."
 pnpm install
-pnpm --filter @starbeam/db exec prisma migrate deploy
+pnpm --filter @starbeam/db prisma:migrate
 ```
 
 ### 2) Create Google OAuth Credentials
