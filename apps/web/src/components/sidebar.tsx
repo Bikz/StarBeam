@@ -246,6 +246,8 @@ export default function Sidebar({
 
   const nav = useMemo(() => navFor(activeWorkspace, mode), [activeWorkspace, mode]);
   const showWorkspaceSearch = workspaces.length > 8;
+  const globalHasWorkspaces = nav.global.some((i) => i.href === "/workspaces");
+  const showAllWorkspacesLink = workspaces.length > 8 && !globalHasWorkspaces;
   const workspaceMatches = useMemo(() => {
     const q = workspaceQuery.trim().toLowerCase();
     if (!q) return workspaces.slice(0, 8);
@@ -260,7 +262,12 @@ export default function Sidebar({
 
   const content = (
     <nav aria-label="Primary" className="sb-card p-4">
-      <div className="flex items-center justify-between gap-2">
+      <div
+        className={[
+          "flex gap-2",
+          collapsed ? "flex-col items-center" : "flex-row items-center justify-between",
+        ].join(" ")}
+      >
         <Link
           href={homeHref}
           onClick={onNavigate}
@@ -295,7 +302,11 @@ export default function Sidebar({
           <button
             type="button"
             onClick={onToggleCollapsed}
-            className={sbButtonClass({ size: "icon" })}
+            className={sbButtonClass({
+              variant: "secondary",
+              size: "icon",
+              className: collapsed ? "h-10 w-10" : "",
+            })}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             title={collapsed ? "Expand" : "Collapse"}
           >
@@ -323,16 +334,6 @@ export default function Sidebar({
               </span>
             </Link>
           ) : null}
-
-          <Link
-            href="/workspaces"
-            onClick={onNavigate}
-            className={sbButtonClass({ className: "h-11 w-11" })}
-            aria-label="All workspaces"
-            title="All workspaces"
-          >
-            <IconGrid className="h-5 w-5" />
-          </Link>
         </div>
       ) : (
         <div className="mt-5 grid gap-2">
@@ -402,6 +403,20 @@ export default function Sidebar({
                 onNavigate={onNavigate}
               />
             ))}
+          </div>
+        ) : null}
+
+        {collapsed && showAllWorkspacesLink ? (
+          <div className="mt-2 grid gap-1 justify-items-center">
+            <Link
+              href="/workspaces"
+              onClick={onNavigate}
+              className={sbButtonClass({ className: "h-11 w-11" })}
+              aria-label="All workspaces"
+              title="All workspaces"
+            >
+              <IconGrid className="h-5 w-5" />
+            </Link>
           </div>
         ) : null}
       </div>

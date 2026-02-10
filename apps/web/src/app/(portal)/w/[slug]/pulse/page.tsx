@@ -281,58 +281,10 @@ export default async function PulsePage({
     redirect(`${base}/pulse`);
   }
 
+  const history = editions.filter((e) => e.id !== selectedId);
+
   return (
-    <div className="grid gap-6 lg:grid-cols-[0.42fr_0.58fr] lg:items-start">
-      <aside className="sb-card p-6 sm:p-7">
-        <PageHeader
-          title="Previous pulses"
-          description={`${editions.length} saved`}
-        />
-
-        <div className="mt-5 grid gap-2">
-          {editions.map((e) => {
-            const active = e.id === selectedId;
-            return (
-              <Link
-                key={e.id}
-                href={`${base}/pulse?edition=${encodeURIComponent(e.id)}`}
-                aria-current={active ? "page" : undefined}
-                className={[
-                  "sb-card-inset px-4 py-3 text-sm transition",
-                  "hover:border-black/10 hover:bg-black/[0.03] dark:hover:border-white/15 dark:hover:bg-white/[0.06]",
-                  active ? "border-black/10 dark:border-white/20 bg-black/5 dark:bg-white/10" : "",
-                ].join(" ")}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="font-semibold text-[color:var(--sb-fg)] truncate">
-                      {formatEditionDate(e.editionDate)}
-                    </div>
-                    <div className="mt-1 text-xs text-[color:var(--sb-muted)]">
-                      {e._count.cards} cards <span aria-hidden>·</span>{" "}
-                      {statusLabel(e.status)}
-                    </div>
-                  </div>
-                  {statusPill(e.status)}
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-
-        <div className="mt-6">
-          <Link
-            href={`${base}/settings`}
-            className={sbButtonClass({
-              variant: "secondary",
-              className: "h-11 px-5 text-sm font-semibold",
-            })}
-          >
-            Settings
-          </Link>
-        </div>
-      </aside>
-
+    <div id="top" className="grid gap-6">
       <div className="min-w-0">
         <PulseReader
           workspaceSlug={membership.workspace.slug}
@@ -353,6 +305,53 @@ export default async function PulsePage({
           }))}
         />
       </div>
+
+      <section id="history" className="sb-card p-6 sm:p-7">
+        <PageHeader title="History" description={`${editions.length} saved`} />
+
+        {history.length ? (
+          <div className="mt-5 grid gap-2">
+            {history.map((e) => (
+              <Link
+                key={e.id}
+                href={`${base}/pulse?edition=${encodeURIComponent(e.id)}#top`}
+                className={[
+                  "sb-card-inset px-4 py-3 text-sm transition",
+                  "hover:border-black/10 hover:bg-black/[0.03] dark:hover:border-white/15 dark:hover:bg-white/[0.06]",
+                ].join(" ")}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="font-semibold text-[color:var(--sb-fg)] truncate">
+                      {formatEditionDate(e.editionDate)}
+                    </div>
+                    <div className="mt-1 text-xs text-[color:var(--sb-muted)]">
+                      {e._count.cards} cards <span aria-hidden>·</span> {statusLabel(e.status)}
+                    </div>
+                  </div>
+                  {statusPill(e.status)}
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-5 text-sm text-[color:var(--sb-muted)]">
+            No previous pulses yet.
+          </div>
+        )}
+
+        <div className="mt-6">
+          <Link
+            href={`${base}/settings`}
+            className={sbButtonClass({
+              variant: "secondary",
+              className: "h-11 px-5 text-sm font-semibold",
+            })}
+          >
+            Settings
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }

@@ -67,7 +67,7 @@ export default function AppShellFrame({
             <aside
               className={[
                 "hidden lg:block shrink-0 sticky top-6",
-                sidebarCollapsed ? "w-20" : "w-72",
+                sidebarCollapsed ? "w-20" : "w-64",
               ].join(" ")}
             >
               <Sidebar
