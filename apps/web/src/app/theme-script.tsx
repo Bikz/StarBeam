@@ -8,19 +8,25 @@ export default function ThemeScript() {
     try {
       var mql = window.matchMedia("(prefers-color-scheme: dark)");
 
+      function readPref() {
+        try {
+          var raw = window.localStorage.getItem("sb_theme");
+          if (raw === "light" || raw === "dark" || raw === "system") return raw;
+        } catch (e) {}
+        return "system";
+      }
+
       function apply() {
         var root = document.documentElement;
-        // We always follow the OS preference. (No theme toggle.)
-        var isDark = !!mql.matches;
-        root.dataset.sbTheme = "system";
+        var pref = readPref();
+        var isDark = pref === "dark" ? true : pref === "light" ? false : !!mql.matches;
+
+        root.dataset.sbTheme = pref;
         root.classList.toggle("dark", isDark);
         root.style.colorScheme = isDark ? "dark" : "light";
       }
 
       apply();
-
-      // Clear any legacy preference so auth pages match system immediately.
-      try { localStorage.removeItem("sb_theme"); } catch (e) {}
 
       var handler = function () { apply(); };
       if (mql.addEventListener) mql.addEventListener("change", handler);
