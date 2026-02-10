@@ -23,9 +23,9 @@
     "graphile-worker": "^0.16.6",
     "next": "16.1.6",
     "next-auth": "^4.24.13",
-    "nodemailer": "^7.0.11",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
+    "nodemailer": "^8.0.1",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
     "resend": "^6.9.1",
     "zod": "^4.3.6"
   },
