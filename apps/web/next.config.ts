@@ -7,6 +7,15 @@ import dotenv from "dotenv";
 dotenv.config({ path: path.resolve(__dirname, "../../.env.local") });
 dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
+// NextAuth.js v4 expects NEXTAUTH_* env vars. We treat AUTH_* as canonical in
+// this repo and map to NEXTAUTH_* for library compatibility.
+if (process.env.AUTH_URL && !process.env.NEXTAUTH_URL) {
+  process.env.NEXTAUTH_URL = process.env.AUTH_URL;
+}
+if (process.env.AUTH_SECRET && !process.env.NEXTAUTH_SECRET) {
+  process.env.NEXTAUTH_SECRET = process.env.AUTH_SECRET;
+}
+
 const nextConfig: NextConfig = {
   transpilePackages: ["@starbeam/db", "@starbeam/shared"],
   // Expose Sentry settings to the browser build when provided. This keeps the
