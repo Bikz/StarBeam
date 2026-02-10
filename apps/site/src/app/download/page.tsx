@@ -19,7 +19,7 @@ export default async function DownloadPage() {
         Skip to content
       </a>
       <div className="mx-auto max-w-6xl px-6 py-12 sm:py-16">
-        <SiteHeader appOrigin={app} minimal />
+        <SiteHeader appOrigin={app} />
 
         <main id="main" className="mt-12">
           <section className="sb-marketing-shell">

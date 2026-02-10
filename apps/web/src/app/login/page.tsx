@@ -36,6 +36,17 @@ export default async function LoginPage({
     ? `/beta/claim?ref=${encodeURIComponent(referralCode)}&next=${encodeURIComponent(safeNext)}`
     : callbackUrlRaw;
 
+  const baseParams = new URLSearchParams();
+  if (typeof sp.callbackUrl === "string" && sp.callbackUrl.trim()) {
+    baseParams.set("callbackUrl", sp.callbackUrl.trim());
+  }
+  if (referralCode) baseParams.set("ref", referralCode);
+  if (initialEmail) baseParams.set("email", initialEmail);
+  const signInHref = baseParams.size ? `/login?${baseParams.toString()}` : "/login";
+  const waitlistParams = new URLSearchParams(baseParams);
+  waitlistParams.set("mode", "waitlist");
+  const waitlistHref = `/login?${waitlistParams.toString()}`;
+
   return (
     <div className="sb-bg">
       <a href="#main" className="sb-skip-link">
@@ -114,6 +125,33 @@ export default async function LoginPage({
           </section>
 
           <main id="main" className="sb-card p-8 sm:p-9">
+            <div className="sb-card-inset inline-flex flex-wrap items-center gap-1 p-1">
+              <Link
+                href={signInHref}
+                className={[
+                  "rounded-full px-4 py-2 text-xs font-extrabold transition",
+                  mode === "signin"
+                    ? "bg-[color:var(--sb-card)] text-[color:var(--sb-fg)] shadow-[var(--sb-shadow-soft)]"
+                    : "text-[color:var(--sb-muted)] hover:text-[color:var(--sb-fg)]",
+                ].join(" ")}
+                aria-current={mode === "signin" ? "page" : undefined}
+              >
+                Sign in
+              </Link>
+              <Link
+                href={waitlistHref}
+                className={[
+                  "rounded-full px-4 py-2 text-xs font-extrabold transition",
+                  mode === "waitlist"
+                    ? "bg-[color:var(--sb-card)] text-[color:var(--sb-fg)] shadow-[var(--sb-shadow-soft)]"
+                    : "text-[color:var(--sb-muted)] hover:text-[color:var(--sb-fg)]",
+                ].join(" ")}
+                aria-current={mode === "waitlist" ? "page" : undefined}
+              >
+                Join waitlist
+              </Link>
+            </div>
+
             <div className="flex items-start justify-between gap-6">
               <div>
                 <div className="sb-title text-2xl">{title}</div>
@@ -143,18 +181,6 @@ export default async function LoginPage({
             </div>
 
             <div className="mt-8 flex flex-wrap gap-3 text-sm">
-              {mode === "waitlist" ? (
-                <Link href="/login" className="text-[color:var(--sb-fg)] hover:underline">
-                  Already have an invite? Sign in
-                </Link>
-              ) : (
-                <Link
-                  href="/login?mode=waitlist"
-                  className="text-[color:var(--sb-fg)] hover:underline"
-                >
-                  New here? Join waitlist
-                </Link>
-              )}
               <a href={siteOrigin()} className="text-[color:var(--sb-muted)] hover:underline">
                 Learn more
               </a>
