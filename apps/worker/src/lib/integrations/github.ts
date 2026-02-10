@@ -45,7 +45,10 @@ function decryptToken(enc: string): string {
   return decryptString(enc, encKey());
 }
 
-function toSnippet(text: string | null | undefined, maxLen = 280): string | null {
+function toSnippet(
+  text: string | null | undefined,
+  maxLen = 280,
+): string | null {
   if (typeof text !== "string") return null;
   const t = text.trim();
   if (!t) return null;
@@ -166,7 +169,10 @@ export async function syncGitHubConnection(args: {
     where: { id: args.connectionId },
   });
   if (!connection) throw new Error("GitHub connection not found");
-  if (connection.workspaceId !== args.workspaceId || connection.ownerUserId !== args.userId) {
+  if (
+    connection.workspaceId !== args.workspaceId ||
+    connection.ownerUserId !== args.userId
+  ) {
     throw new Error("GitHub connection workspace/user mismatch");
   }
 
@@ -183,7 +189,8 @@ export async function syncGitHubConnection(args: {
   }
 
   const token = decryptToken(connection.tokenEnc);
-  const since = connection.lastSyncedAt ?? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const since =
+    connection.lastSyncedAt ?? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   const sinceIso = since.toISOString();
 
   // Keep it simple: pull the top recent items across a few "attention routing" filters.
@@ -214,7 +221,9 @@ export async function syncGitHubConnection(args: {
     if (!externalId) continue;
 
     const isPr = Boolean(it.pull_request);
-    const type = isPr ? ("GITHUB_PULL_REQUEST" as const) : ("GITHUB_ISSUE" as const);
+    const type = isPr
+      ? ("GITHUB_PULL_REQUEST" as const)
+      : ("GITHUB_ISSUE" as const);
 
     const occurredAt =
       parseDate(it.updated_at) ?? parseDate(it.created_at) ?? new Date();
@@ -225,7 +234,8 @@ export async function syncGitHubConnection(args: {
 
     const url = typeof it.html_url === "string" ? it.html_url : null;
     const snippet = toSnippet(it.body);
-    const contentText = typeof it.body === "string" ? it.body.trim().slice(0, 50_000) : null;
+    const contentText =
+      typeof it.body === "string" ? it.body.trim().slice(0, 50_000) : null;
 
     const metadata = {
       repoFullName: repo || null,
@@ -287,9 +297,7 @@ export async function syncGitHubConnection(args: {
 
   // Recent commits (what changed) across the user's most recently-updated repos.
   const candidateRepos: string[] =
-    repoSelectionMode === "SELECTED"
-      ? selectedRepos.slice(0, 10)
-      : [];
+    repoSelectionMode === "SELECTED" ? selectedRepos.slice(0, 10) : [];
 
   if (repoSelectionMode === "ALL" && candidateRepos.length === 0) {
     const repos = await listRepos({ token, perPage: 20 });
@@ -321,7 +329,8 @@ export async function syncGitHubConnection(args: {
           parseDate(c.commit?.committer?.date) ??
           new Date();
 
-        const message = typeof c.commit?.message === "string" ? c.commit.message : "";
+        const message =
+          typeof c.commit?.message === "string" ? c.commit.message : "";
         const subject = firstLine(message) || sha.slice(0, 7);
         const title = `[${repoFullName}] Commit: ${subject}`;
         const url = typeof c.html_url === "string" ? c.html_url : null;

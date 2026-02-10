@@ -14,7 +14,8 @@ function sha256Hex(input: string): string {
 
 export async function acceptInvite(token: string) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id || !session.user.email) throw new Error("Unauthorized");
+  if (!session?.user?.id || !session.user.email)
+    throw new Error("Unauthorized");
 
   const tokenHash = sha256Hex(token);
   const invite = await prisma.invite.findUnique({
@@ -24,7 +25,8 @@ export async function acceptInvite(token: string) {
 
   if (!invite) throw new Error("Invite not found");
   if (invite.usedAt) throw new Error("Invite already used");
-  if (invite.expiresAt.getTime() < Date.now()) throw new Error("Invite expired");
+  if (invite.expiresAt.getTime() < Date.now())
+    throw new Error("Invite expired");
 
   if (invite.email.toLowerCase() !== session.user.email.toLowerCase()) {
     throw new Error("Invite email mismatch");
@@ -33,10 +35,17 @@ export async function acceptInvite(token: string) {
   await prisma.$transaction(async (tx) => {
     await tx.membership.upsert({
       where: {
-        workspaceId_userId: { workspaceId: invite.workspaceId, userId: session.user.id },
+        workspaceId_userId: {
+          workspaceId: invite.workspaceId,
+          userId: session.user.id,
+        },
       },
       update: {},
-      create: { workspaceId: invite.workspaceId, userId: session.user.id, role: invite.role },
+      create: {
+        workspaceId: invite.workspaceId,
+        userId: session.user.id,
+        role: invite.role,
+      },
     });
 
     // Treat a workspace invite as product access (private beta).
@@ -54,7 +63,12 @@ export async function acceptInvite(token: string) {
     });
     if (defaultDept) {
       await tx.departmentMembership.upsert({
-        where: { departmentId_userId: { departmentId: defaultDept.id, userId: session.user.id } },
+        where: {
+          departmentId_userId: {
+            departmentId: defaultDept.id,
+            userId: session.user.id,
+          },
+        },
         update: {},
         create: { departmentId: defaultDept.id, userId: session.user.id },
       });

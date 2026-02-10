@@ -43,8 +43,8 @@ export default async function BetaPage({
         <div className="sb-card p-8">
           <div className="sb-title text-2xl">Private beta</div>
           <p className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
-            Starbeam is in private beta. Enter an invite key to unlock access, or invite
-            5 friends with your referral link.
+            Starbeam is in private beta. Enter an invite key to unlock access,
+            or invite 5 friends with your referral link.
           </p>
 
           <div className="mt-6 sb-alert">
@@ -89,7 +89,8 @@ export default async function BetaPage({
                 <div>
                   <div className="sb-title text-lg">Referral unlock</div>
                   <p className="mt-1 text-sm text-[color:var(--sb-muted)] leading-relaxed">
-                    Share your link. When 5 people sign up, your account unlocks automatically.
+                    Share your link. When 5 people sign up, your account unlocks
+                    automatically.
                   </p>
                 </div>
                 <div className="sb-pill">{status.referralCount}/5</div>
@@ -110,13 +111,19 @@ export default async function BetaPage({
           </div>
 
           <div className="mt-8 flex flex-wrap gap-3 text-sm">
-            <Link href="/feedback" className="text-[color:var(--sb-fg)] hover:underline">
+            <Link
+              href="/feedback"
+              className="text-[color:var(--sb-fg)] hover:underline"
+            >
               Send feedback
             </Link>
             <span className="text-[color:var(--sb-muted)]" aria-hidden>
               ·
             </span>
-            <Link href="/api/auth/signout?callbackUrl=/login" className="text-[color:var(--sb-muted)] hover:underline">
+            <Link
+              href="/api/auth/signout?callbackUrl=/login"
+              className="text-[color:var(--sb-muted)] hover:underline"
+            >
               Sign out
             </Link>
           </div>

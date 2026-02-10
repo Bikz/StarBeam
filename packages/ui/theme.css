@@ -8,7 +8,7 @@
   /* Default surfaces skew slightly "marketing glass". App overrides below. */
   --sb-card: rgba(255, 255, 255, 0.72);
   --sb-card-border: rgba(16, 16, 20, 0.08);
-  --sb-divider: rgba(16, 16, 20, 0.10);
+  --sb-divider: rgba(16, 16, 20, 0.1);
 
   --sb-ring: rgba(16, 16, 20, 0.18);
 
@@ -27,7 +27,7 @@
     rgba(255, 255, 255, 0.24)
   );
   --sb-btn-shadow: 0 6px 14px rgba(18, 12, 34, 0.06);
-  --sb-btn-press-shadow: 0 3px 10px rgba(18, 12, 34, 0.10);
+  --sb-btn-press-shadow: 0 3px 10px rgba(18, 12, 34, 0.1);
   --sb-btn-ghost-hover-bg: rgba(16, 16, 20, 0.06);
 
   --sb-btn-primary-border: rgba(16, 16, 20, 0.12);
@@ -47,7 +47,7 @@
 
   /* Skeleton loaders */
   --sb-skeleton-a: rgba(16, 16, 20, 0.06);
-  --sb-skeleton-b: rgba(16, 16, 20, 0.10);
+  --sb-skeleton-b: rgba(16, 16, 20, 0.1);
 }
 
 html {
@@ -62,8 +62,8 @@ html.dark {
   --sb-fg: #f5f5f7;
   --sb-muted: rgba(245, 245, 247, 0.66);
 
-  --sb-card: rgba(14, 14, 16, 0.70);
-  --sb-card-border: rgba(255, 255, 255, 0.10);
+  --sb-card: rgba(14, 14, 16, 0.7);
+  --sb-card-border: rgba(255, 255, 255, 0.1);
   --sb-divider: rgba(255, 255, 255, 0.12);
 
   --sb-ring: rgba(245, 245, 247, 0.16);
@@ -78,17 +78,17 @@ html.dark {
 
   --sb-btn-bg: linear-gradient(
     180deg,
-    rgba(255, 255, 255, 0.10),
+    rgba(255, 255, 255, 0.1),
     rgba(255, 255, 255, 0.03)
   );
   --sb-btn-shadow: 0 12px 30px rgba(0, 0, 0, 0.24);
   --sb-btn-press-shadow: 0 10px 22px rgba(0, 0, 0, 0.42);
-  --sb-btn-ghost-hover-bg: rgba(245, 245, 247, 0.10);
+  --sb-btn-ghost-hover-bg: rgba(245, 245, 247, 0.1);
 
   --sb-btn-primary-border: rgba(255, 255, 255, 0.12);
   --sb-btn-primary-bg: linear-gradient(
     180deg,
-    rgba(245, 245, 247, 0.10),
+    rgba(245, 245, 247, 0.1),
     rgba(245, 245, 247, 0.04)
   );
   --sb-btn-primary-solid-bg: rgba(245, 245, 247, 0.92);
@@ -102,7 +102,7 @@ html.dark {
 
   /* Skeleton loaders */
   --sb-skeleton-a: rgba(255, 255, 255, 0.06);
-  --sb-skeleton-b: rgba(255, 255, 255, 0.10);
+  --sb-skeleton-b: rgba(255, 255, 255, 0.1);
 }
 
 body {
@@ -119,9 +119,21 @@ body {
 .sb-bg {
   min-height: 100dvh;
   background:
-    radial-gradient(1000px 620px at 18% 12%, var(--sb-bg-glow-a), transparent 62%),
-    radial-gradient(1100px 760px at 86% 10%, var(--sb-bg-glow-b), transparent 58%),
-    radial-gradient(1200px 900px at 70% 86%, var(--sb-bg-glow-c), transparent 55%),
+    radial-gradient(
+      1000px 620px at 18% 12%,
+      var(--sb-bg-glow-a),
+      transparent 62%
+    ),
+    radial-gradient(
+      1100px 760px at 86% 10%,
+      var(--sb-bg-glow-b),
+      transparent 58%
+    ),
+    radial-gradient(
+      1200px 900px at 70% 86%,
+      var(--sb-bg-glow-c),
+      transparent 55%
+    ),
     linear-gradient(180deg, var(--sb-bg0), var(--sb-bg1));
   position: relative;
   overflow-x: clip;
@@ -134,8 +146,11 @@ body {
   pointer-events: none;
   opacity: 0.38;
   mix-blend-mode: soft-light;
-  background-image:
-    radial-gradient(circle at 1px 1px, var(--sb-bg-dot) 1px, transparent 0);
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    var(--sb-bg-dot) 1px,
+    transparent 0
+  );
   background-size: 16px 16px;
   mask-image: radial-gradient(1200px 740px at 40% 10%, black, transparent 72%);
 }
@@ -300,7 +315,9 @@ body[data-sb-surface="marketing"] .sb-title {
 
 .sb-btn:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 4px var(--sb-ring), var(--sb-shadow);
+  box-shadow:
+    0 0 0 4px var(--sb-ring),
+    var(--sb-shadow);
 }
 
 .sb-btn-primary {
@@ -448,27 +465,25 @@ body[data-sb-surface="marketing"] .sb-title {
   inset: 0;
   opacity: 0.18;
   mix-blend-mode: soft-light;
-  background-image:
-    repeating-linear-gradient(
-      0deg,
-      rgba(0, 0, 0, 0.06),
-      rgba(0, 0, 0, 0.06) 1px,
-      transparent 1px,
-      transparent 3px
-    );
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.06),
+    rgba(0, 0, 0, 0.06) 1px,
+    transparent 1px,
+    transparent 3px
+  );
   mask-image: radial-gradient(900px 560px at 50% 0%, black, transparent 72%);
 }
 
 html.dark .sb-marketing-shell::after {
   opacity: 0.16;
-  background-image:
-    repeating-linear-gradient(
-      0deg,
-      rgba(255, 255, 255, 0.08),
-      rgba(255, 255, 255, 0.08) 1px,
-      transparent 1px,
-      transparent 3px
-    );
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.08),
+    rgba(255, 255, 255, 0.08) 1px,
+    transparent 1px,
+    transparent 3px
+  );
 }
 
 .sb-orbit {
@@ -478,12 +493,12 @@ html.dark .sb-marketing-shell::after {
   opacity: 0.65;
   filter: blur(0.2px);
   background:
-    radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.10), transparent 55%),
+    radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.1), transparent 55%),
     conic-gradient(
       from 180deg,
-      rgba(0, 0, 0, 0.0),
+      rgba(0, 0, 0, 0),
       rgba(0, 0, 0, 0.14),
-      rgba(0, 0, 0, 0.0)
+      rgba(0, 0, 0, 0)
     );
   mask-image: radial-gradient(540px 540px at 50% 50%, black, transparent 64%);
   animation: sb-scan 26s linear infinite;
@@ -491,12 +506,16 @@ html.dark .sb-marketing-shell::after {
 
 html.dark .sb-orbit {
   background:
-    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.12), transparent 55%),
+    radial-gradient(
+      circle at 50% 50%,
+      rgba(255, 255, 255, 0.12),
+      transparent 55%
+    ),
     conic-gradient(
       from 180deg,
-      rgba(255, 255, 255, 0.0),
+      rgba(255, 255, 255, 0),
       rgba(255, 255, 255, 0.16),
-      rgba(255, 255, 255, 0.0)
+      rgba(255, 255, 255, 0)
     );
 }
 

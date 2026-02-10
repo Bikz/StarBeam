@@ -5,7 +5,11 @@ export default async function GooglePage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ connected?: string; disconnected?: string; error?: string }>;
+  searchParams: Promise<{
+    connected?: string;
+    disconnected?: string;
+    error?: string;
+  }>;
 }) {
   // Backwards-compatible redirect: integrations now live under /integrations.
   const [{ slug }, sp] = await Promise.all([params, searchParams]);

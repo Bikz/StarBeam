@@ -71,7 +71,9 @@ export async function createGoal(workspaceSlug: string, formData: FormData) {
     },
   });
 
-  redirect(`/w/${workspaceSlug}/tracks?track=${encodeURIComponent(departmentId)}`);
+  redirect(
+    `/w/${workspaceSlug}/tracks?track=${encodeURIComponent(departmentId)}`,
+  );
 }
 
 export async function toggleGoalActive(workspaceSlug: string, goalId: string) {
@@ -104,7 +106,9 @@ export async function toggleGoalActive(workspaceSlug: string, goalId: string) {
     data: { active: !goal.active },
   });
 
-  redirect(`/w/${workspaceSlug}/tracks?track=${encodeURIComponent(goal.departmentId ?? "")}`);
+  redirect(
+    `/w/${workspaceSlug}/tracks?track=${encodeURIComponent(goal.departmentId ?? "")}`,
+  );
 }
 
 export async function deleteGoal(workspaceSlug: string, goalId: string) {
@@ -126,5 +130,7 @@ export async function deleteGoal(workspaceSlug: string, goalId: string) {
 
   await prisma.goal.delete({ where: { id: goal.id } });
 
-  redirect(`/w/${workspaceSlug}/tracks?track=${encodeURIComponent(goal.departmentId ?? "")}`);
+  redirect(
+    `/w/${workspaceSlug}/tracks?track=${encodeURIComponent(goal.departmentId ?? "")}`,
+  );
 }

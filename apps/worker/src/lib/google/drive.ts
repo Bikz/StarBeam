@@ -31,7 +31,10 @@ async function googleGetJson<T>(url: string, accessToken: string): Promise<T> {
   return JSON.parse(text) as T;
 }
 
-async function googleGetBytes(url: string, accessToken: string): Promise<{ bytes: Buffer; contentType?: string }> {
+async function googleGetBytes(
+  url: string,
+  accessToken: string,
+): Promise<{ bytes: Buffer; contentType?: string }> {
   const resp = await fetch(url, {
     method: "GET",
     headers: { Authorization: `Bearer ${accessToken}` },
@@ -54,7 +57,8 @@ function toRfc3339(d: Date): string {
 function exportMimeTypeForGoogleMime(mimeType: string): string | null {
   if (mimeType === "application/vnd.google-apps.document") return "text/plain";
   if (mimeType === "application/vnd.google-apps.spreadsheet") return "text/csv";
-  if (mimeType === "application/vnd.google-apps.presentation") return "application/pdf";
+  if (mimeType === "application/vnd.google-apps.presentation")
+    return "application/pdf";
   return null;
 }
 
@@ -74,7 +78,8 @@ export async function listRecentlyModifiedFiles(args: {
       q,
       orderBy: "modifiedTime desc",
       pageSize: String(batch),
-      fields: "nextPageToken,files(id,name,mimeType,modifiedTime,webViewLink,size)",
+      fields:
+        "nextPageToken,files(id,name,mimeType,modifiedTime,webViewLink,size)",
       supportsAllDrives: "true",
       includeItemsFromAllDrives: "true",
     });
@@ -87,17 +92,36 @@ export async function listRecentlyModifiedFiles(args: {
     for (const f of files) {
       const id = typeof f?.id === "string" ? f.id : "";
       if (!id) continue;
-      const name = typeof f.name === "string" && f.name.trim() ? f.name.trim() : "(untitled)";
-      const mimeType = typeof f.mimeType === "string" && f.mimeType ? f.mimeType : "application/octet-stream";
-      const modifiedTime = typeof f.modifiedTime === "string" && f.modifiedTime ? f.modifiedTime : new Date().toISOString();
-      const webViewLink = typeof f.webViewLink === "string" ? f.webViewLink : undefined;
-      const sizeBytes = typeof f.size === "string" && f.size ? Number(f.size) : undefined;
+      const name =
+        typeof f.name === "string" && f.name.trim()
+          ? f.name.trim()
+          : "(untitled)";
+      const mimeType =
+        typeof f.mimeType === "string" && f.mimeType
+          ? f.mimeType
+          : "application/octet-stream";
+      const modifiedTime =
+        typeof f.modifiedTime === "string" && f.modifiedTime
+          ? f.modifiedTime
+          : new Date().toISOString();
+      const webViewLink =
+        typeof f.webViewLink === "string" ? f.webViewLink : undefined;
+      const sizeBytes =
+        typeof f.size === "string" && f.size ? Number(f.size) : undefined;
 
-      out.push({ id, name, mimeType, modifiedTime, webViewLink, sizeBytes: Number.isFinite(sizeBytes) ? sizeBytes : undefined });
+      out.push({
+        id,
+        name,
+        mimeType,
+        modifiedTime,
+        webViewLink,
+        sizeBytes: Number.isFinite(sizeBytes) ? sizeBytes : undefined,
+      });
       if (out.length >= args.maxResults) break;
     }
 
-    pageToken = typeof resp.nextPageToken === "string" ? resp.nextPageToken : undefined;
+    pageToken =
+      typeof resp.nextPageToken === "string" ? resp.nextPageToken : undefined;
     if (!pageToken) break;
   }
 
@@ -111,12 +135,18 @@ export async function downloadDriveFile(args: {
 }): Promise<{ bytes: Buffer; contentType?: string }> {
   const exportMime = exportMimeTypeForGoogleMime(args.mimeType);
   if (exportMime) {
-    const params = new URLSearchParams({ mimeType: exportMime, supportsAllDrives: "true" });
+    const params = new URLSearchParams({
+      mimeType: exportMime,
+      supportsAllDrives: "true",
+    });
     const url = `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(args.fileId)}/export?${params.toString()}`;
     return googleGetBytes(url, args.accessToken);
   }
 
-  const params = new URLSearchParams({ alt: "media", supportsAllDrives: "true" });
+  const params = new URLSearchParams({
+    alt: "media",
+    supportsAllDrives: "true",
+  });
   const url = `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(args.fileId)}?${params.toString()}`;
   return googleGetBytes(url, args.accessToken);
 }

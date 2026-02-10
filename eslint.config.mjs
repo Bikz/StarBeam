@@ -19,7 +19,10 @@ export default [
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    files: ["apps/worker/**/*.{ts,tsx,mts,cts}", "packages/**/*.{ts,tsx,mts,cts}"],
+    files: [
+      "apps/worker/**/*.{ts,tsx,mts,cts}",
+      "packages/**/*.{ts,tsx,mts,cts}",
+    ],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: "module",

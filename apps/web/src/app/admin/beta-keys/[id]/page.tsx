@@ -9,7 +9,11 @@ import { disableBetaKey } from "@/app/admin/beta-keys/actions";
 import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
 
-function statusForKey(key: { disabledAt: Date | null; expiresAt: Date | null }, used: number, maxUses: number) {
+function statusForKey(
+  key: { disabledAt: Date | null; expiresAt: Date | null },
+  used: number,
+  maxUses: number,
+) {
   const disabled = Boolean(key.disabledAt);
   const expired = Boolean(key.expiresAt && key.expiresAt <= new Date());
   const exhausted = used >= maxUses;
@@ -26,13 +30,21 @@ export default async function BetaKeyDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.email || !isAdminEmail(session.user.email)) redirect("/login");
+  if (!session?.user?.email || !isAdminEmail(session.user.email))
+    redirect("/login");
 
   const { id } = await params;
 
   const key = await prisma.betaKey.findUnique({
     where: { id },
-    select: { id: true, label: true, maxUses: true, createdAt: true, expiresAt: true, disabledAt: true },
+    select: {
+      id: true,
+      label: true,
+      maxUses: true,
+      createdAt: true,
+      expiresAt: true,
+      disabledAt: true,
+    },
   });
   if (!key) notFound();
 
@@ -66,7 +78,8 @@ export default async function BetaKeyDetailPage({
             <div>
               <div className="sb-title text-2xl">Beta key</div>
               <div className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
-                Plaintext codes are not stored. You can only copy the code at creation time.
+                Plaintext codes are not stored. You can only copy the code at
+                creation time.
               </div>
             </div>
             <Link
@@ -88,11 +101,16 @@ export default async function BetaKeyDetailPage({
                   {key.label || "Untitled"}
                 </div>
                 <div className="mt-4 text-xs text-[color:var(--sb-muted)]">
-                  Uses: {used}/{key.maxUses} · Status: <span className="font-semibold text-[color:var(--sb-fg)]">{status}</span>
+                  Uses: {used}/{key.maxUses} · Status:{" "}
+                  <span className="font-semibold text-[color:var(--sb-fg)]">
+                    {status}
+                  </span>
                 </div>
                 <div className="mt-2 text-xs text-[color:var(--sb-muted)]">
                   Created: {key.createdAt.toISOString()}
-                  {key.expiresAt ? ` · Expires: ${key.expiresAt.toISOString()}` : ""}
+                  {key.expiresAt
+                    ? ` · Expires: ${key.expiresAt.toISOString()}`
+                    : ""}
                 </div>
               </div>
 
@@ -117,7 +135,9 @@ export default async function BetaKeyDetailPage({
           <div className="mt-8">
             <div className="text-xs font-extrabold sb-title">Redemptions</div>
             {used === 0 ? (
-              <div className="mt-2 text-sm text-[color:var(--sb-muted)]">No one has redeemed this key yet.</div>
+              <div className="mt-2 text-sm text-[color:var(--sb-muted)]">
+                No one has redeemed this key yet.
+              </div>
             ) : (
               <div className="mt-3 grid gap-2">
                 {redemptions.map((r) => (
@@ -128,11 +148,14 @@ export default async function BetaKeyDetailPage({
                           {r.user.email ?? "unknown email"}
                         </div>
                         <div className="mt-1 text-xs text-[color:var(--sb-muted)]">
-                          Redeemed: {r.createdAt.toISOString()} · User: {r.userId}
+                          Redeemed: {r.createdAt.toISOString()} · User:{" "}
+                          {r.userId}
                         </div>
                       </div>
                       <div className="sb-pill">
-                        {r.user.betaAccessGrantedAt ? "access granted" : "no access"}
+                        {r.user.betaAccessGrantedAt
+                          ? "access granted"
+                          : "no access"}
                       </div>
                     </div>
                   </div>

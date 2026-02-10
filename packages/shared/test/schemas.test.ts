@@ -46,7 +46,9 @@ test("DeviceExchangeResponseSchema: parses a valid exchange response", () => {
     refreshToken: "refresh",
     expiresIn: 3600,
     user: { id: "u_1", email: "u@example.com" },
-    workspaces: [{ id: "w_1", type: "PERSONAL", name: "Personal", slug: "personal-u_1" }],
+    workspaces: [
+      { id: "w_1", type: "PERSONAL", name: "Personal", slug: "personal-u_1" },
+    ],
   });
 
   assert.equal(payload.user.email, "u@example.com");

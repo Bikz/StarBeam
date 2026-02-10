@@ -12,7 +12,10 @@ export default function Loading() {
               <div className="sb-skeleton h-10 w-44 rounded-xl" />
               <div className="mt-4 grid gap-2">
                 {NAV_ITEMS.map((key) => (
-                  <div key={key} className="sb-skeleton h-10 w-full rounded-xl" />
+                  <div
+                    key={key}
+                    className="sb-skeleton h-10 w-full rounded-xl"
+                  />
                 ))}
               </div>
               <div className="mt-5 sb-skeleton h-10 w-full rounded-xl" />

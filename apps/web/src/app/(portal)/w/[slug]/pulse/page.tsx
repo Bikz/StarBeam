@@ -95,11 +95,15 @@ export default async function PulsePage({
           },
         }),
         prisma.jobRun.findUnique({
-          where: { id: `bootstrap:${membership.workspace.id}:${session.user.id}` },
+          where: {
+            id: `bootstrap:${membership.workspace.id}:${session.user.id}`,
+          },
           select: { status: true, errorSummary: true },
         }),
         prisma.jobRun.findUnique({
-          where: { id: `auto-first:${membership.workspace.id}:${session.user.id}` },
+          where: {
+            id: `auto-first:${membership.workspace.id}:${session.user.id}`,
+          },
           select: { status: true, errorSummary: true },
         }),
       ]);
@@ -140,7 +144,9 @@ export default async function PulsePage({
                 <div className="text-xs font-semibold tracking-wide uppercase text-[color:var(--sb-muted)]">
                   Step 1
                 </div>
-                <div className="sb-title text-base font-extrabold">Connect Google</div>
+                <div className="sb-title text-base font-extrabold">
+                  Connect Google
+                </div>
                 <div className="mt-1 text-sm text-[color:var(--sb-muted)]">
                   Status:{" "}
                   <span className="font-semibold text-[color:var(--sb-fg)]">
@@ -149,7 +155,12 @@ export default async function PulsePage({
                 </div>
               </div>
 
-              <form action={startGoogleConnect.bind(null, membership.workspace.slug)}>
+              <form
+                action={startGoogleConnect.bind(
+                  null,
+                  membership.workspace.slug,
+                )}
+              >
                 <button
                   type="submit"
                   className={sbButtonClass({
@@ -157,7 +168,11 @@ export default async function PulsePage({
                     className: "h-11 px-5 text-sm font-extrabold",
                   })}
                   disabled={!hasGoogleAuthEnv()}
-                  title={!hasGoogleAuthEnv() ? "Google OAuth not configured" : undefined}
+                  title={
+                    !hasGoogleAuthEnv()
+                      ? "Google OAuth not configured"
+                      : undefined
+                  }
                 >
                   Connect
                 </button>
@@ -166,7 +181,8 @@ export default async function PulsePage({
 
             {!hasGoogleAuthEnv() ? (
               <div className="mt-3 text-xs text-[color:var(--sb-muted)]">
-                Google OAuth is not configured yet. Set <code>GOOGLE_CLIENT_ID</code> and{" "}
+                Google OAuth is not configured yet. Set{" "}
+                <code>GOOGLE_CLIENT_ID</code> and{" "}
                 <code>GOOGLE_CLIENT_SECRET</code>.
               </div>
             ) : null}
@@ -178,27 +194,37 @@ export default async function PulsePage({
                 <div className="text-xs font-semibold tracking-wide uppercase text-[color:var(--sb-muted)]">
                   Step 2
                 </div>
-                <div className="sb-title text-base font-extrabold">Generate your first pulse</div>
+                <div className="sb-title text-base font-extrabold">
+                  Generate your first pulse
+                </div>
                 <div className="mt-1 text-sm text-[color:var(--sb-muted)]">
                   Bootstrap:{" "}
                   <span className="font-semibold text-[color:var(--sb-fg)]">
                     {jobStatusLabel(bootstrapRun?.status)}
                   </span>{" "}
-                  <span aria-hidden>·</span>{" "}
-                  Run:{" "}
+                  <span aria-hidden>·</span> Run:{" "}
                   <span className="font-semibold text-[color:var(--sb-fg)]">
                     {jobStatusLabel(autoFirstRun?.status)}
                   </span>
                 </div>
                 {bootstrapRun?.errorSummary || autoFirstRun?.errorSummary ? (
                   <div className="mt-2 text-xs text-[color:var(--sb-muted)] whitespace-pre-wrap">
-                    {bootstrapRun?.errorSummary ? `Bootstrap error: ${bootstrapRun.errorSummary}\n` : ""}
-                    {autoFirstRun?.errorSummary ? `Run error: ${autoFirstRun.errorSummary}` : ""}
+                    {bootstrapRun?.errorSummary
+                      ? `Bootstrap error: ${bootstrapRun.errorSummary}\n`
+                      : ""}
+                    {autoFirstRun?.errorSummary
+                      ? `Run error: ${autoFirstRun.errorSummary}`
+                      : ""}
                   </div>
                 ) : null}
               </div>
 
-              <form action={generateFirstPulseNow.bind(null, membership.workspace.slug)}>
+              <form
+                action={generateFirstPulseNow.bind(
+                  null,
+                  membership.workspace.slug,
+                )}
+              >
                 <button
                   type="submit"
                   className={sbButtonClass({
@@ -212,7 +238,8 @@ export default async function PulsePage({
             </div>
 
             <div className="mt-3 text-xs text-[color:var(--sb-muted)] leading-relaxed">
-              Tip: if you just connected Google, Starbeam may auto-queue a first run. “Generate now” is always safe.
+              Tip: if you just connected Google, Starbeam may auto-queue a first
+              run. “Generate now” is always safe.
             </div>
           </div>
 
@@ -222,9 +249,13 @@ export default async function PulsePage({
                 <div className="text-xs font-semibold tracking-wide uppercase text-[color:var(--sb-muted)]">
                   Step 3
                 </div>
-                <div className="sb-title text-base font-extrabold">Get it in your menu bar</div>
+                <div className="sb-title text-base font-extrabold">
+                  Get it in your menu bar
+                </div>
                 <div className="mt-1 text-sm text-[color:var(--sb-muted)]">
-                  {deviceTokens > 0 ? "macOS app signed in" : "not signed in yet"}
+                  {deviceTokens > 0
+                    ? "macOS app signed in"
+                    : "not signed in yet"}
                 </div>
               </div>
               <a
@@ -268,13 +299,20 @@ export default async function PulsePage({
   }
 
   const requestedId = typeof sp.edition === "string" ? sp.edition.trim() : "";
-  const selectedId = requestedId && editions.some((e) => e.id === requestedId)
-    ? requestedId
-    : editions[0]?.id ?? "";
+  const selectedId =
+    requestedId && editions.some((e) => e.id === requestedId)
+      ? requestedId
+      : (editions[0]?.id ?? "");
 
   const selected = await prisma.pulseEdition.findFirst({
-    where: { id: selectedId, workspaceId: membership.workspace.id, userId: session.user.id },
-    include: { cards: { orderBy: [{ priority: "desc" }, { createdAt: "asc" }] } },
+    where: {
+      id: selectedId,
+      workspaceId: membership.workspace.id,
+      userId: session.user.id,
+    },
+    include: {
+      cards: { orderBy: [{ priority: "desc" }, { createdAt: "asc" }] },
+    },
   });
 
   if (!selected) {
@@ -326,7 +364,8 @@ export default async function PulsePage({
                       {formatEditionDate(e.editionDate)}
                     </div>
                     <div className="mt-1 text-xs text-[color:var(--sb-muted)]">
-                      {e._count.cards} cards <span aria-hidden>·</span> {statusLabel(e.status)}
+                      {e._count.cards} cards <span aria-hidden>·</span>{" "}
+                      {statusLabel(e.status)}
                     </div>
                   </div>
                   {statusPill(e.status)}

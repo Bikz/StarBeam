@@ -28,7 +28,8 @@ export default async function ContactPage() {
                 Contact
               </div>
               <p className="mt-3 text-[color:var(--sb-muted)] text-lg leading-relaxed max-w-2xl">
-                Starbeam is in private beta. If you’re trying it, we want to hear what feels noisy, confusing, or genuinely useful.
+                Starbeam is in private beta. If you’re trying it, we want to
+                hear what feels noisy, confusing, or genuinely useful.
               </p>
 
               <div className="mt-7 grid gap-3">
@@ -109,7 +110,9 @@ export default async function ContactPage() {
                   <div className="font-semibold text-[color:var(--sb-fg)]">
                     What felt wrong
                   </div>
-                  <div>Noisy cards, missing context, or confusing setup steps.</div>
+                  <div>
+                    Noisy cards, missing context, or confusing setup steps.
+                  </div>
                 </div>
               </div>
             </div>

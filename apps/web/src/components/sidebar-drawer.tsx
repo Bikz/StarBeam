@@ -7,7 +7,10 @@ function focusables(root: HTMLElement): HTMLElement[] {
     root.querySelectorAll<HTMLElement>(
       'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])',
     ),
-  ).filter((el) => !el.hasAttribute("disabled") && el.getAttribute("aria-hidden") !== "true");
+  ).filter(
+    (el) =>
+      !el.hasAttribute("disabled") && el.getAttribute("aria-hidden") !== "true",
+  );
 }
 
 export default function SidebarDrawer({
@@ -62,7 +65,10 @@ export default function SidebarDrawer({
     const prev = document.documentElement.style.overflow;
     document.documentElement.style.overflow = "hidden";
 
-    restoreFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    restoreFocusRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
 
     const raf = requestAnimationFrame(() => {
       const panel = panelRef.current;

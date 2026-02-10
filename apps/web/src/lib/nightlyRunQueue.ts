@@ -19,7 +19,10 @@ function workspaceBootstrapJobKey(workspaceId: string, userId: string): string {
   return `workspace_bootstrap:auto-first:${workspaceId}:${userId}`;
 }
 
-function workspaceBootstrapJobRunId(workspaceId: string, userId: string): string {
+function workspaceBootstrapJobRunId(
+  workspaceId: string,
+  userId: string,
+): string {
   return `bootstrap:${workspaceId}:${userId}`;
 }
 

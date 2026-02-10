@@ -30,7 +30,8 @@ export default async function PricingPage() {
                   Pricing
                 </div>
                 <p className="mt-3 text-[color:var(--sb-muted)] text-lg leading-relaxed max-w-xl">
-                  Starbeam is free during private beta. We’re optimizing for real usage, not complicated tiers.
+                  Starbeam is free during private beta. We’re optimizing for
+                  real usage, not complicated tiers.
                 </p>
 
                 <div className="mt-7 grid gap-4 sm:grid-cols-2">
@@ -42,7 +43,8 @@ export default async function PricingPage() {
                       $0
                     </div>
                     <div className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
-                      Full access while we iterate. Early teams help shape what “pulse” becomes.
+                      Full access while we iterate. Early teams help shape what
+                      “pulse” becomes.
                     </div>
                     <div className="mt-5">
                       <Link
@@ -65,7 +67,8 @@ export default async function PricingPage() {
                       Team plans
                     </div>
                     <div className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
-                      Pricing will be simple and team-sized. If you want a notification when it lands, join the waitlist.
+                      Pricing will be simple and team-sized. If you want a
+                      notification when it lands, join the waitlist.
                     </div>
                     <div className="mt-5 text-xs text-[color:var(--sb-muted)]">
                       Have needs around SSO/compliance? Email{" "}
@@ -85,18 +88,26 @@ export default async function PricingPage() {
 
           <aside className="sb-marketing-shell">
             <div className="sb-card p-7 sm:p-8">
-              <div className="sb-title text-xl font-extrabold">What’s included</div>
+              <div className="sb-title text-xl font-extrabold">
+                What’s included
+              </div>
               <div className="mt-4 grid gap-3 text-sm text-[color:var(--sb-muted)] leading-relaxed">
                 <div className="rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-4">
-                  <div className="font-semibold text-[color:var(--sb-fg)]">Pulse</div>
+                  <div className="font-semibold text-[color:var(--sb-fg)]">
+                    Pulse
+                  </div>
                   <div>Daily cards with “why” and suggested actions.</div>
                 </div>
                 <div className="rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-4">
-                  <div className="font-semibold text-[color:var(--sb-fg)]">Goals + announcements</div>
+                  <div className="font-semibold text-[color:var(--sb-fg)]">
+                    Goals + announcements
+                  </div>
                   <div>Founder context that keeps everyone aligned.</div>
                 </div>
                 <div className="rounded-2xl border border-black/5 dark:border-white/10 bg-white/30 dark:bg-white/5 p-4">
-                  <div className="font-semibold text-[color:var(--sb-fg)]">Cited web research</div>
+                  <div className="font-semibold text-[color:var(--sb-fg)]">
+                    Cited web research
+                  </div>
                   <div>Signals with sources you can verify quickly.</div>
                 </div>
               </div>

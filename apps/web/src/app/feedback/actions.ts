@@ -40,4 +40,3 @@ export async function submitFeedback(formData: FormData) {
 
   redirect("/feedback?sent=1");
 }
-

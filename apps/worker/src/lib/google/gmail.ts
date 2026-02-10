@@ -17,10 +17,7 @@ type GmailMessage = {
   };
 };
 
-async function googleGetJson<T>(
-  url: string,
-  accessToken: string,
-): Promise<T> {
+async function googleGetJson<T>(url: string, accessToken: string): Promise<T> {
   const resp = await fetch(url, {
     method: "GET",
     headers: { Authorization: `Bearer ${accessToken}` },
@@ -68,11 +65,15 @@ export async function listMessageRefs(args: {
     const refs = Array.isArray(resp.messages) ? resp.messages : [];
     for (const r of refs) {
       if (typeof r?.id !== "string" || !r.id) continue;
-      out.push({ id: r.id, threadId: typeof r.threadId === "string" ? r.threadId : undefined });
+      out.push({
+        id: r.id,
+        threadId: typeof r.threadId === "string" ? r.threadId : undefined,
+      });
       if (out.length >= args.maxResults) break;
     }
 
-    pageToken = typeof resp.nextPageToken === "string" ? resp.nextPageToken : undefined;
+    pageToken =
+      typeof resp.nextPageToken === "string" ? resp.nextPageToken : undefined;
     if (!pageToken) break;
   }
 

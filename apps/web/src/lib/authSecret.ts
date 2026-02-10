@@ -3,4 +3,3 @@ export function requireAuthSecret(): string {
   if (!secret) throw new Error("Missing AUTH_SECRET/NEXTAUTH_SECRET");
   return secret;
 }
-

@@ -33,13 +33,11 @@ function applyPref(pref: ThemePref) {
   window.dispatchEvent(new Event("sb-theme-change"));
 }
 
-export default function ThemeToggle(
-  {
-    variant = "full",
-  }: {
-    variant?: "full" | "compact";
-  } = {},
-) {
+export default function ThemeToggle({
+  variant = "full",
+}: {
+  variant?: "full" | "compact";
+} = {}) {
   const pref = useSyncExternalStore(
     (onStoreChange) => {
       if (typeof window === "undefined") return () => {};
@@ -72,10 +70,13 @@ export default function ThemeToggle(
   );
 
   if (variant === "compact") {
-    const label = pref === "system" ? "System" : pref === "light" ? "Light" : "Dark";
-    const next: ThemePref = pref === "system" ? "light" : pref === "light" ? "dark" : "system";
+    const label =
+      pref === "system" ? "System" : pref === "light" ? "Light" : "Dark";
+    const next: ThemePref =
+      pref === "system" ? "light" : pref === "light" ? "dark" : "system";
 
-    const Icon = pref === "system" ? IconMonitor : pref === "light" ? IconSun : IconMoon;
+    const Icon =
+      pref === "system" ? IconMonitor : pref === "light" ? IconSun : IconMoon;
 
     return (
       <button

@@ -19,7 +19,8 @@ async function importBuildProvidersFromEnv(): Promise<ProvidersBuilder> {
 
   const def = mod.default;
   if (def && typeof def === "object") {
-    const maybe = (def as { buildProvidersFromEnv?: unknown }).buildProvidersFromEnv;
+    const maybe = (def as { buildProvidersFromEnv?: unknown })
+      .buildProvidersFromEnv;
     if (typeof maybe === "function") return maybe as ProvidersBuilder;
   }
 
@@ -28,7 +29,10 @@ async function importBuildProvidersFromEnv(): Promise<ProvidersBuilder> {
 
 test("buildProvidersFromEnv returns no providers when env is missing", async () => {
   const buildProvidersFromEnv = await importBuildProvidersFromEnv();
-  const providers = buildProvidersFromEnv({ GOOGLE_CLIENT_ID: "", GOOGLE_CLIENT_SECRET: "" });
+  const providers = buildProvidersFromEnv({
+    GOOGLE_CLIENT_ID: "",
+    GOOGLE_CLIENT_SECRET: "",
+  });
   assert.equal(Array.isArray(providers), true);
   assert.equal(providers.length, 1);
   assert.equal((providers[0] as { id?: unknown })?.id, "credentials");

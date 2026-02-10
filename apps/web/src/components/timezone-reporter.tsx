@@ -22,7 +22,8 @@ export default function TimezoneReporter() {
     if (!tz) return;
 
     const key = `sb_tz_reported:${userId}`;
-    const last = typeof window !== "undefined" ? window.localStorage.getItem(key) : null;
+    const last =
+      typeof window !== "undefined" ? window.localStorage.getItem(key) : null;
     if (last === tz) return;
 
     void fetch("/api/user/timezone", {
@@ -39,4 +40,3 @@ export default function TimezoneReporter() {
 
   return null;
 }
-

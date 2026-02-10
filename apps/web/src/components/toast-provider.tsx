@@ -1,6 +1,12 @@
 "use client";
 
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+} from "react";
 
 export type ToastKind = "info" | "success" | "error";
 
@@ -27,7 +33,11 @@ export function useToast() {
   return ctx;
 }
 
-export default function ToastProvider({ children }: { children: React.ReactNode }) {
+export default function ToastProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const push = useCallback((t: Omit<Toast, "id">) => {

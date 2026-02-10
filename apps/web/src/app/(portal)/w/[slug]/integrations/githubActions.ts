@@ -39,9 +39,13 @@ export async function connectGitHub(workspaceSlug: string, formData: FormData) {
   const viewer = await fetchGitHubViewer(token);
   const tokenEnc = encryptSecret(token);
 
-  const modeRaw = typeof formData.get("mode") === "string" ? String(formData.get("mode")) : "";
+  const modeRaw =
+    typeof formData.get("mode") === "string"
+      ? String(formData.get("mode"))
+      : "";
   const mode = modeRaw === "ALL" ? "ALL" : "SELECTED";
-  const selectedRepoFullNames = mode === "SELECTED" ? normalizeRepoFullNames(formData.get("repos")) : [];
+  const selectedRepoFullNames =
+    mode === "SELECTED" ? normalizeRepoFullNames(formData.get("repos")) : [];
 
   await prisma.gitHubConnection.upsert({
     where: {
@@ -93,9 +97,13 @@ export async function updateGitHubRepoSelection(
   });
   if (!existing) throw new Error("Connection not found");
 
-  const modeRaw = typeof formData.get("mode") === "string" ? String(formData.get("mode")) : "";
+  const modeRaw =
+    typeof formData.get("mode") === "string"
+      ? String(formData.get("mode"))
+      : "";
   const mode = modeRaw === "SELECTED" ? "SELECTED" : "ALL";
-  const selectedRepoFullNames = mode === "SELECTED" ? normalizeRepoFullNames(formData.get("repos")) : [];
+  const selectedRepoFullNames =
+    mode === "SELECTED" ? normalizeRepoFullNames(formData.get("repos")) : [];
 
   await prisma.gitHubConnection.update({
     where: { id: existing.id },

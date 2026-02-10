@@ -26,14 +26,18 @@ export function buildProvidersFromEnv(
         code: { label: "Code", type: "text" },
       },
       authorize: async (credentials, req) => {
-        const email = String(credentials?.email ?? "").trim().toLowerCase();
+        const email = String(credentials?.email ?? "")
+          .trim()
+          .toLowerCase();
         const code = String(credentials?.code ?? "").trim();
 
         if (!email) return null;
         if (!code || !/^[0-9]{6}$/.test(code)) return null;
 
         const ip =
-          (req?.headers?.["x-forwarded-for"] as string | undefined)?.split(",")[0]?.trim() ??
+          (req?.headers?.["x-forwarded-for"] as string | undefined)
+            ?.split(",")[0]
+            ?.trim() ??
           (req?.headers?.["cf-connecting-ip"] as string | undefined) ??
           "";
 
@@ -77,7 +81,13 @@ export function buildProvidersFromEnv(
 
           const existing = await tx.user.findUnique({
             where: { email },
-            select: { id: true, email: true, name: true, image: true, emailVerified: true },
+            select: {
+              id: true,
+              email: true,
+              name: true,
+              image: true,
+              emailVerified: true,
+            },
           });
 
           if (existing?.id) {

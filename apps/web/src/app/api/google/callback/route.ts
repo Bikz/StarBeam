@@ -2,7 +2,10 @@ import { prisma } from "@starbeam/db";
 import { encryptString, parseAes256GcmKeyFromEnv } from "@starbeam/shared";
 import { NextResponse } from "next/server";
 
-import { enqueueAutoFirstNightlyWorkspaceRun, enqueueWorkspaceBootstrap } from "@/lib/nightlyRunQueue";
+import {
+  enqueueAutoFirstNightlyWorkspaceRun,
+  enqueueWorkspaceBootstrap,
+} from "@/lib/nightlyRunQueue";
 import { parseSignedState } from "@/lib/signedState";
 import { webOrigin } from "@/lib/webOrigin";
 
@@ -150,13 +153,19 @@ export async function GET(request: Request) {
 
     try {
       const membership = await prisma.membership.findFirst({
-        where: { userId: parsedState.userId, workspaceId: parsedState.workspaceId },
+        where: {
+          userId: parsedState.userId,
+          workspaceId: parsedState.workspaceId,
+        },
         select: { role: true },
       });
 
       if (membership) {
         const existingPulse = await prisma.pulseEdition.findFirst({
-          where: { workspaceId: parsedState.workspaceId, userId: parsedState.userId },
+          where: {
+            workspaceId: parsedState.workspaceId,
+            userId: parsedState.userId,
+          },
           select: { id: true },
         });
 

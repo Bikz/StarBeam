@@ -29,7 +29,9 @@ function extractCitations(sources: unknown): Citation[] {
     .filter((c): c is Citation => c !== null);
 }
 
-function iconForFocusSource(type: string | null | undefined): string | undefined {
+function iconForFocusSource(
+  type: string | null | undefined,
+): string | undefined {
   if (type === "GMAIL_MESSAGE") return "sf:envelope";
   if (type === "CALENDAR_EVENT") return "sf:calendar";
   return "sf:checkmark.circle";
@@ -41,8 +43,12 @@ function getBearerToken(request: Request): string | null {
   return match?.[1] ?? null;
 }
 
-async function userIdFromRefreshToken(request: Request): Promise<string | null> {
-  const refreshToken = (request.headers.get("x-starbeam-refresh-token") ?? "").trim();
+async function userIdFromRefreshToken(
+  request: Request,
+): Promise<string | null> {
+  const refreshToken = (
+    request.headers.get("x-starbeam-refresh-token") ?? ""
+  ).trim();
   if (!refreshToken) return null;
 
   const tokenHash = sha256Hex(refreshToken);
@@ -133,7 +139,10 @@ export async function GET(request: Request) {
     where: { workspaceId, userId },
     orderBy: { editionDate: "desc" },
     include: {
-      cards: { orderBy: [{ priority: "desc" }, { createdAt: "asc" }], take: 12 },
+      cards: {
+        orderBy: [{ priority: "desc" }, { createdAt: "asc" }],
+        take: 12,
+      },
     },
   });
 
@@ -166,7 +175,10 @@ export async function GET(request: Request) {
         workspaceId,
         ownerUserId: userId,
         type: "CALENDAR_EVENT",
-        occurredAt: { gte: now, lt: new Date(Date.now() + 24 * 60 * 60 * 1000) },
+        occurredAt: {
+          gte: now,
+          lt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        },
       },
       orderBy: { occurredAt: "asc" },
       take: 10,

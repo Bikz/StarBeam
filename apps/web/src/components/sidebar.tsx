@@ -6,7 +6,11 @@ import { usePathname } from "next/navigation";
 import { useMemo, useState } from "react";
 import { sbButtonClass } from "@starbeam/shared";
 
-import type { ActiveWorkspace, ShellUser, ShellWorkspace } from "@/components/app-shell";
+import type {
+  ActiveWorkspace,
+  ShellUser,
+  ShellWorkspace,
+} from "@/components/app-shell";
 import type { UiMode } from "@/components/ui-mode";
 import { useUiMode } from "@/components/ui-mode";
 import {
@@ -84,8 +88,18 @@ function navFor(
   const global: NavItem[] =
     mode === "advanced"
       ? [
-          { href: "/dashboard", label: "Dashboard", icon: "dashboard", match: "exact" },
-          { href: "/workspaces", label: "Workspaces", icon: "workspaces", match: "exact" },
+          {
+            href: "/dashboard",
+            label: "Dashboard",
+            icon: "dashboard",
+            match: "exact",
+          },
+          {
+            href: "/workspaces",
+            label: "Workspaces",
+            icon: "workspaces",
+            match: "exact",
+          },
         ]
       : [];
   if (!activeWorkspace) return { global, workspace: [] };
@@ -100,12 +114,20 @@ function navFor(
 
   // Advanced mode: reveal additional surfaces, but avoid showing admin-only pages
   // to non-managers by default.
-  workspace.push({ href: `${base}/integrations`, label: "Integrations", icon: "integrations" });
+  workspace.push({
+    href: `${base}/integrations`,
+    label: "Integrations",
+    icon: "integrations",
+  });
 
   if (isManageRole(activeWorkspace.role)) {
     workspace.push(
       { href: `${base}/tracks`, label: "Tracks", icon: "tracks" },
-      { href: `${base}/announcements`, label: "Announcements", icon: "announcements" },
+      {
+        href: `${base}/announcements`,
+        label: "Announcements",
+        icon: "announcements",
+      },
       { href: `${base}/members`, label: "People", icon: "people" },
       { href: `${base}/jobs`, label: "Runs", icon: "runs" },
     );
@@ -144,7 +166,9 @@ function SidebarLink({
           "group grid h-11 w-11 place-items-center rounded-xl border border-transparent",
           "hover:border-black/10 hover:bg-black/[0.03] dark:hover:border-white/10 dark:hover:bg-white/[0.04]",
           "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]",
-          active ? "border-black/10 bg-black/[0.04] dark:border-white/15 dark:bg-white/[0.06]" : "",
+          active
+            ? "border-black/10 bg-black/[0.04] dark:border-white/15 dark:bg-white/[0.06]"
+            : "",
         ].join(" ")}
       >
         {iconFor(item.icon, "h-5 w-5")}
@@ -161,7 +185,9 @@ function SidebarLink({
         "group flex items-center justify-between gap-3 rounded-xl px-3 py-2 text-sm",
         "border border-transparent hover:border-black/10 hover:bg-black/[0.03] dark:hover:border-white/10 dark:hover:bg-white/[0.04]",
         "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]",
-        active ? "border-black/10 bg-black/[0.04] dark:border-white/15 dark:bg-white/[0.06]" : "",
+        active
+          ? "border-black/10 bg-black/[0.04] dark:border-white/15 dark:bg-white/[0.06]"
+          : "",
       ].join(" ")}
     >
       <span className="flex items-center gap-3 min-w-0">
@@ -202,7 +228,9 @@ function WorkspaceLink({
         "flex items-center justify-between gap-3 rounded-xl px-3 py-2 text-sm",
         "border border-transparent hover:border-black/10 hover:bg-black/[0.03] dark:hover:border-white/10 dark:hover:bg-white/[0.04]",
         "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]",
-        active ? "border-black/10 bg-black/[0.04] dark:border-white/15 dark:bg-white/[0.06]" : "",
+        active
+          ? "border-black/10 bg-black/[0.04] dark:border-white/15 dark:bg-white/[0.06]"
+          : "",
       ].join(" ")}
       aria-current={active ? "page" : undefined}
       title={w.name}
@@ -238,13 +266,18 @@ export default function Sidebar({
   const collapsed = variant === "desktop" && Boolean(collapsedProp);
   const pathname = usePathname();
   const [workspaceQuery, setWorkspaceQuery] = useState("");
-  const homeHref = activeWorkspace ? `/w/${activeWorkspace.slug}/pulse` : "/dashboard";
+  const homeHref = activeWorkspace
+    ? `/w/${activeWorkspace.slug}/pulse`
+    : "/dashboard";
   const feedbackHref = useMemo(() => {
     const p = pathname || "/";
     return `/feedback?path=${encodeURIComponent(p)}`;
   }, [pathname]);
 
-  const nav = useMemo(() => navFor(activeWorkspace, mode), [activeWorkspace, mode]);
+  const nav = useMemo(
+    () => navFor(activeWorkspace, mode),
+    [activeWorkspace, mode],
+  );
   const showWorkspaceSearch = workspaces.length > 8;
   const globalHasWorkspaces = nav.global.some((i) => i.href === "/workspaces");
   const showAllWorkspacesLink = workspaces.length > 8 && !globalHasWorkspaces;
@@ -265,7 +298,9 @@ export default function Sidebar({
       <div
         className={[
           "flex gap-2",
-          collapsed ? "flex-col items-center" : "flex-row items-center justify-between",
+          collapsed
+            ? "flex-col items-center"
+            : "flex-row items-center justify-between",
         ].join(" ")}
       >
         <Link
@@ -279,11 +314,20 @@ export default function Sidebar({
         >
           <div className="sb-card-inset grid h-10 w-10 place-items-center border border-black/10 dark:border-white/10">
             <Image
-              src="/brand/starbeam-logo.png"
+              src="/brand/starbeam-logo-light.png"
               alt=""
               width={28}
               height={28}
               priority
+              className="block dark:hidden"
+            />
+            <Image
+              src="/brand/starbeam-logo-dark.png"
+              alt=""
+              width={28}
+              height={28}
+              priority
+              className="hidden dark:block"
             />
           </div>
           {!collapsed ? (
@@ -310,7 +354,11 @@ export default function Sidebar({
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             title={collapsed ? "Expand" : "Collapse"}
           >
-            {collapsed ? <IconChevronRight className="h-5 w-5" /> : <IconChevronLeft className="h-5 w-5" />}
+            {collapsed ? (
+              <IconChevronRight className="h-5 w-5" />
+            ) : (
+              <IconChevronLeft className="h-5 w-5" />
+            )}
           </button>
         ) : null}
       </div>
@@ -380,7 +428,11 @@ export default function Sidebar({
 
       <div className="mt-5 grid gap-2">
         {!collapsed ? <SectionLabel>Navigate</SectionLabel> : null}
-        <div className={collapsed ? "grid gap-1 justify-items-center" : "grid gap-1"}>
+        <div
+          className={
+            collapsed ? "grid gap-1 justify-items-center" : "grid gap-1"
+          }
+        >
           {nav.global.map((item) => (
             <SidebarLink
               key={item.href}
@@ -393,7 +445,13 @@ export default function Sidebar({
         </div>
 
         {nav.workspace.length ? (
-          <div className={collapsed ? "mt-2 grid gap-1 justify-items-center" : "mt-2 grid gap-1"}>
+          <div
+            className={
+              collapsed
+                ? "mt-2 grid gap-1 justify-items-center"
+                : "mt-2 grid gap-1"
+            }
+          >
             {nav.workspace.map((item) => (
               <SidebarLink
                 key={item.href}
@@ -423,7 +481,13 @@ export default function Sidebar({
 
       <div className="mt-5">
         <div className="h-px bg-[color:var(--sb-divider)]" />
-        <div className={collapsed ? "mt-4 grid gap-2 justify-items-center" : "mt-4 grid gap-2"}>
+        <div
+          className={
+            collapsed
+              ? "mt-4 grid gap-2 justify-items-center"
+              : "mt-4 grid gap-2"
+          }
+        >
           {collapsed ? (
             <Link
               href={feedbackHref}

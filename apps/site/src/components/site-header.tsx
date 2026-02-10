@@ -21,11 +21,20 @@ export default function SiteHeader({
         >
           <div className="sb-card grid h-11 w-11 place-items-center">
             <Image
-              src="/brand/starbeam-logo.png"
+              src="/brand/starbeam-logo-light.png"
               alt=""
               width={34}
               height={34}
               priority
+              className="block dark:hidden"
+            />
+            <Image
+              src="/brand/starbeam-logo-dark.png"
+              alt=""
+              width={34}
+              height={34}
+              priority
+              className="hidden dark:block"
             />
           </div>
           <div>

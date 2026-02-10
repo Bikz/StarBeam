@@ -39,8 +39,10 @@ function readCodexEstimates(meta: unknown): CodexEstimates | null {
   if (!est || typeof est !== "object") return null;
 
   const runs = (est as { runs?: unknown }).runs;
-  const approxInputTokens = (est as { approxInputTokens?: unknown }).approxInputTokens;
-  const approxOutputTokens = (est as { approxOutputTokens?: unknown }).approxOutputTokens;
+  const approxInputTokens = (est as { approxInputTokens?: unknown })
+    .approxInputTokens;
+  const approxOutputTokens = (est as { approxOutputTokens?: unknown })
+    .approxOutputTokens;
   const durationMs = (est as { durationMs?: unknown }).durationMs;
 
   if (typeof runs !== "number") return null;
@@ -72,7 +74,10 @@ export default async function JobsPage({
   const manageable = canManage(membership.role);
 
   const jobRuns = await prisma.jobRun.findMany({
-    where: { workspaceId: membership.workspace.id, kind: "NIGHTLY_WORKSPACE_RUN" },
+    where: {
+      workspaceId: membership.workspace.id,
+      kind: "NIGHTLY_WORKSPACE_RUN",
+    },
     orderBy: { createdAt: "desc" },
     take: 20,
   });
@@ -118,20 +123,21 @@ export default async function JobsPage({
           ) : (
             <div className="mt-3 grid gap-2">
               {jobRuns.map((jr) => (
-                <div
-                  key={jr.id}
-                  className="sb-card-inset px-4 py-3 text-sm"
-                >
+                <div key={jr.id} className="sb-card-inset px-4 py-3 text-sm">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="font-semibold text-[color:var(--sb-fg)]">
                       {formatStatus(jr.status)}
                     </div>
-                    <div className="sb-pill">{jr.createdAt.toLocaleString()}</div>
+                    <div className="sb-pill">
+                      {jr.createdAt.toLocaleString()}
+                    </div>
                   </div>
                   {jr.startedAt ? (
                     <div className="mt-1 text-xs text-[color:var(--sb-muted)]">
                       Started: {jr.startedAt.toLocaleString()}
-                      {jr.finishedAt ? ` | Finished: ${jr.finishedAt.toLocaleString()}` : ""}
+                      {jr.finishedAt
+                        ? ` | Finished: ${jr.finishedAt.toLocaleString()}`
+                        : ""}
                     </div>
                   ) : (
                     <div className="mt-1 text-xs text-[color:var(--sb-muted)]">
@@ -144,7 +150,8 @@ export default async function JobsPage({
                     const durS = Math.round(est.durationMs / 1000);
                     return (
                       <div className="mt-2 text-xs text-[color:var(--sb-muted)]">
-                        Codex: {est.runs} runs | ~{formatInt(est.approxInputTokens)} in / ~
+                        Codex: {est.runs} runs | ~
+                        {formatInt(est.approxInputTokens)} in / ~
                         {formatInt(est.approxOutputTokens)} out tokens | {durS}s
                       </div>
                     );

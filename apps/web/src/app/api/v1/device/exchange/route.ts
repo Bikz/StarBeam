@@ -33,10 +33,14 @@ export async function POST(request: Request) {
   try {
     body = await request.json();
   } catch {
-    return jsonError({ error: "invalid_request", errorDescription: "Invalid JSON" });
+    return jsonError({
+      error: "invalid_request",
+      errorDescription: "Invalid JSON",
+    });
   }
 
-  const obj = body && typeof body === "object" ? (body as Record<string, unknown>) : {};
+  const obj =
+    body && typeof body === "object" ? (body as Record<string, unknown>) : {};
   const deviceCode = typeof obj.deviceCode === "string" ? obj.deviceCode : "";
   if (!deviceCode) {
     return jsonError({
@@ -93,7 +97,10 @@ export async function POST(request: Request) {
   });
   if (!access?.betaAccessGrantedAt) {
     return jsonError(
-      { error: "access_denied", errorDescription: "Private beta access required" },
+      {
+        error: "access_denied",
+        errorDescription: "Private beta access required",
+      },
       403,
     );
   }

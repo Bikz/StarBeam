@@ -13,15 +13,21 @@ import PageHeader from "@/components/page-header";
 import { authOptions } from "@/lib/auth";
 import { requireBetaAccessOrRedirect } from "@/lib/betaAccess";
 
-function isProfileUseful(profile: {
-  websiteUrl: string | null;
-  description: string | null;
-  competitorDomains: string[];
-} | null): boolean {
+function isProfileUseful(
+  profile: {
+    websiteUrl: string | null;
+    description: string | null;
+    competitorDomains: string[];
+  } | null,
+): boolean {
   if (!profile) return false;
   if (profile.websiteUrl?.trim()) return true;
   if (profile.description?.trim()) return true;
-  if (Array.isArray(profile.competitorDomains) && profile.competitorDomains.length > 0) return true;
+  if (
+    Array.isArray(profile.competitorDomains) &&
+    profile.competitorDomains.length > 0
+  )
+    return true;
   return false;
 }
 
@@ -90,17 +96,28 @@ export default async function DashboardPage() {
     }),
     prisma.workspaceProfile.findMany({
       where: { workspaceId: { in: workspaceIds } },
-      select: { workspaceId: true, websiteUrl: true, description: true, competitorDomains: true },
+      select: {
+        workspaceId: true,
+        websiteUrl: true,
+        description: true,
+        competitorDomains: true,
+      },
     }),
   ]);
 
-  const goalsByWorkspace = new Map(activeGoals.map((g) => [g.workspaceId, g._count._all]));
-  const googleByWorkspace = new Map(connections.map((c) => [c.workspaceId, c._count._all]));
+  const goalsByWorkspace = new Map(
+    activeGoals.map((g) => [g.workspaceId, g._count._all]),
+  );
+  const googleByWorkspace = new Map(
+    connections.map((c) => [c.workspaceId, c._count._all]),
+  );
   const hasEdition = new Set(editions.map((e) => e.workspaceId));
   const profileByWorkspace = new Map(profiles.map((p) => [p.workspaceId, p]));
 
   const orgCount = memberships.filter((m) => m.workspace.type === "ORG").length;
-  const personalCount = memberships.filter((m) => m.workspace.type !== "ORG").length;
+  const personalCount = memberships.filter(
+    (m) => m.workspace.type !== "ORG",
+  ).length;
 
   return (
     <AppShell
@@ -154,7 +171,8 @@ export default async function DashboardPage() {
                   No workspaces found
                 </div>
                 <div className="mt-1 text-sm text-[color:var(--sb-muted)]">
-                  Personal workspace creation may have failed. Try signing out and back in.
+                  Personal workspace creation may have failed. Try signing out
+                  and back in.
                 </div>
                 <Link
                   href="/api/auth/signout?callbackUrl=/"
@@ -176,16 +194,28 @@ export default async function DashboardPage() {
 
                   const todo: Array<{ label: string; href: string }> = [];
                   if (m.workspace.type === "ORG" && !isProfileUseful(profile)) {
-                    todo.push({ label: "Add profile", href: `/w/${m.workspace.slug}/profile` });
+                    todo.push({
+                      label: "Add profile",
+                      href: `/w/${m.workspace.slug}/profile`,
+                    });
                   }
                   if (goalCount === 0) {
-                    todo.push({ label: "Add goals", href: `/w/${m.workspace.slug}/tracks` });
+                    todo.push({
+                      label: "Add goals",
+                      href: `/w/${m.workspace.slug}/tracks`,
+                    });
                   }
                   if (googleCount === 0) {
-                    todo.push({ label: "Connect Google", href: `/w/${m.workspace.slug}/google` });
+                    todo.push({
+                      label: "Connect Google",
+                      href: `/w/${m.workspace.slug}/google`,
+                    });
                   }
                   if (!editionReady) {
-                    todo.push({ label: "Finish setup", href: `/w/${m.workspace.slug}/settings` });
+                    todo.push({
+                      label: "Finish setup",
+                      href: `/w/${m.workspace.slug}/settings`,
+                    });
                   }
 
                   return (
@@ -196,7 +226,9 @@ export default async function DashboardPage() {
                             {m.workspace.name}
                           </div>
                           <div className="mt-1 text-sm text-[color:var(--sb-muted)]">
-                            {m.workspace.type === "ORG" ? "Org workspace" : "Personal"}{" "}
+                            {m.workspace.type === "ORG"
+                              ? "Org workspace"
+                              : "Personal"}{" "}
                             <span aria-hidden>·</span>{" "}
                             <span className="font-semibold text-[color:var(--sb-fg)]">
                               {m.role.toLowerCase()}
@@ -204,7 +236,10 @@ export default async function DashboardPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <CopyPill value={m.workspace.slug} label={`id:${m.workspace.slug}`} />
+                          <CopyPill
+                            value={m.workspace.slug}
+                            label={`id:${m.workspace.slug}`}
+                          />
                           <span className="text-[11px] font-semibold tracking-wide uppercase text-[color:var(--sb-muted)]">
                             {m.workspace.type}
                           </span>

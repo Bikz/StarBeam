@@ -1,6 +1,12 @@
 "use client";
 
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+} from "react";
 
 export type UiMode = "simple" | "advanced";
 
@@ -69,7 +75,9 @@ export function UiModeProvider({
     [mode, setMode, toggle, workspaceSlug],
   );
 
-  return <UiModeContext.Provider value={value}>{children}</UiModeContext.Provider>;
+  return (
+    <UiModeContext.Provider value={value}>{children}</UiModeContext.Provider>
+  );
 }
 
 export function useUiMode(): UiModeContextValue {

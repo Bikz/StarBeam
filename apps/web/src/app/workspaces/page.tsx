@@ -54,7 +54,8 @@ export default async function WorkspacesPage({
         <div className="sb-card p-7 sm:p-8">
           <h2 className="sb-title text-2xl font-extrabold">All workspaces</h2>
           <p className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
-            Switch between workspaces. Use search to quickly jump to the one you need.
+            Switch between workspaces. Use search to quickly jump to the one you
+            need.
           </p>
 
           <form method="get" className="mt-6 grid gap-2">
@@ -73,9 +74,7 @@ export default async function WorkspacesPage({
           <div className="mt-7">
             <div className="text-xs font-extrabold sb-title">Results</div>
             {filtered.length === 0 ? (
-              <div className="mt-2 sb-alert">
-                No workspaces match “{q}”.
-              </div>
+              <div className="mt-2 sb-alert">No workspaces match “{q}”.</div>
             ) : (
               <div className="mt-3 grid gap-2">
                 {filtered.map((m) => (
@@ -86,7 +85,8 @@ export default async function WorkspacesPage({
                           {m.workspace.name}
                         </div>
                         <div className="mt-0.5 text-xs text-[color:var(--sb-muted)] truncate">
-                          /w/{m.workspace.slug} · {m.workspace.type.toLowerCase()} ·{" "}
+                          /w/{m.workspace.slug} ·{" "}
+                          {m.workspace.type.toLowerCase()} ·{" "}
                           {m.role.toLowerCase()}
                         </div>
                       </div>

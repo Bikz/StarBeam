@@ -30,9 +30,11 @@ function sleep(ms: number): Promise<void> {
 function isRetryableError(err: unknown): boolean {
   const anyErr = err as { status?: number; code?: string };
   const status = typeof anyErr?.status === "number" ? anyErr.status : undefined;
-  if (status && [408, 409, 429, 500, 502, 503, 504].includes(status)) return true;
+  if (status && [408, 409, 429, 500, 502, 503, 504].includes(status))
+    return true;
   const code = typeof anyErr?.code === "string" ? anyErr.code : "";
-  if (code && ["ETIMEDOUT", "ECONNRESET", "EAI_AGAIN"].includes(code)) return true;
+  if (code && ["ETIMEDOUT", "ECONNRESET", "EAI_AGAIN"].includes(code))
+    return true;
   return false;
 }
 
@@ -78,7 +80,10 @@ function normalizeUrl(url: string): string {
   return url.replace(/\/$/, "");
 }
 
-function filterCitationsToSources(cards: WebInsightCard[], sources: ToolSource[]): WebInsightCard[] {
+function filterCitationsToSources(
+  cards: WebInsightCard[],
+  sources: ToolSource[],
+): WebInsightCard[] {
   const sourceUrls = new Set(
     sources
       .map((s) => (typeof s.url === "string" ? normalizeUrl(s.url) : ""))
@@ -91,7 +96,9 @@ function filterCitationsToSources(cards: WebInsightCard[], sources: ToolSource[]
 
   return cards
     .map((c) => {
-      const citations = c.citations.filter((cit) => sourceUrls.has(normalizeUrl(cit.url)));
+      const citations = c.citations.filter((cit) =>
+        sourceUrls.has(normalizeUrl(cit.url)),
+      );
       return { ...c, citations };
     })
     .filter((c) => c.citations.length > 0);
@@ -160,7 +167,9 @@ export function buildDepartmentWebResearchPrompt(args: {
   departmentPromptTemplate?: string;
   goals: Array<{ title: string; body: string; priority: string }>;
 }): string {
-  const competitors = (args.competitorDomains ?? []).filter(Boolean).slice(0, 10);
+  const competitors = (args.competitorDomains ?? [])
+    .filter(Boolean)
+    .slice(0, 10);
   const goals = args.goals.slice(0, 5);
 
   return [

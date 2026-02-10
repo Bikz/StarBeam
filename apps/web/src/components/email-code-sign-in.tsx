@@ -56,7 +56,9 @@ export default function EmailCodeSignIn({
 
   const resendCooldownMs = 30_000;
   const resendRemainingMs =
-    step === "code" && sentAt ? Math.max(0, resendCooldownMs - (now - sentAt)) : 0;
+    step === "code" && sentAt
+      ? Math.max(0, resendCooldownMs - (now - sentAt))
+      : 0;
   const resendRemainingSec = Math.ceil(resendRemainingMs / 1000);
   const canResend = step === "code" && resendRemainingMs === 0 && !busy;
 
@@ -220,7 +222,9 @@ export default function EmailCodeSignIn({
               disabled={!canResend}
               aria-label="Resend code"
             >
-              {resendRemainingSec > 0 ? `Resend (${resendRemainingSec}s)` : "Resend"}
+              {resendRemainingSec > 0
+                ? `Resend (${resendRemainingSec}s)`
+                : "Resend"}
             </button>
             <button
               type="button"
@@ -240,9 +244,7 @@ export default function EmailCodeSignIn({
         </div>
       )}
 
-      {error ? (
-        <div className="sb-alert">{error}</div>
-      ) : null}
+      {error ? <div className="sb-alert">{error}</div> : null}
     </div>
   );
 }

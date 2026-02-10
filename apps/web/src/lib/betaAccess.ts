@@ -22,7 +22,12 @@ export async function ensureBetaEligibilityProcessed(userId: string): Promise<{
   const [user, referralCount] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, email: true, betaAccessGrantedAt: true, referralCode: true },
+      select: {
+        id: true,
+        email: true,
+        betaAccessGrantedAt: true,
+        referralCode: true,
+      },
     }),
     referralCountForUser(userId),
   ]);
@@ -59,7 +64,9 @@ export async function ensureBetaEligibilityProcessed(userId: string): Promise<{
   return { hasAccess: false, referralCode, referralCount };
 }
 
-export async function requireBetaAccessOrRedirect(userId: string): Promise<void> {
+export async function requireBetaAccessOrRedirect(
+  userId: string,
+): Promise<void> {
   const status = await ensureBetaEligibilityProcessed(userId);
   if (!status.hasAccess) redirect("/beta");
 }

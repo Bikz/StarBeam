@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { mintAccessToken, mintRefreshToken, parseAccessToken } from "../src/lib/apiTokens";
+import {
+  mintAccessToken,
+  mintRefreshToken,
+  parseAccessToken,
+} from "../src/lib/apiTokens";
 
 test("apiTokens: mintAccessToken round-trip", () => {
   const original = process.env.AUTH_SECRET;
@@ -21,4 +25,3 @@ test("apiTokens: mintRefreshToken produces a hash", () => {
   assert.ok(refreshToken.length > 10);
   assert.match(tokenHash, /^[a-f0-9]{64}$/);
 });
-

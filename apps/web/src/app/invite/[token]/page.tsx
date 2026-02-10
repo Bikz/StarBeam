@@ -59,14 +59,10 @@ export default async function InvitePage({
               This invite link was already used.
             </div>
           ) : expired ? (
-            <div className="mt-6 sb-alert">
-              This invite link expired.
-            </div>
+            <div className="mt-6 sb-alert">This invite link expired.</div>
           ) : !session?.user?.id ? (
             <div className="mt-6">
-              <div className="sb-alert">
-                Sign in to accept this invite.
-              </div>
+              <div className="sb-alert">Sign in to accept this invite.</div>
               <div className="mt-4">
                 <Link
                   href={`/login?callbackUrl=${encodeURIComponent(`/invite/${token}`)}`}

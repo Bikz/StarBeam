@@ -48,4 +48,6 @@ export const DeviceExchangeResponseSchema = z.object({
   user: UserSchema,
   workspaces: z.array(WorkspaceSchema),
 });
-export type DeviceExchangeResponse = z.infer<typeof DeviceExchangeResponseSchema>;
+export type DeviceExchangeResponse = z.infer<
+  typeof DeviceExchangeResponseSchema
+>;

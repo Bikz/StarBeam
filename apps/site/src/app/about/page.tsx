@@ -26,7 +26,9 @@ export default async function AboutPage() {
                 About Starbeam
               </div>
               <p className="mt-3 text-[color:var(--sb-muted)] text-lg leading-relaxed max-w-2xl">
-                Startups lose time to scattered context: a goal doc here, an urgent thread there, a competitor move nobody saw until it was too late.
+                Startups lose time to scattered context: a goal doc here, an
+                urgent thread there, a competitor move nobody saw until it was
+                too late.
               </p>
 
               <div className="mt-7 grid gap-4 sm:grid-cols-3">
@@ -35,7 +37,8 @@ export default async function AboutPage() {
                     Calm by design
                   </div>
                   <div className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
-                    The default is fewer cards, not more. A pulse is a constraint.
+                    The default is fewer cards, not more. A pulse is a
+                    constraint.
                   </div>
                 </div>
                 <div className="sb-card-inset p-5">
@@ -43,7 +46,8 @@ export default async function AboutPage() {
                     Context first
                   </div>
                   <div className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
-                    Goals and pinned announcements keep the whole team pointed at the same north star.
+                    Goals and pinned announcements keep the whole team pointed
+                    at the same north star.
                   </div>
                 </div>
                 <div className="sb-card-inset p-5">
@@ -51,7 +55,8 @@ export default async function AboutPage() {
                     Cited signals
                   </div>
                   <div className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
-                    Web insights include sources so you can verify quickly and move on.
+                    Web insights include sources so you can verify quickly and
+                    move on.
                   </div>
                 </div>
               </div>

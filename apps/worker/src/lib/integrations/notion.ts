@@ -33,7 +33,10 @@ function decryptToken(enc: string): string {
   return decryptString(enc, encKey());
 }
 
-function toSnippet(text: string | null | undefined, maxLen = 280): string | null {
+function toSnippet(
+  text: string | null | undefined,
+  maxLen = 280,
+): string | null {
   if (typeof text !== "string") return null;
   const t = text.trim();
   if (!t) return null;
@@ -87,7 +90,9 @@ function extractBlockPlainText(block: unknown): string {
   const type = typeof b.type === "string" ? b.type : "";
   if (!type) return "";
 
-  const payload = b[type] as { rich_text?: unknown; text?: unknown } | undefined;
+  const payload = b[type] as
+    | { rich_text?: unknown; text?: unknown }
+    | undefined;
   const rich = payload?.rich_text ?? payload?.text;
   return richTextToPlainText(rich);
 }
@@ -111,7 +116,10 @@ async function notionRequest<T>(args: {
   return fetchJson<T>({ url: args.url, init, label: args.label });
 }
 
-async function searchPages(args: { token: string; pageSize: number }): Promise<NotionPage[]> {
+async function searchPages(args: {
+  token: string;
+  pageSize: number;
+}): Promise<NotionPage[]> {
   const body = JSON.stringify({
     page_size: args.pageSize,
     sort: { direction: "descending", timestamp: "last_edited_time" },
@@ -121,7 +129,11 @@ async function searchPages(args: { token: string; pageSize: number }): Promise<N
   const resp = await notionRequest<NotionSearchResponse>({
     token: args.token,
     url: "https://api.notion.com/v1/search",
-    init: { method: "POST", headers: { "Content-Type": "application/json" }, body },
+    init: {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body,
+    },
     label: "Notion search",
   });
 
@@ -185,7 +197,10 @@ export async function syncNotionConnection(args: {
     where: { id: args.connectionId },
   });
   if (!connection) throw new Error("Notion connection not found");
-  if (connection.workspaceId !== args.workspaceId || connection.ownerUserId !== args.userId) {
+  if (
+    connection.workspaceId !== args.workspaceId ||
+    connection.ownerUserId !== args.userId
+  ) {
     throw new Error("Notion connection workspace/user mismatch");
   }
 
@@ -210,7 +225,11 @@ export async function syncNotionConnection(args: {
     let contentText: string | null = null;
     if (idx < 8) {
       try {
-        contentText = await fetchPageText({ token, pageId: externalId, maxChars: 12_000 });
+        contentText = await fetchPageText({
+          token,
+          pageId: externalId,
+          maxChars: 12_000,
+        });
       } catch {
         contentText = null;
       }

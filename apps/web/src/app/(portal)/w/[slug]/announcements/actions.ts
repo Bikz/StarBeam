@@ -17,7 +17,10 @@ const CreateAnnouncementSchema = z.object({
   pinned: z.enum(["on"]).optional(),
 });
 
-export async function createAnnouncement(workspaceSlug: string, formData: FormData) {
+export async function createAnnouncement(
+  workspaceSlug: string,
+  formData: FormData,
+) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) throw new Error("Unauthorized");
 
@@ -75,7 +78,10 @@ export async function toggleAnnouncementPinned(
   redirect(`/w/${workspaceSlug}/announcements`);
 }
 
-export async function dismissAnnouncement(workspaceSlug: string, announcementId: string) {
+export async function dismissAnnouncement(
+  workspaceSlug: string,
+  announcementId: string,
+) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) throw new Error("Unauthorized");
 

@@ -2,7 +2,11 @@ import type { Prisma } from "@starbeam/db";
 import { prisma } from "@starbeam/db";
 import { makeWorkerUtils } from "graphile-worker";
 
-import { hourInTimeZone, isValidIanaTimeZone, startOfDayKeyUtcForTimeZone } from "../lib/dates";
+import {
+  hourInTimeZone,
+  isValidIanaTimeZone,
+  startOfDayKeyUtcForTimeZone,
+} from "../lib/dates";
 
 type SchedulerCursor = { createdAt: string; id: string };
 
@@ -23,7 +27,11 @@ function isTruthyEnv(value: string | undefined): boolean {
   return ["1", "true", "yes"].includes((value ?? "").trim().toLowerCase());
 }
 
-function withinWindow(args: { hour: number; startHour: number; endHour: number }): boolean {
+function withinWindow(args: {
+  hour: number;
+  startHour: number;
+  endHour: number;
+}): boolean {
   const { hour } = args;
   const start = ((args.startHour % 24) + 24) % 24;
   const end = ((args.endHour % 24) + 24) % 24;
@@ -34,8 +42,18 @@ function withinWindow(args: { hour: number; startHour: number; endHour: number }
   return hour >= start || hour < end;
 }
 
-function eligibleNow(args: { hour: number; startHour: number; endHour: number; strictWindow: boolean }): boolean {
-  if (args.strictWindow) return withinWindow({ hour: args.hour, startHour: args.startHour, endHour: args.endHour });
+function eligibleNow(args: {
+  hour: number;
+  startHour: number;
+  endHour: number;
+  strictWindow: boolean;
+}): boolean {
+  if (args.strictWindow)
+    return withinWindow({
+      hour: args.hour,
+      startHour: args.startHour,
+      endHour: args.endHour,
+    });
   // Softer window: once a user's local time passes the start hour, we consider them
   // eligible for the rest of the day. This improves "guaranteed coverage" for large
   // orgs where the enqueue scan might take longer than a fixed 2-5am window.
@@ -43,11 +61,19 @@ function eligibleNow(args: { hour: number; startHour: number; endHour: number; s
   return args.hour >= start;
 }
 
-function dailyJobRunId(args: { workspaceId: string; userId: string; dateKey: string }): string {
+function dailyJobRunId(args: {
+  workspaceId: string;
+  userId: string;
+  dateKey: string;
+}): string {
   return `daily:${args.workspaceId}:${args.userId}:${args.dateKey}`;
 }
 
-function dailyJobKey(args: { workspaceId: string; userId: string; dateKey: string }): string {
+function dailyJobKey(args: {
+  workspaceId: string;
+  userId: string;
+  dateKey: string;
+}): string {
   return `nightly_workspace_run:daily:${args.workspaceId}:${args.userId}:${args.dateKey}`;
 }
 
@@ -63,7 +89,8 @@ function decodeCursor(raw: string | null | undefined): SchedulerCursor | null {
   if (!s) return null;
   try {
     const parsed = JSON.parse(s) as { createdAt?: unknown; id?: unknown };
-    if (typeof parsed.createdAt !== "string" || typeof parsed.id !== "string") return null;
+    if (typeof parsed.createdAt !== "string" || typeof parsed.id !== "string")
+      return null;
     if (!parsed.createdAt.trim() || !parsed.id.trim()) return null;
     return { createdAt: parsed.createdAt, id: parsed.id };
   } catch {
@@ -88,7 +115,9 @@ async function setCursor(cursor: SchedulerCursor | null): Promise<void> {
   });
 }
 
-function membershipCursorWhere(cursor: SchedulerCursor | null): Prisma.MembershipWhereInput | undefined {
+function membershipCursorWhere(
+  cursor: SchedulerCursor | null,
+): Prisma.MembershipWhereInput | undefined {
   if (!cursor) return undefined;
   const createdAt = new Date(cursor.createdAt);
   if (!Number.isFinite(createdAt.getTime())) return undefined;
@@ -125,15 +154,26 @@ async function releaseSchedulerLock(): Promise<void> {
 // Enqueue per-user daily pulses during a small user-local window (2-5am by default).
 // This lets the app "feel alive" each morning without needing users to click "Run now".
 export async function enqueue_due_daily_pulses(): Promise<void> {
-  const enabled = (process.env.STARB_DAILY_PULSE_ENABLED ?? "1").trim().toLowerCase();
+  const enabled = (process.env.STARB_DAILY_PULSE_ENABLED ?? "1")
+    .trim()
+    .toLowerCase();
   if (!["1", "true", "yes"].includes(enabled)) return;
 
   const startHour = parseIntEnv("STARB_DAILY_PULSE_WINDOW_START_HOUR", 2);
   const endHour = parseIntEnv("STARB_DAILY_PULSE_WINDOW_END_HOUR", 5);
-  const batch = Math.min(500, Math.max(1, parseIntEnv("STARB_DAILY_PULSE_ENQUEUE_BATCH", 200)));
-  const maxPages = Math.min(200, Math.max(1, parseIntEnv("STARB_DAILY_PULSE_MAX_PAGES_PER_TICK", 25)));
+  const batch = Math.min(
+    500,
+    Math.max(1, parseIntEnv("STARB_DAILY_PULSE_ENQUEUE_BATCH", 200)),
+  );
+  const maxPages = Math.min(
+    200,
+    Math.max(1, parseIntEnv("STARB_DAILY_PULSE_MAX_PAGES_PER_TICK", 25)),
+  );
   const strictWindow = isTruthyEnv(process.env.STARB_DAILY_PULSE_STRICT_WINDOW);
-  const maxRuntimeMs = Math.min(5 * 60_000, Math.max(5_000, parseIntEnv("STARB_DAILY_PULSE_MAX_RUNTIME_MS", 25_000)));
+  const maxRuntimeMs = Math.min(
+    5 * 60_000,
+    Math.max(5_000, parseIntEnv("STARB_DAILY_PULSE_MAX_RUNTIME_MS", 25_000)),
+  );
 
   const now = new Date();
 
@@ -193,12 +233,23 @@ export async function enqueue_due_daily_pulses(): Promise<void> {
 
         // If a pulse already exists (or is currently generating) for this user/day,
         // don't enqueue another.
-        if (existing && (existing.status === "READY" || existing.status === "GENERATING")) {
+        if (
+          existing &&
+          (existing.status === "READY" || existing.status === "GENERATING")
+        ) {
           continue;
         }
 
-        const jobRunId = dailyJobRunId({ workspaceId: m.workspaceId, userId: m.userId, dateKey });
-        const jobKey = dailyJobKey({ workspaceId: m.workspaceId, userId: m.userId, dateKey });
+        const jobRunId = dailyJobRunId({
+          workspaceId: m.workspaceId,
+          userId: m.userId,
+          dateKey,
+        });
+        const jobKey = dailyJobKey({
+          workspaceId: m.workspaceId,
+          userId: m.userId,
+          dateKey,
+        });
 
         await prisma.jobRun.upsert({
           where: { id: jobRunId },
@@ -209,14 +260,26 @@ export async function enqueue_due_daily_pulses(): Promise<void> {
             startedAt: null,
             finishedAt: null,
             errorSummary: null,
-            meta: { source: "daily", userId: m.userId, timezone: tz, editionDate: dateKey, jobKey },
+            meta: {
+              source: "daily",
+              userId: m.userId,
+              timezone: tz,
+              editionDate: dateKey,
+              jobKey,
+            },
           },
           create: {
             id: jobRunId,
             workspaceId: m.workspaceId,
             kind: "NIGHTLY_WORKSPACE_RUN",
             status: "QUEUED",
-            meta: { source: "daily", userId: m.userId, timezone: tz, editionDate: dateKey, jobKey },
+            meta: {
+              source: "daily",
+              userId: m.userId,
+              timezone: tz,
+              editionDate: dateKey,
+              jobKey,
+            },
           },
         });
 

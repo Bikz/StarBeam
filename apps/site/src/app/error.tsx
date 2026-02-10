@@ -25,7 +25,10 @@ export default function ErrorPage({
           </div>
           <p className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
             Please try again. If it keeps happening, use the{" "}
-            <Link href="/contact" className="text-[color:var(--sb-fg)] hover:underline">
+            <Link
+              href="/contact"
+              className="text-[color:var(--sb-fg)] hover:underline"
+            >
               contact page
             </Link>
             .

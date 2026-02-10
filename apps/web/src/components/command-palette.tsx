@@ -186,13 +186,18 @@ export default function CommandPalette({
             {
               id: "act:run",
               section: "Actions",
-              label: pending ? "Run overnight now (working…)" : "Run overnight now",
+              label: pending
+                ? "Run overnight now (working…)"
+                : "Run overnight now",
               keywords: "nightly generate pulse",
               perform: () => {
                 setError("");
                 startTransition(() => {
                   void runNightlyNow(w.slug).catch((err) => {
-                    const msg = err instanceof Error ? err.message : "Failed to run overnight";
+                    const msg =
+                      err instanceof Error
+                        ? err.message
+                        : "Failed to run overnight";
                     setError(msg);
                   });
                 });
@@ -222,7 +227,15 @@ export default function CommandPalette({
         : [];
 
     return [...actions, ...global, ...workspaceNav, ...wsItems];
-  }, [activeWorkspace, advanced, onClose, pathname, pending, router, workspaces]);
+  }, [
+    activeWorkspace,
+    advanced,
+    onClose,
+    pathname,
+    pending,
+    router,
+    workspaces,
+  ]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -244,7 +257,10 @@ export default function CommandPalette({
   }, [filtered]);
 
   useEffect(() => {
-    restoreFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    restoreFocusRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
     const prev = document.documentElement.style.overflow;
     document.documentElement.style.overflow = "hidden";
 
@@ -377,7 +393,9 @@ export default function CommandPalette({
                             "sb-card-inset px-4 py-3 text-left text-sm",
                             "hover:border-black/10 hover:bg-black/[0.03] dark:hover:border-white/15 dark:hover:bg-white/[0.06]",
                             "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--sb-ring)]",
-                            active ? "border-black/10 dark:border-white/20 bg-black/5 dark:bg-white/10" : "",
+                            active
+                              ? "border-black/10 dark:border-white/20 bg-black/5 dark:bg-white/10"
+                              : "",
                           ].join(" ")}
                         >
                           <div className="font-semibold text-[color:var(--sb-fg)] truncate">
@@ -394,8 +412,15 @@ export default function CommandPalette({
 
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-[color:var(--sb-muted)]">
             <div>
-              Tip: use <span className="font-semibold text-[color:var(--sb-fg)]">Arrow keys</span>{" "}
-              and <span className="font-semibold text-[color:var(--sb-fg)]">Enter</span>.
+              Tip: use{" "}
+              <span className="font-semibold text-[color:var(--sb-fg)]">
+                Arrow keys
+              </span>{" "}
+              and{" "}
+              <span className="font-semibold text-[color:var(--sb-fg)]">
+                Enter
+              </span>
+              .
             </div>
             <button
               type="button"

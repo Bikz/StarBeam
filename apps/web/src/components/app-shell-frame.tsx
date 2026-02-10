@@ -3,7 +3,11 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 
-import type { ActiveWorkspace, ShellUser, ShellWorkspace } from "@/components/app-shell";
+import type {
+  ActiveWorkspace,
+  ShellUser,
+  ShellWorkspace,
+} from "@/components/app-shell";
 import CommandPalette from "@/components/command-palette";
 import PortalTopbar from "@/components/portal-topbar";
 import Sidebar from "@/components/sidebar";

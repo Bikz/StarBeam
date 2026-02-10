@@ -56,7 +56,9 @@ export async function persistCodexMemory(args: {
       },
     }),
     prisma.blob.upsert({
-      where: { bucket_key: { bucket: dailyStored.bucket, key: dailyStored.key } },
+      where: {
+        bucket_key: { bucket: dailyStored.bucket, key: dailyStored.key },
+      },
       update: {
         workspaceId: args.workspaceId,
         ownerUserId: args.userId,
@@ -81,4 +83,3 @@ export async function persistCodexMemory(args: {
 
   return { baseKey, dailyKey };
 }
-

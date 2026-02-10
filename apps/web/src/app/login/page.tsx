@@ -10,7 +10,13 @@ import { siteOrigin } from "@/lib/siteOrigin";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ callbackUrl?: string; ref?: string; mode?: string; email?: string; error?: string }>;
+  searchParams: Promise<{
+    callbackUrl?: string;
+    ref?: string;
+    mode?: string;
+    email?: string;
+    error?: string;
+  }>;
 }) {
   const session = await getServerSession(authOptions);
   if (session?.user?.id) {
@@ -20,7 +26,8 @@ export default async function LoginPage({
 
   const sp = await searchParams;
   const authError = sp.error ? String(sp.error) : "";
-  const mode = (sp.mode ?? "").trim().toLowerCase() === "waitlist" ? "waitlist" : "signin";
+  const mode =
+    (sp.mode ?? "").trim().toLowerCase() === "waitlist" ? "waitlist" : "signin";
   const title = mode === "waitlist" ? "Join waitlist" : "Sign in";
   const subtitle =
     mode === "waitlist"
@@ -32,9 +39,10 @@ export default async function LoginPage({
   const callbackUrlRaw = (sp.callbackUrl ?? "/beta").trim() || "/beta";
   const safeNext = callbackUrlRaw.startsWith("/") ? callbackUrlRaw : "/beta";
   const referralCode = typeof sp.ref === "string" ? sp.ref.trim() : "";
-  const callbackUrl = referralCode && !callbackUrlRaw.startsWith("/beta/claim")
-    ? `/beta/claim?ref=${encodeURIComponent(referralCode)}&next=${encodeURIComponent(safeNext)}`
-    : callbackUrlRaw;
+  const callbackUrl =
+    referralCode && !callbackUrlRaw.startsWith("/beta/claim")
+      ? `/beta/claim?ref=${encodeURIComponent(referralCode)}&next=${encodeURIComponent(safeNext)}`
+      : callbackUrlRaw;
 
   const baseParams = new URLSearchParams();
   if (typeof sp.callbackUrl === "string" && sp.callbackUrl.trim()) {
@@ -42,7 +50,9 @@ export default async function LoginPage({
   }
   if (referralCode) baseParams.set("ref", referralCode);
   if (initialEmail) baseParams.set("email", initialEmail);
-  const signInHref = baseParams.size ? `/login?${baseParams.toString()}` : "/login";
+  const signInHref = baseParams.size
+    ? `/login?${baseParams.toString()}`
+    : "/login";
   const waitlistParams = new URLSearchParams(baseParams);
   waitlistParams.set("mode", "waitlist");
   const waitlistHref = `/login?${waitlistParams.toString()}`;
@@ -70,7 +80,9 @@ export default async function LoginPage({
 
             <h1
               className="mt-5 text-4xl sm:text-5xl font-extrabold tracking-tight leading-[1.02] text-[color:var(--sb-fg)]"
-              style={{ fontFamily: "var(--font-sb-display), ui-sans-serif, system-ui" }}
+              style={{
+                fontFamily: "var(--font-sb-display), ui-sans-serif, system-ui",
+              }}
             >
               A calm daily pulse, pulled from the tools you already use.
             </h1>
@@ -82,19 +94,29 @@ export default async function LoginPage({
 
             <div className="mt-7 grid gap-3 max-w-prose">
               <div className="sb-card-inset p-4">
-                <div className="text-xs font-extrabold sb-title">What you get</div>
+                <div className="text-xs font-extrabold sb-title">
+                  What you get
+                </div>
                 <ul className="mt-2 grid gap-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
                   <li>
-                    <span className="font-semibold text-[color:var(--sb-fg)]">One calm pulse</span>{" "}
-                    each morning: what changed, why it matters, and what to do next.
+                    <span className="font-semibold text-[color:var(--sb-fg)]">
+                      One calm pulse
+                    </span>{" "}
+                    each morning: what changed, why it matters, and what to do
+                    next.
                   </li>
                   <li>
-                    <span className="font-semibold text-[color:var(--sb-fg)]">Citations by default</span>{" "}
+                    <span className="font-semibold text-[color:var(--sb-fg)]">
+                      Citations by default
+                    </span>{" "}
                     so you can verify quickly and move on.
                   </li>
                   <li>
-                    <span className="font-semibold text-[color:var(--sb-fg)]">Context-aware</span>{" "}
-                    with goals and pinned announcements to keep your team aligned.
+                    <span className="font-semibold text-[color:var(--sb-fg)]">
+                      Context-aware
+                    </span>{" "}
+                    with goals and pinned announcements to keep your team
+                    aligned.
                   </li>
                 </ul>
               </div>
@@ -102,7 +124,10 @@ export default async function LoginPage({
 
             <p className="mt-6 text-xs text-[color:var(--sb-muted)] leading-relaxed max-w-prose">
               Tip: if you don’t see the code, check spam or search for{" "}
-              <span className="font-semibold text-[color:var(--sb-fg)]">Starbeam</span>.
+              <span className="font-semibold text-[color:var(--sb-fg)]">
+                Starbeam
+              </span>
+              .
             </p>
           </div>
         </section>
@@ -166,7 +191,10 @@ export default async function LoginPage({
               </div>
 
               <div className="mt-8 flex flex-wrap gap-3 text-sm">
-                <a href={siteOrigin()} className="text-[color:var(--sb-muted)] hover:underline">
+                <a
+                  href={siteOrigin()}
+                  className="text-[color:var(--sb-muted)] hover:underline"
+                >
                   Learn more
                 </a>
               </div>

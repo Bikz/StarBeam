@@ -16,7 +16,11 @@ export default function SearchParamToasts() {
     let changed = false;
 
     if (params.get("queued") === "1") {
-      push({ kind: "success", title: "Queued", message: "Nightly run queued." });
+      push({
+        kind: "success",
+        title: "Queued",
+        message: "Nightly run queued.",
+      });
       params.delete("queued");
       changed = true;
     }
@@ -35,4 +39,3 @@ export default function SearchParamToasts() {
 
   return null;
 }
-

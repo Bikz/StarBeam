@@ -84,8 +84,8 @@ export default async function Home({
                   </h1>
                   <p className="mt-4 text-[color:var(--sb-muted)] text-lg leading-relaxed max-w-xl">
                     Set context once. Starbeam runs overnight and delivers a
-                    calm, cited pulse: what changed, why it matters, and what
-                    to do next.
+                    calm, cited pulse: what changed, why it matters, and what to
+                    do next.
                   </p>
 
                   <form
@@ -273,7 +273,11 @@ export default async function Home({
           {/* Home-only promo CTA lives in the footer. */}
         </main>
 
-        <SiteFooter appOrigin={app} supportEmail={email} homePromo={{ ctaHref: "#waitlist" }} />
+        <SiteFooter
+          appOrigin={app}
+          supportEmail={email}
+          homePromo={{ ctaHref: "#waitlist" }}
+        />
       </div>
     </div>
   );

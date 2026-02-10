@@ -12,10 +12,15 @@ import { isAdminEmail } from "@/lib/admin";
 export default async function BetaKeysAdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ created?: string; error?: string; disabled?: string }>;
+  searchParams: Promise<{
+    created?: string;
+    error?: string;
+    disabled?: string;
+  }>;
 }) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.email || !isAdminEmail(session.user.email)) redirect("/login");
+  if (!session?.user?.email || !isAdminEmail(session.user.email))
+    redirect("/login");
 
   const sp = await searchParams;
   const created = sp.created ? String(sp.created) : "";
@@ -40,8 +45,8 @@ export default async function BetaKeysAdminPage({
         <div className="sb-card p-8">
           <div className="sb-title text-2xl">Beta keys</div>
           <p className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
-            Generate multi-use invite keys for private beta access. Keep the plaintext code out of
-            logs and screenshots.
+            Generate multi-use invite keys for private beta access. Keep the
+            plaintext code out of logs and screenshots.
           </p>
 
           {created ? (
@@ -63,7 +68,10 @@ export default async function BetaKeysAdminPage({
 
           <div className="mt-8 sb-card-inset p-6">
             <div className="sb-title text-lg">Create key</div>
-            <form action={createBetaKey} className="mt-4 grid gap-3 sm:grid-cols-3">
+            <form
+              action={createBetaKey}
+              className="mt-4 grid gap-3 sm:grid-cols-3"
+            >
               <label className="grid gap-2 sm:col-span-2">
                 <div className="text-xs font-extrabold sb-title">Label</div>
                 <input
@@ -83,7 +91,9 @@ export default async function BetaKeysAdminPage({
                 />
               </label>
               <label className="grid gap-2 sm:col-span-2">
-                <div className="text-xs font-extrabold sb-title">Valid days (0 = no expiry)</div>
+                <div className="text-xs font-extrabold sb-title">
+                  Valid days (0 = no expiry)
+                </div>
                 <input
                   name="validDays"
                   type="number"
@@ -109,14 +119,18 @@ export default async function BetaKeysAdminPage({
           <div className="mt-8">
             <div className="text-xs font-extrabold sb-title">Recent keys</div>
             {keys.length === 0 ? (
-              <div className="mt-2 text-sm text-[color:var(--sb-muted)]">No keys yet.</div>
+              <div className="mt-2 text-sm text-[color:var(--sb-muted)]">
+                No keys yet.
+              </div>
             ) : (
               <div className="mt-3 grid gap-2">
                 {keys.map((k) => {
                   const used = usedByKey.get(k.id) ?? 0;
                   const exhausted = used >= k.maxUses;
                   const disabled = Boolean(k.disabledAt);
-                  const expired = Boolean(k.expiresAt && k.expiresAt <= new Date());
+                  const expired = Boolean(
+                    k.expiresAt && k.expiresAt <= new Date(),
+                  );
 
                   const status = disabled
                     ? "disabled"
@@ -127,10 +141,7 @@ export default async function BetaKeysAdminPage({
                         : "active";
 
                   return (
-                    <div
-                      key={k.id}
-                      className="sb-card-inset px-4 py-3 text-sm"
-                    >
+                    <div key={k.id} className="sb-card-inset px-4 py-3 text-sm">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="font-semibold text-[color:var(--sb-fg)]">
                           {k.label || "Untitled"}
@@ -139,7 +150,9 @@ export default async function BetaKeysAdminPage({
                       </div>
                       <div className="mt-1 text-xs text-[color:var(--sb-muted)]">
                         Uses: {used}/{k.maxUses}
-                        {k.expiresAt ? ` · Expires: ${k.expiresAt.toISOString()}` : ""}
+                        {k.expiresAt
+                          ? ` · Expires: ${k.expiresAt.toISOString()}`
+                          : ""}
                       </div>
                       <div className="mt-3 flex gap-2">
                         <Link

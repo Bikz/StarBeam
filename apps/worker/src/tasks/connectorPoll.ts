@@ -2,9 +2,18 @@ import { prisma } from "@starbeam/db";
 import { z } from "zod";
 
 import { syncGoogleConnection, generateFocusTasks } from "../lib/google/sync";
-import { isAuthRevoked as isGitHubAuthRevoked, syncGitHubConnection } from "../lib/integrations/github";
-import { isAuthRevoked as isLinearAuthRevoked, syncLinearConnection } from "../lib/integrations/linear";
-import { isAuthRevoked as isNotionAuthRevoked, syncNotionConnection } from "../lib/integrations/notion";
+import {
+  isAuthRevoked as isGitHubAuthRevoked,
+  syncGitHubConnection,
+} from "../lib/integrations/github";
+import {
+  isAuthRevoked as isLinearAuthRevoked,
+  syncLinearConnection,
+} from "../lib/integrations/linear";
+import {
+  isAuthRevoked as isNotionAuthRevoked,
+  syncNotionConnection,
+} from "../lib/integrations/notion";
 
 function isTruthyEnv(value: string | undefined): boolean {
   return ["1", "true", "yes"].includes((value ?? "").trim().toLowerCase());
@@ -29,110 +38,171 @@ function needsPoll(lastAt: Date | null | undefined, cutoff: Date): boolean {
   return lastAt.getTime() <= cutoff.getTime();
 }
 
-function googleLastSyncAt(syncState: {
-  lastGmailSyncAt: Date | null;
-  lastCalendarSyncAt: Date | null;
-  lastDriveSyncAt: Date | null;
-} | null): Date | null {
+function googleLastSyncAt(
+  syncState: {
+    lastGmailSyncAt: Date | null;
+    lastCalendarSyncAt: Date | null;
+    lastDriveSyncAt: Date | null;
+  } | null,
+): Date | null {
   if (!syncState) return null;
-  const candidates = [syncState.lastGmailSyncAt, syncState.lastCalendarSyncAt, syncState.lastDriveSyncAt].filter(
-    (d): d is Date => d instanceof Date,
-  );
+  const candidates = [
+    syncState.lastGmailSyncAt,
+    syncState.lastCalendarSyncAt,
+    syncState.lastDriveSyncAt,
+  ].filter((d): d is Date => d instanceof Date);
   if (!candidates.length) return null;
   return candidates.reduce((a, b) => (a.getTime() > b.getTime() ? a : b));
 }
 
 function isGoogleAuthRevoked(err: unknown): boolean {
   const msg = err instanceof Error ? err.message : String(err);
-  return msg.includes("invalid_grant") || msg.includes("reconnect required") || msg.includes("refresh token missing");
+  return (
+    msg.includes("invalid_grant") ||
+    msg.includes("reconnect required") ||
+    msg.includes("refresh token missing")
+  );
 }
 
-async function pollForUserInWorkspace(args: { workspaceId: string; userId: string; cutoff: Date }) {
-  const [googleConnections, githubConnections, linearConnections, notionConnections] =
-    await Promise.all([
-      prisma.googleConnection.findMany({
-        where: {
-          workspaceId: args.workspaceId,
-          ownerUserId: args.userId,
-          status: { in: ["CONNECTED", "ERROR"] },
+async function pollForUserInWorkspace(args: {
+  workspaceId: string;
+  userId: string;
+  cutoff: Date;
+}) {
+  const [
+    googleConnections,
+    githubConnections,
+    linearConnections,
+    notionConnections,
+  ] = await Promise.all([
+    prisma.googleConnection.findMany({
+      where: {
+        workspaceId: args.workspaceId,
+        ownerUserId: args.userId,
+        status: { in: ["CONNECTED", "ERROR"] },
+      },
+      include: {
+        syncState: {
+          select: {
+            lastGmailSyncAt: true,
+            lastCalendarSyncAt: true,
+            lastDriveSyncAt: true,
+          },
         },
-        include: {
-          syncState: { select: { lastGmailSyncAt: true, lastCalendarSyncAt: true, lastDriveSyncAt: true } },
-        },
-        orderBy: { updatedAt: "asc" },
-      }),
-      prisma.gitHubConnection.findMany({
-        where: {
-          workspaceId: args.workspaceId,
-          ownerUserId: args.userId,
-          status: { in: ["CONNECTED", "ERROR"] },
-        },
-        select: { id: true, githubLogin: true, repoSelectionMode: true, selectedRepoFullNames: true, lastSyncedAt: true },
-        orderBy: { updatedAt: "asc" },
-      }),
-      prisma.linearConnection.findMany({
-        where: {
-          workspaceId: args.workspaceId,
-          ownerUserId: args.userId,
-          status: { in: ["CONNECTED", "ERROR"] },
-        },
-        select: { id: true, linearUserEmail: true, lastSyncedAt: true },
-        orderBy: { updatedAt: "asc" },
-      }),
-      prisma.notionConnection.findMany({
-        where: {
-          workspaceId: args.workspaceId,
-          ownerUserId: args.userId,
-          status: { in: ["CONNECTED", "ERROR"] },
-        },
-        select: { id: true, notionWorkspaceName: true, lastSyncedAt: true },
-        orderBy: { updatedAt: "asc" },
-      }),
-    ]);
+      },
+      orderBy: { updatedAt: "asc" },
+    }),
+    prisma.gitHubConnection.findMany({
+      where: {
+        workspaceId: args.workspaceId,
+        ownerUserId: args.userId,
+        status: { in: ["CONNECTED", "ERROR"] },
+      },
+      select: {
+        id: true,
+        githubLogin: true,
+        repoSelectionMode: true,
+        selectedRepoFullNames: true,
+        lastSyncedAt: true,
+      },
+      orderBy: { updatedAt: "asc" },
+    }),
+    prisma.linearConnection.findMany({
+      where: {
+        workspaceId: args.workspaceId,
+        ownerUserId: args.userId,
+        status: { in: ["CONNECTED", "ERROR"] },
+      },
+      select: { id: true, linearUserEmail: true, lastSyncedAt: true },
+      orderBy: { updatedAt: "asc" },
+    }),
+    prisma.notionConnection.findMany({
+      where: {
+        workspaceId: args.workspaceId,
+        ownerUserId: args.userId,
+        status: { in: ["CONNECTED", "ERROR"] },
+      },
+      select: { id: true, notionWorkspaceName: true, lastSyncedAt: true },
+      orderBy: { updatedAt: "asc" },
+    }),
+  ]);
 
   for (const c of googleConnections) {
     const last = googleLastSyncAt(c.syncState);
     if (!needsPoll(last, args.cutoff)) continue;
 
     try {
-      await syncGoogleConnection({ workspaceId: args.workspaceId, userId: args.userId, connectionId: c.id });
-      await prisma.googleConnection.update({ where: { id: c.id }, data: { status: "CONNECTED" } }).catch(() => undefined);
-      await generateFocusTasks({ workspaceId: args.workspaceId, userId: args.userId }).catch(() => undefined);
+      await syncGoogleConnection({
+        workspaceId: args.workspaceId,
+        userId: args.userId,
+        connectionId: c.id,
+      });
+      await prisma.googleConnection
+        .update({ where: { id: c.id }, data: { status: "CONNECTED" } })
+        .catch(() => undefined);
+      await generateFocusTasks({
+        workspaceId: args.workspaceId,
+        userId: args.userId,
+      }).catch(() => undefined);
     } catch (err) {
       const status = isGoogleAuthRevoked(err) ? "REVOKED" : "ERROR";
-      await prisma.googleConnection.update({ where: { id: c.id }, data: { status } }).catch(() => undefined);
+      await prisma.googleConnection
+        .update({ where: { id: c.id }, data: { status } })
+        .catch(() => undefined);
     }
   }
 
   for (const c of githubConnections) {
     if (!needsPoll(c.lastSyncedAt, args.cutoff)) continue;
-    if (c.repoSelectionMode === "SELECTED" && (c.selectedRepoFullNames ?? []).filter(Boolean).length === 0) continue;
+    if (
+      c.repoSelectionMode === "SELECTED" &&
+      (c.selectedRepoFullNames ?? []).filter(Boolean).length === 0
+    )
+      continue;
 
     try {
-      await syncGitHubConnection({ workspaceId: args.workspaceId, userId: args.userId, connectionId: c.id });
+      await syncGitHubConnection({
+        workspaceId: args.workspaceId,
+        userId: args.userId,
+        connectionId: c.id,
+      });
     } catch (err) {
       const status = isGitHubAuthRevoked(err) ? "REVOKED" : "ERROR";
-      await prisma.gitHubConnection.update({ where: { id: c.id }, data: { status } }).catch(() => undefined);
+      await prisma.gitHubConnection
+        .update({ where: { id: c.id }, data: { status } })
+        .catch(() => undefined);
     }
   }
 
   for (const c of linearConnections) {
     if (!needsPoll(c.lastSyncedAt, args.cutoff)) continue;
     try {
-      await syncLinearConnection({ workspaceId: args.workspaceId, userId: args.userId, connectionId: c.id });
+      await syncLinearConnection({
+        workspaceId: args.workspaceId,
+        userId: args.userId,
+        connectionId: c.id,
+      });
     } catch (err) {
       const status = isLinearAuthRevoked(err) ? "REVOKED" : "ERROR";
-      await prisma.linearConnection.update({ where: { id: c.id }, data: { status } }).catch(() => undefined);
+      await prisma.linearConnection
+        .update({ where: { id: c.id }, data: { status } })
+        .catch(() => undefined);
     }
   }
 
   for (const c of notionConnections) {
     if (!needsPoll(c.lastSyncedAt, args.cutoff)) continue;
     try {
-      await syncNotionConnection({ workspaceId: args.workspaceId, userId: args.userId, connectionId: c.id });
+      await syncNotionConnection({
+        workspaceId: args.workspaceId,
+        userId: args.userId,
+        connectionId: c.id,
+      });
     } catch (err) {
       const status = isNotionAuthRevoked(err) ? "REVOKED" : "ERROR";
-      await prisma.notionConnection.update({ where: { id: c.id }, data: { status } }).catch(() => undefined);
+      await prisma.notionConnection
+        .update({ where: { id: c.id }, data: { status } })
+        .catch(() => undefined);
     }
   }
 }
@@ -163,19 +233,28 @@ export async function connector_poll() {
       take: batch,
     }),
     prisma.gitHubConnection.findMany({
-      where: { status: { in: ["CONNECTED", "ERROR"] }, OR: [{ lastSyncedAt: null }, { lastSyncedAt: { lte: cutoff } }] },
+      where: {
+        status: { in: ["CONNECTED", "ERROR"] },
+        OR: [{ lastSyncedAt: null }, { lastSyncedAt: { lte: cutoff } }],
+      },
       select: { workspaceId: true, ownerUserId: true },
       orderBy: [{ lastSyncedAt: "asc" }, { updatedAt: "asc" }],
       take: batch,
     }),
     prisma.linearConnection.findMany({
-      where: { status: { in: ["CONNECTED", "ERROR"] }, OR: [{ lastSyncedAt: null }, { lastSyncedAt: { lte: cutoff } }] },
+      where: {
+        status: { in: ["CONNECTED", "ERROR"] },
+        OR: [{ lastSyncedAt: null }, { lastSyncedAt: { lte: cutoff } }],
+      },
       select: { workspaceId: true, ownerUserId: true },
       orderBy: [{ lastSyncedAt: "asc" }, { updatedAt: "asc" }],
       take: batch,
     }),
     prisma.notionConnection.findMany({
-      where: { status: { in: ["CONNECTED", "ERROR"] }, OR: [{ lastSyncedAt: null }, { lastSyncedAt: { lte: cutoff } }] },
+      where: {
+        status: { in: ["CONNECTED", "ERROR"] },
+        OR: [{ lastSyncedAt: null }, { lastSyncedAt: { lte: cutoff } }],
+      },
       select: { workspaceId: true, ownerUserId: true },
       orderBy: [{ lastSyncedAt: "asc" }, { updatedAt: "asc" }],
       take: batch,
@@ -189,7 +268,11 @@ export async function connector_poll() {
 
   const list = Array.from(pairs.values()).slice(0, batch);
   for (const p of list) {
-    await pollForUserInWorkspace({ workspaceId: p.workspaceId, userId: p.userId, cutoff });
+    await pollForUserInWorkspace({
+      workspaceId: p.workspaceId,
+      userId: p.userId,
+      cutoff,
+    });
   }
 }
 
@@ -212,4 +295,3 @@ export async function connector_poll_one(payload: unknown) {
     cutoff,
   });
 }
-

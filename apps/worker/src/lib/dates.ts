@@ -1,5 +1,7 @@
 export function startOfDayUtc(d: Date): Date {
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  return new Date(
+    Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()),
+  );
 }
 
 export function isValidIanaTimeZone(tz: string): boolean {
@@ -35,7 +37,11 @@ export function startOfDayKeyUtcForTimeZone(d: Date, tz: string): Date {
   const year = Number(parts.find((p) => p.type === "year")?.value ?? "1970");
   const month = Number(parts.find((p) => p.type === "month")?.value ?? "01");
   const day = Number(parts.find((p) => p.type === "day")?.value ?? "01");
-  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
+  if (
+    !Number.isFinite(year) ||
+    !Number.isFinite(month) ||
+    !Number.isFinite(day)
+  ) {
     return startOfDayUtc(d);
   }
   return new Date(Date.UTC(year, month - 1, day));

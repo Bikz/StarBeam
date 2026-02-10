@@ -33,4 +33,3 @@ export async function fetchJson<T>(args: {
     throw new Error(`${args.label} returned invalid JSON: ${msg}`);
   }
 }
-

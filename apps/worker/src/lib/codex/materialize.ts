@@ -64,7 +64,9 @@ export async function materializeWorkspaceContextForCodex(args: {
   cleanup: () => Promise<void>;
   departmentNameToId: Map<string, string>;
 }> {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "starbeam-codex-context-"));
+  const dir = await fs.mkdtemp(
+    path.join(os.tmpdir(), "starbeam-codex-context-"),
+  );
 
   const cleanup = async () => {
     await fs.rm(dir, { recursive: true, force: true });
@@ -136,7 +138,10 @@ export async function materializeWorkspaceContextForCodex(args: {
 
   if (baseBlob) {
     try {
-      const { plaintext } = await getDecryptedObject({ bucket: baseBlob.bucket, key: baseBlob.key });
+      const { plaintext } = await getDecryptedObject({
+        bucket: baseBlob.bucket,
+        key: baseBlob.key,
+      });
       const date = extractDateFromKey(baseBlob.key) ?? "latest";
       await fs.writeFile(path.join(memoryDir, "base", `${date}.md`), plaintext);
     } catch {
@@ -146,10 +151,16 @@ export async function materializeWorkspaceContextForCodex(args: {
 
   for (const b of dailyBlobs) {
     try {
-      const { plaintext } = await getDecryptedObject({ bucket: b.bucket, key: b.key });
+      const { plaintext } = await getDecryptedObject({
+        bucket: b.bucket,
+        key: b.key,
+      });
       const date = extractDateFromKey(b.key);
       if (!date) continue;
-      await fs.writeFile(path.join(memoryDir, "daily", `${date}.md`), plaintext);
+      await fs.writeFile(
+        path.join(memoryDir, "daily", `${date}.md`),
+        plaintext,
+      );
     } catch {
       // Ignore missing/unreadable memory blobs.
     }
@@ -166,7 +177,13 @@ export async function materializeWorkspaceContextForCodex(args: {
     },
     include: {
       contentBlob: {
-        select: { bucket: true, key: true, contentType: true, sizeBytes: true, sha256: true },
+        select: {
+          bucket: true,
+          key: true,
+          contentType: true,
+          sizeBytes: true,
+          sha256: true,
+        },
       },
     },
     orderBy: { occurredAt: "desc" },
@@ -215,7 +232,9 @@ export async function materializeWorkspaceContextForCodex(args: {
   for (const si of sourceItems) {
     const materializedBlobPath = blobPathBySourceItemId.get(si.id) ?? null;
     const contentText =
-      typeof si.contentText === "string" ? si.contentText.trim().slice(0, 12_000) : null;
+      typeof si.contentText === "string"
+        ? si.contentText.trim().slice(0, 12_000)
+        : null;
 
     lines.push(
       JSON.stringify({

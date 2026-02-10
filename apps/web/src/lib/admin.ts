@@ -1,5 +1,6 @@
 export function isAdminEmail(email: string | null | undefined): boolean {
-  const raw = process.env.STARB_ADMIN_EMAILS ?? process.env.BETA_ADMIN_EMAILS ?? "";
+  const raw =
+    process.env.STARB_ADMIN_EMAILS ?? process.env.BETA_ADMIN_EMAILS ?? "";
   const allowed = raw
     .split(",")
     .map((s) => s.trim().toLowerCase())

@@ -11,7 +11,10 @@ import UiModeToggle from "@/components/ui-mode-toggle";
 import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
 import { siteOrigin } from "@/lib/siteOrigin";
-import { startGoogleConnect, disconnectGoogleConnection } from "@/app/(portal)/w/[slug]/integrations/googleActions";
+import {
+  startGoogleConnect,
+  disconnectGoogleConnection,
+} from "@/app/(portal)/w/[slug]/integrations/googleActions";
 
 function canManage(role: string): boolean {
   return role === "ADMIN" || role === "MANAGER";
@@ -53,34 +56,60 @@ export default async function SettingsPage({
   const dl = `${siteOrigin()}/download`;
   const isAdmin = isAdminEmail(session.user.email);
 
-  const [edition, googleConnections, deviceTokens, bootstrapJobRun, autoFirstJobRun] =
-    await Promise.all([
-      prisma.pulseEdition.findFirst({
-        where: { workspaceId: membership.workspace.id, userId: session.user.id },
-        select: { id: true },
-      }),
-      prisma.googleConnection.findMany({
-        where: { workspaceId: membership.workspace.id, ownerUserId: session.user.id },
-        select: { id: true, googleAccountEmail: true, status: true, scopes: true, createdAt: true },
-        orderBy: { createdAt: "desc" },
-        take: 3,
-      }),
-      prisma.apiRefreshToken.count({
-        where: {
-          userId: session.user.id,
-          revokedAt: null,
-          expiresAt: { gt: new Date() },
-        },
-      }),
-      prisma.jobRun.findUnique({
-        where: { id: `bootstrap:${membership.workspace.id}:${session.user.id}` },
-        select: { status: true, errorSummary: true, createdAt: true, startedAt: true, finishedAt: true },
-      }),
-      prisma.jobRun.findUnique({
-        where: { id: `auto-first:${membership.workspace.id}:${session.user.id}` },
-        select: { status: true, errorSummary: true, createdAt: true, startedAt: true, finishedAt: true },
-      }),
-    ]);
+  const [
+    edition,
+    googleConnections,
+    deviceTokens,
+    bootstrapJobRun,
+    autoFirstJobRun,
+  ] = await Promise.all([
+    prisma.pulseEdition.findFirst({
+      where: { workspaceId: membership.workspace.id, userId: session.user.id },
+      select: { id: true },
+    }),
+    prisma.googleConnection.findMany({
+      where: {
+        workspaceId: membership.workspace.id,
+        ownerUserId: session.user.id,
+      },
+      select: {
+        id: true,
+        googleAccountEmail: true,
+        status: true,
+        scopes: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: "desc" },
+      take: 3,
+    }),
+    prisma.apiRefreshToken.count({
+      where: {
+        userId: session.user.id,
+        revokedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+    }),
+    prisma.jobRun.findUnique({
+      where: { id: `bootstrap:${membership.workspace.id}:${session.user.id}` },
+      select: {
+        status: true,
+        errorSummary: true,
+        createdAt: true,
+        startedAt: true,
+        finishedAt: true,
+      },
+    }),
+    prisma.jobRun.findUnique({
+      where: { id: `auto-first:${membership.workspace.id}:${session.user.id}` },
+      select: {
+        status: true,
+        errorSummary: true,
+        createdAt: true,
+        startedAt: true,
+        finishedAt: true,
+      },
+    }),
+  ]);
 
   // Backward-compat: older deployments stored bootstrap/auto-first as workspace-scoped ids.
   const [bootstrapJobRunCompat, autoFirstJobRunCompat] = await Promise.all([
@@ -88,20 +117,34 @@ export default async function SettingsPage({
       ? Promise.resolve(null)
       : prisma.jobRun.findUnique({
           where: { id: `bootstrap:${membership.workspace.id}` },
-          select: { status: true, errorSummary: true, createdAt: true, startedAt: true, finishedAt: true },
+          select: {
+            status: true,
+            errorSummary: true,
+            createdAt: true,
+            startedAt: true,
+            finishedAt: true,
+          },
         }),
     autoFirstJobRun
       ? Promise.resolve(null)
       : prisma.jobRun.findUnique({
           where: { id: `auto-first:${membership.workspace.id}` },
-          select: { status: true, errorSummary: true, createdAt: true, startedAt: true, finishedAt: true },
+          select: {
+            status: true,
+            errorSummary: true,
+            createdAt: true,
+            startedAt: true,
+            finishedAt: true,
+          },
         }),
   ]);
 
   const bootstrapRun = bootstrapJobRun ?? bootstrapJobRunCompat;
   const autoFirstRun = autoFirstJobRun ?? autoFirstJobRunCompat;
 
-  const googleConnected = googleConnections.some((c) => c.status === "CONNECTED");
+  const googleConnected = googleConnections.some(
+    (c) => c.status === "CONNECTED",
+  );
 
   return (
     <div className="grid gap-6">
@@ -114,9 +157,12 @@ export default async function SettingsPage({
         {!edition ? (
           <div className="mt-6 grid gap-4">
             <div className="sb-card-inset p-5">
-              <div className="sb-title text-lg font-extrabold">Get your first pulse</div>
+              <div className="sb-title text-lg font-extrabold">
+                Get your first pulse
+              </div>
               <div className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
-                Starbeam works best with real context, but you can generate a first pulse any time.
+                Starbeam works best with real context, but you can generate a
+                first pulse any time.
               </div>
 
               <div className="mt-5 grid gap-3">
@@ -126,7 +172,9 @@ export default async function SettingsPage({
                       <div className="text-xs font-semibold tracking-wide uppercase text-[color:var(--sb-muted)]">
                         Step 1
                       </div>
-                      <div className="sb-title text-base font-extrabold">Connect Google</div>
+                      <div className="sb-title text-base font-extrabold">
+                        Connect Google
+                      </div>
                       <div className="mt-1 text-sm text-[color:var(--sb-muted)]">
                         Status:{" "}
                         <span className="font-semibold text-[color:var(--sb-fg)]">
@@ -134,7 +182,12 @@ export default async function SettingsPage({
                         </span>
                       </div>
                     </div>
-                    <form action={startGoogleConnect.bind(null, membership.workspace.slug)}>
+                    <form
+                      action={startGoogleConnect.bind(
+                        null,
+                        membership.workspace.slug,
+                      )}
+                    >
                       <button
                         type="submit"
                         className={sbButtonClass({
@@ -142,7 +195,11 @@ export default async function SettingsPage({
                           className: "h-10 px-4 text-xs font-extrabold",
                         })}
                         disabled={!hasGoogleAuthEnv()}
-                        title={!hasGoogleAuthEnv() ? "Google OAuth not configured" : undefined}
+                        title={
+                          !hasGoogleAuthEnv()
+                            ? "Google OAuth not configured"
+                            : undefined
+                        }
                       >
                         Connect
                       </button>
@@ -150,7 +207,8 @@ export default async function SettingsPage({
                   </div>
                   {!hasGoogleAuthEnv() ? (
                     <div className="mt-2 text-xs text-[color:var(--sb-muted)]">
-                      Google OAuth is not configured yet. Set <code>GOOGLE_CLIENT_ID</code> and{" "}
+                      Google OAuth is not configured yet. Set{" "}
+                      <code>GOOGLE_CLIENT_ID</code> and{" "}
                       <code>GOOGLE_CLIENT_SECRET</code>.
                     </div>
                   ) : null}
@@ -162,26 +220,37 @@ export default async function SettingsPage({
                       <div className="text-xs font-semibold tracking-wide uppercase text-[color:var(--sb-muted)]">
                         Step 2
                       </div>
-                      <div className="sb-title text-base font-extrabold">Generate your first pulse</div>
+                      <div className="sb-title text-base font-extrabold">
+                        Generate your first pulse
+                      </div>
                       <div className="mt-1 text-sm text-[color:var(--sb-muted)]">
                         Bootstrap:{" "}
                         <span className="font-semibold text-[color:var(--sb-fg)]">
                           {statusLabel(bootstrapRun?.status)}
                         </span>{" "}
-                        <span aria-hidden>·</span>{" "}
-                        Run:{" "}
+                        <span aria-hidden>·</span> Run:{" "}
                         <span className="font-semibold text-[color:var(--sb-fg)]">
                           {statusLabel(autoFirstRun?.status)}
                         </span>
                       </div>
-                      {bootstrapRun?.errorSummary || autoFirstRun?.errorSummary ? (
+                      {bootstrapRun?.errorSummary ||
+                      autoFirstRun?.errorSummary ? (
                         <div className="mt-2 text-xs text-[color:var(--sb-muted)] whitespace-pre-wrap">
-                          {bootstrapRun?.errorSummary ? `Bootstrap error: ${bootstrapRun.errorSummary}\n` : ""}
-                          {autoFirstRun?.errorSummary ? `Run error: ${autoFirstRun.errorSummary}` : ""}
+                          {bootstrapRun?.errorSummary
+                            ? `Bootstrap error: ${bootstrapRun.errorSummary}\n`
+                            : ""}
+                          {autoFirstRun?.errorSummary
+                            ? `Run error: ${autoFirstRun.errorSummary}`
+                            : ""}
                         </div>
                       ) : null}
                     </div>
-                    <form action={generateFirstPulseNow.bind(null, membership.workspace.slug)}>
+                    <form
+                      action={generateFirstPulseNow.bind(
+                        null,
+                        membership.workspace.slug,
+                      )}
+                    >
                       <button
                         type="submit"
                         className={sbButtonClass({
@@ -201,9 +270,13 @@ export default async function SettingsPage({
                       <div className="text-xs font-semibold tracking-wide uppercase text-[color:var(--sb-muted)]">
                         Step 3
                       </div>
-                      <div className="sb-title text-base font-extrabold">Get it in your menu bar</div>
+                      <div className="sb-title text-base font-extrabold">
+                        Get it in your menu bar
+                      </div>
                       <div className="mt-1 text-sm text-[color:var(--sb-muted)]">
-                        {deviceTokens > 0 ? "macOS app signed in" : "not signed in yet"}
+                        {deviceTokens > 0
+                          ? "macOS app signed in"
+                          : "not signed in yet"}
                       </div>
                     </div>
                     <a
@@ -259,7 +332,12 @@ export default async function SettingsPage({
               </div>
 
               {googleConnections.length === 0 ? (
-                <form action={startGoogleConnect.bind(null, membership.workspace.slug)}>
+                <form
+                  action={startGoogleConnect.bind(
+                    null,
+                    membership.workspace.slug,
+                  )}
+                >
                   <button
                     type="submit"
                     className={sbButtonClass({
@@ -267,19 +345,23 @@ export default async function SettingsPage({
                       className: "h-11 px-5 text-sm font-extrabold",
                     })}
                     disabled={!hasGoogleAuthEnv()}
-                    title={!hasGoogleAuthEnv() ? "Google OAuth not configured" : undefined}
+                    title={
+                      !hasGoogleAuthEnv()
+                        ? "Google OAuth not configured"
+                        : undefined
+                    }
                   >
                     Connect Google
                   </button>
                 </form>
               ) : (
-                    <form
-                      action={disconnectGoogleConnection.bind(
-                        null,
-                        membership.workspace.slug,
-                        googleConnections[0]!.id,
-                      )}
-                    >
+                <form
+                  action={disconnectGoogleConnection.bind(
+                    null,
+                    membership.workspace.slug,
+                    googleConnections[0]!.id,
+                  )}
+                >
                   <button
                     type="submit"
                     className={sbButtonClass({
@@ -294,7 +376,8 @@ export default async function SettingsPage({
             </div>
 
             <div className="mt-4 text-xs text-[color:var(--sb-muted)] leading-relaxed">
-              Read-only in v0. Used for Focus and Calendar signals, plus context for better pulses.
+              Read-only in v0. Used for Focus and Calendar signals, plus context
+              for better pulses.
             </div>
           </div>
 
@@ -304,8 +387,8 @@ export default async function SettingsPage({
             </summary>
             <div className="mt-3 grid gap-3 text-sm text-[color:var(--sb-muted)] leading-relaxed">
               <div>
-                GitHub, Linear, and Notion connectors are available, but optional. Use them when you want tighter
-                context.
+                GitHub, Linear, and Notion connectors are available, but
+                optional. Use them when you want tighter context.
               </div>
               <div>
                 <Link
@@ -340,7 +423,9 @@ export default async function SettingsPage({
             </div>
           </Link>
           <Link href={`${base}/tracks`} className="sb-card-inset p-5">
-            <div className="sb-title text-base font-extrabold">Tracks and goals</div>
+            <div className="sb-title text-base font-extrabold">
+              Tracks and goals
+            </div>
             <div className="mt-1 text-sm text-[color:var(--sb-muted)]">
               Up to 5 active goals per track
             </div>
@@ -349,7 +434,9 @@ export default async function SettingsPage({
             </div>
           </Link>
           <Link href={`${base}/announcements`} className="sb-card-inset p-5">
-            <div className="sb-title text-base font-extrabold">Announcements</div>
+            <div className="sb-title text-base font-extrabold">
+              Announcements
+            </div>
             <div className="mt-1 text-sm text-[color:var(--sb-muted)]">
               Pinned notes that show up in pulses
             </div>
@@ -370,7 +457,8 @@ export default async function SettingsPage({
 
         {!manageable ? (
           <div className="mt-4 text-xs text-[color:var(--sb-muted)]">
-            Note: some context is manager/admin-only in v0. You can still connect your own tools and get personal pulses.
+            Note: some context is manager/admin-only in v0. You can still
+            connect your own tools and get personal pulses.
           </div>
         ) : null}
       </section>
@@ -385,7 +473,10 @@ export default async function SettingsPage({
           <UiModeToggle />
           <div className="text-xs text-[color:var(--sb-muted)] leading-relaxed">
             You can always return here via{" "}
-            <Link href={`${base}/settings`} className="underline underline-offset-2">
+            <Link
+              href={`${base}/settings`}
+              className="underline underline-offset-2"
+            >
               Settings
             </Link>
             .

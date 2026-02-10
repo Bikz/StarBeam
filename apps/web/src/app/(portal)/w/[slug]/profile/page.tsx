@@ -49,13 +49,13 @@ export default async function WorkspaceProfilePage({
               and department pulses.
             </p>
           </div>
-          {saved ? (
-            <div className="sb-pill">Saved</div>
-          ) : null}
+          {saved ? <div className="sb-pill">Saved</div> : null}
         </div>
 
         {!manageable ? (
-          <div className="mt-5 sb-alert">Only managers/admins can edit the profile in v0.</div>
+          <div className="mt-5 sb-alert">
+            Only managers/admins can edit the profile in v0.
+          </div>
         ) : null}
 
         <form
@@ -89,7 +89,9 @@ export default async function WorkspaceProfilePage({
           </label>
 
           <label className="grid gap-1 text-sm">
-            <span className="text-[color:var(--sb-muted)]">Competitors (domains)</span>
+            <span className="text-[color:var(--sb-muted)]">
+              Competitors (domains)
+            </span>
             <textarea
               name="competitorDomains"
               placeholder={"competitor-a.com\ncompetitor-b.com"}

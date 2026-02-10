@@ -50,9 +50,10 @@ export default function CopyPill({
   return (
     <button
       type="button"
-      className={["sb-kbd inline-flex items-center gap-2", className ?? ""].join(
-        " ",
-      )}
+      className={[
+        "sb-kbd inline-flex items-center gap-2",
+        className ?? "",
+      ].join(" ")}
       onClick={async () => {
         const ok = await copyText(value);
         setCopied(ok ? "ok" : "fail");
@@ -72,4 +73,3 @@ export default function CopyPill({
     </button>
   );
 }
-

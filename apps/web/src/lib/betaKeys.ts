@@ -16,4 +16,3 @@ export function generateBetaKeyCode(): string {
   // Shareable, URL-safe.
   return crypto.randomBytes(18).toString("base64url");
 }
-

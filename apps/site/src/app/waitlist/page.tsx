@@ -26,10 +26,15 @@ export default async function WaitlistPage({
         <main id="main" className="sb-card p-8">
           <div className="sb-title text-2xl">Join the waitlist</div>
           <p className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
-            Create your account with a 6-digit code. If you don’t have an invite yet, you’ll unlock via an invite key or 5 referrals.
+            Create your account with a 6-digit code. If you don’t have an invite
+            yet, you’ll unlock via an invite key or 5 referrals.
           </p>
 
-          <form action={`${app}/login`} method="GET" className="mt-6 grid gap-3">
+          <form
+            action={`${app}/login`}
+            method="GET"
+            className="mt-6 grid gap-3"
+          >
             <label className="grid gap-1 text-sm">
               <span className="text-[color:var(--sb-muted)]">Email</span>
               <input
@@ -68,7 +73,10 @@ export default async function WaitlistPage({
           ) : null}
 
           <div className="mt-8 flex flex-wrap gap-3 text-sm">
-            <Link href="/" className="text-[color:var(--sb-muted)] hover:underline">
+            <Link
+              href="/"
+              className="text-[color:var(--sb-muted)] hover:underline"
+            >
               ← Back to home
             </Link>
           </div>

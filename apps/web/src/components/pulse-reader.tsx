@@ -135,8 +135,14 @@ export default function PulseReader({
   edition: { editionDateIso: string; status: string };
   cards: PulseCard[];
 }) {
-  const editionDate = useMemo(() => new Date(edition.editionDateIso), [edition.editionDateIso]);
-  const doneKey = useMemo(() => storageKey(workspaceSlug, edition.editionDateIso), [workspaceSlug, edition.editionDateIso]);
+  const editionDate = useMemo(
+    () => new Date(edition.editionDateIso),
+    [edition.editionDateIso],
+  );
+  const doneKey = useMemo(
+    () => storageKey(workspaceSlug, edition.editionDateIso),
+    [workspaceSlug, edition.editionDateIso],
+  );
 
   const [done, setDone] = useState<Set<string>>(() => new Set());
   const { push } = useToast();
@@ -209,12 +215,15 @@ export default function PulseReader({
                         onClick={() => {
                           void navigator.clipboard
                             .writeText(copyText)
-                            .then(() => push({ kind: "success", title: "Copied" }))
+                            .then(() =>
+                              push({ kind: "success", title: "Copied" }),
+                            )
                             .catch(() =>
                               push({
                                 kind: "error",
                                 title: "Copy failed",
-                                message: "Your browser blocked clipboard access.",
+                                message:
+                                  "Your browser blocked clipboard access.",
                               }),
                             );
                         }}
@@ -241,7 +250,9 @@ export default function PulseReader({
                         className={sbButtonClass({
                           className: [
                             "h-9 w-9",
-                            isDone ? "border-black/15 dark:border-white/25" : "",
+                            isDone
+                              ? "border-black/15 dark:border-white/25"
+                              : "",
                           ].join(" "),
                         })}
                         aria-label={isDone ? "Mark not done" : "Mark done"}
@@ -307,7 +318,9 @@ export default function PulseReader({
                             >
                               <div className="flex items-center gap-2 min-w-0">
                                 <Favicon domain={domain} />
-                                <span className="sb-pill">{domain || "source"}</span>
+                                <span className="sb-pill">
+                                  {domain || "source"}
+                                </span>
                                 <span className="min-w-0 truncate font-semibold text-[color:var(--sb-fg)]">
                                   {title || s.url}
                                 </span>
@@ -333,11 +346,10 @@ export default function PulseReader({
       <aside className="sb-card p-7">
         <h2 className="sb-title text-xl font-extrabold">Reading mode</h2>
         <div className="mt-3 grid gap-3 text-sm text-[color:var(--sb-muted)] leading-relaxed">
+          <div>Treat this like an inbox. Mark cards done as you act.</div>
           <div>
-            Treat this like an inbox. Mark cards done as you act.
-          </div>
-          <div>
-            Open sources to verify quickly; copy cards into Slack, email, or docs.
+            Open sources to verify quickly; copy cards into Slack, email, or
+            docs.
           </div>
         </div>
       </aside>

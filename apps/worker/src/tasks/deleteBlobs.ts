@@ -23,4 +23,3 @@ export async function delete_blobs(payload: unknown): Promise<void> {
     await deleteObjectBestEffort({ bucket: b.bucket, key: b.key });
   }
 }
-

@@ -82,7 +82,10 @@ export function parseAccessToken(token: string): AccessTokenPayload {
   return payload;
 }
 
-export function mintRefreshToken(): { refreshToken: string; tokenHash: string } {
+export function mintRefreshToken(): {
+  refreshToken: string;
+  tokenHash: string;
+} {
   const refreshToken = base64url(crypto.randomBytes(32));
   const tokenHash = sha256Hex(refreshToken);
   return { refreshToken, tokenHash };

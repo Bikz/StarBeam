@@ -10,7 +10,9 @@ import { sha256Hex } from "@/lib/apiTokens";
 export async function approveDevice(code: string) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
-    redirect(`/login?callbackUrl=${encodeURIComponent(`/device?code=${code}`)}`);
+    redirect(
+      `/login?callbackUrl=${encodeURIComponent(`/device?code=${code}`)}`,
+    );
   }
 
   const deviceCode = (code ?? "").trim();

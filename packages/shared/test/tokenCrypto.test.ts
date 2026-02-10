@@ -29,7 +29,8 @@ test("tokenCrypto: encryptBytes/decryptBytes round trip", () => {
 test("tokenCrypto: parseAes256GcmKeyFromEnv validates key length", () => {
   const original = process.env.STARB_TOKEN_ENC_KEY_B64;
   try {
-    process.env.STARB_TOKEN_ENC_KEY_B64 = Buffer.from("short").toString("base64");
+    process.env.STARB_TOKEN_ENC_KEY_B64 =
+      Buffer.from("short").toString("base64");
     assert.throws(() => parseAes256GcmKeyFromEnv(), /32 bytes/);
   } finally {
     if (original === undefined) delete process.env.STARB_TOKEN_ENC_KEY_B64;

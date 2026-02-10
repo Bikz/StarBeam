@@ -4,10 +4,22 @@ import { prisma } from "@starbeam/db";
 import { persistCodexMemory } from "../lib/codex/memory";
 import { generatePulseCardsWithCodexExec } from "../lib/codex/pulse";
 import { generateFocusTasks, syncGoogleConnection } from "../lib/google/sync";
-import { isAuthRevoked as isGitHubAuthRevoked, syncGitHubConnection } from "../lib/integrations/github";
-import { isAuthRevoked as isLinearAuthRevoked, syncLinearConnection } from "../lib/integrations/linear";
-import { isAuthRevoked as isNotionAuthRevoked, syncNotionConnection } from "../lib/integrations/notion";
-import { buildDepartmentWebResearchPrompt, generateWebInsights } from "../lib/webResearch";
+import {
+  isAuthRevoked as isGitHubAuthRevoked,
+  syncGitHubConnection,
+} from "../lib/integrations/github";
+import {
+  isAuthRevoked as isLinearAuthRevoked,
+  syncLinearConnection,
+} from "../lib/integrations/linear";
+import {
+  isAuthRevoked as isNotionAuthRevoked,
+  syncNotionConnection,
+} from "../lib/integrations/notion";
+import {
+  buildDepartmentWebResearchPrompt,
+  generateWebInsights,
+} from "../lib/webResearch";
 
 export function toJsonCitations(
   citations: Array<{ url: string; title?: string }>,
@@ -30,9 +42,23 @@ export async function generateLegacyDepartmentWebResearchCards(args: {
   openaiApiKey: string;
   model: string;
   workspace: { name: string };
-  profile: { websiteUrl: string | null; description: string | null; competitorDomains: string[] } | null;
-  goals: Array<{ title: string; body: string | null; priority: string; departmentId: string | null }>;
-  departments: Array<{ id: string; name: string; promptTemplate: string; memberships: Array<{ userId: string }> }>;
+  profile: {
+    websiteUrl: string | null;
+    description: string | null;
+    competitorDomains: string[];
+  } | null;
+  goals: Array<{
+    title: string;
+    body: string | null;
+    priority: string;
+    departmentId: string | null;
+  }>;
+  departments: Array<{
+    id: string;
+    name: string;
+    promptTemplate: string;
+    memberships: Array<{ userId: string }>;
+  }>;
   onPartialError: (message: string) => void;
 }): Promise<
   Map<
@@ -107,7 +133,9 @@ export async function generateLegacyDepartmentWebResearchCards(args: {
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      args.onPartialError(`Web research failed for department ${dept.name}: ${msg}`);
+      args.onPartialError(
+        `Web research failed for department ${dept.name}: ${msg}`,
+      );
     }
   }
 
@@ -117,9 +145,24 @@ export async function generateLegacyDepartmentWebResearchCards(args: {
 export async function syncUserConnectorsAndMaybeCodex(args: {
   workspaceId: string;
   workspace: { id: string; name: string; slug: string };
-  profile: { websiteUrl: string | null; description: string | null; competitorDomains: string[] } | null;
-  goals: Array<{ id: string; title: string; body: string | null; priority: string; departmentId: string | null }>;
-  departments: Array<{ id: string; name: string; promptTemplate: string; memberships: Array<{ userId: string }> }>;
+  profile: {
+    websiteUrl: string | null;
+    description: string | null;
+    competitorDomains: string[];
+  } | null;
+  goals: Array<{
+    id: string;
+    title: string;
+    body: string | null;
+    priority: string;
+    departmentId: string | null;
+  }>;
+  departments: Array<{
+    id: string;
+    name: string;
+    promptTemplate: string;
+    memberships: Array<{ userId: string }>;
+  }>;
   userId: string;
   googleConnections: Array<{ id: string; email: string }>;
   githubConnections: Array<{ id: string; login: string }>;
@@ -131,10 +174,9 @@ export async function syncUserConnectorsAndMaybeCodex(args: {
   codexWebSearchEnabled: boolean;
   editionDate: Date;
   onPartialError: (message: string) => void;
-}): Promise<
-  | Awaited<ReturnType<typeof generatePulseCardsWithCodexExec>>
-  | null
-> {
+}): Promise<Awaited<
+  ReturnType<typeof generatePulseCardsWithCodexExec>
+> | null> {
   for (const c of args.googleConnections) {
     try {
       await syncGoogleConnection({
@@ -156,42 +198,63 @@ export async function syncUserConnectorsAndMaybeCodex(args: {
 
   for (const c of args.githubConnections) {
     try {
-      await syncGitHubConnection({ workspaceId: args.workspaceId, userId: args.userId, connectionId: c.id });
+      await syncGitHubConnection({
+        workspaceId: args.workspaceId,
+        userId: args.userId,
+        connectionId: c.id,
+      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       args.onPartialError(`GitHub sync failed for ${c.login}: ${msg}`);
       const status = isGitHubAuthRevoked(err) ? "REVOKED" : "ERROR";
-      await prisma.gitHubConnection.update({ where: { id: c.id }, data: { status } }).catch(() => undefined);
+      await prisma.gitHubConnection
+        .update({ where: { id: c.id }, data: { status } })
+        .catch(() => undefined);
     }
   }
 
   for (const c of args.linearConnections) {
     try {
-      await syncLinearConnection({ workspaceId: args.workspaceId, userId: args.userId, connectionId: c.id });
+      await syncLinearConnection({
+        workspaceId: args.workspaceId,
+        userId: args.userId,
+        connectionId: c.id,
+      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       const label = c.email ? c.email : "viewer";
       args.onPartialError(`Linear sync failed for ${label}: ${msg}`);
       const status = isLinearAuthRevoked(err) ? "REVOKED" : "ERROR";
-      await prisma.linearConnection.update({ where: { id: c.id }, data: { status } }).catch(() => undefined);
+      await prisma.linearConnection
+        .update({ where: { id: c.id }, data: { status } })
+        .catch(() => undefined);
     }
   }
 
   for (const c of args.notionConnections) {
     try {
-      await syncNotionConnection({ workspaceId: args.workspaceId, userId: args.userId, connectionId: c.id });
+      await syncNotionConnection({
+        workspaceId: args.workspaceId,
+        userId: args.userId,
+        connectionId: c.id,
+      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       const label = c.workspaceName ? c.workspaceName : "workspace";
       args.onPartialError(`Notion sync failed for ${label}: ${msg}`);
       const status = isNotionAuthRevoked(err) ? "REVOKED" : "ERROR";
-      await prisma.notionConnection.update({ where: { id: c.id }, data: { status } }).catch(() => undefined);
+      await prisma.notionConnection
+        .update({ where: { id: c.id }, data: { status } })
+        .catch(() => undefined);
     }
   }
 
   if (args.googleConnections.length) {
     try {
-      await generateFocusTasks({ workspaceId: args.workspaceId, userId: args.userId });
+      await generateFocusTasks({
+        workspaceId: args.workspaceId,
+        userId: args.userId,
+      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       args.onPartialError(`Focus task generation failed: ${msg}`);

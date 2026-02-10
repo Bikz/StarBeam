@@ -27,7 +27,8 @@ export const authOptions: NextAuthOptions = {
       // Note: when NextAuth uses JWT sessions, `user` is undefined and the ID
       // lives in `token.sub`.
       if (session.user) {
-        const id = user?.id ?? (typeof token?.sub === "string" ? token.sub : "");
+        const id =
+          user?.id ?? (typeof token?.sub === "string" ? token.sub : "");
         if (id) session.user.id = id;
       }
       return session;

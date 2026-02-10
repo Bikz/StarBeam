@@ -53,7 +53,8 @@ export default async function DevicePage({
       "This device code expired. Return to the Starbeam macOS app and start sign-in again.";
   } else if (req.status === "CONSUMED" || sp.done) {
     headline = "All set";
-    message = "Sign-in completed. You can close this tab and return to the app.";
+    message =
+      "Sign-in completed. You can close this tab and return to the app.";
   } else if (req.status === "APPROVED" || sp.approved) {
     if (req.approvedUserId && req.approvedUserId !== session.user.id) {
       headline = "Already approved";

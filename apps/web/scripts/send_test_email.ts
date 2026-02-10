@@ -16,8 +16,8 @@ function usage(): never {
       "  pnpm -C apps/web email:test -- --to you@example.com",
       "",
       "Optional:",
-      "  --subject \"Test\"",
-      "  --text \"Hello\"",
+      '  --subject "Test"',
+      '  --text "Hello"',
     ].join("\n"),
   );
   process.exit(2);

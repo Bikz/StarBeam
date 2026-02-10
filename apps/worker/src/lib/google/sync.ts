@@ -34,7 +34,10 @@ function isActionableSubject(subject: string): boolean {
 function extractFromDomain(fromHeader: string): string | null {
   const at = fromHeader.lastIndexOf("@");
   if (at === -1) return null;
-  const domain = fromHeader.slice(at + 1).replaceAll(/[>\s"].*$/g, "").trim();
+  const domain = fromHeader
+    .slice(at + 1)
+    .replaceAll(/[>\s"].*$/g, "")
+    .trim();
   if (!domain) return null;
   return domain.toLowerCase();
 }
@@ -43,13 +46,20 @@ export async function syncGoogleConnection(args: {
   workspaceId: string;
   userId: string;
   connectionId: string;
-}): Promise<{ gmailIngested: number; calendarIngested: number; driveIngested: number }> {
+}): Promise<{
+  gmailIngested: number;
+  calendarIngested: number;
+  driveIngested: number;
+}> {
   const connection = await prisma.googleConnection.findUnique({
     where: { id: args.connectionId },
     include: { syncState: true },
   });
   if (!connection) throw new Error("Google connection not found");
-  if (connection.workspaceId !== args.workspaceId || connection.ownerUserId !== args.userId) {
+  if (
+    connection.workspaceId !== args.workspaceId ||
+    connection.ownerUserId !== args.userId
+  ) {
     throw new Error("Google connection workspace/user mismatch");
   }
 
@@ -61,7 +71,8 @@ export async function syncGoogleConnection(args: {
 
   // Refresh access token if expired/missing.
   if (isExpired(connection.expiryAt)) {
-    if (!refreshToken) throw new Error("Google refresh token missing; reconnect required");
+    if (!refreshToken)
+      throw new Error("Google refresh token missing; reconnect required");
     const refreshed = await refreshGoogleAccessToken(refreshToken);
     accessToken = refreshed.accessToken;
 
@@ -109,12 +120,19 @@ export async function syncGoogleConnection(args: {
       const subject = headerValue(m, "Subject").trim() || "(no subject)";
       const from = headerValue(m, "From").trim();
       const fromDomain = extractFromDomain(from);
-      const isUnread = Array.isArray(m.labelIds) ? m.labelIds.includes("UNREAD") : false;
+      const isUnread = Array.isArray(m.labelIds)
+        ? m.labelIds.includes("UNREAD")
+        : false;
       const snippet =
-        typeof m.snippet === "string" && m.snippet.trim() ? m.snippet.trim() : null;
+        typeof m.snippet === "string" && m.snippet.trim()
+          ? m.snippet.trim()
+          : null;
 
-      const internalDateMs = typeof m.internalDate === "string" ? Number(m.internalDate) : NaN;
-      const occurredAt = Number.isFinite(internalDateMs) ? new Date(internalDateMs) : new Date();
+      const internalDateMs =
+        typeof m.internalDate === "string" ? Number(m.internalDate) : NaN;
+      const occurredAt = Number.isFinite(internalDateMs)
+        ? new Date(internalDateMs)
+        : new Date();
 
       const threadId = typeof m.threadId === "string" ? m.threadId : undefined;
       const url = threadId
@@ -146,7 +164,10 @@ export async function syncGoogleConnection(args: {
     .filter((x): x is NonNullable<typeof x> => x !== null);
 
   if (gmailData.length) {
-    await prisma.sourceItem.createMany({ data: gmailData, skipDuplicates: true });
+    await prisma.sourceItem.createMany({
+      data: gmailData,
+      skipDuplicates: true,
+    });
   }
 
   // Calendar: now -> next 7 days (cap 50).
@@ -169,7 +190,10 @@ export async function syncGoogleConnection(args: {
       if (!start) return null;
 
       const end = eventEnd(e);
-      const title = (typeof e.summary === "string" && e.summary.trim()) ? e.summary.trim() : "(untitled event)";
+      const title =
+        typeof e.summary === "string" && e.summary.trim()
+          ? e.summary.trim()
+          : "(untitled event)";
       const url = typeof e.htmlLink === "string" ? e.htmlLink : undefined;
       const snippet =
         typeof e.description === "string" && e.description.trim()
@@ -198,18 +222,23 @@ export async function syncGoogleConnection(args: {
     .filter((x): x is NonNullable<typeof x> => x !== null);
 
   if (calendarData.length) {
-    await prisma.sourceItem.createMany({ data: calendarData, skipDuplicates: true });
+    await prisma.sourceItem.createMany({
+      data: calendarData,
+      skipDuplicates: true,
+    });
   }
 
   // Drive: recently modified files (cap 20). Store content in the blob store so
   // background agents can reason over files without re-fetching from Google.
   let driveIngested = 0;
   const driveScope = "https://www.googleapis.com/auth/drive.readonly";
-  const hasDriveScope = Array.isArray(connection.scopes) && connection.scopes.includes(driveScope);
+  const hasDriveScope =
+    Array.isArray(connection.scopes) && connection.scopes.includes(driveScope);
 
   if (hasDriveScope) {
     const modifiedAfter =
-      connection.syncState?.lastDriveSyncAt ?? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      connection.syncState?.lastDriveSyncAt ??
+      new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const files = await listRecentlyModifiedFiles({
       accessToken,
       modifiedAfter,
@@ -225,7 +254,8 @@ export async function syncGoogleConnection(args: {
       let contentBlobId: string | null = null;
       let snippet: string | null = null;
 
-      const looksSmallEnough = typeof f.sizeBytes !== "number" || f.sizeBytes <= maxFileBytes;
+      const looksSmallEnough =
+        typeof f.sizeBytes !== "number" || f.sizeBytes <= maxFileBytes;
 
       if (looksSmallEnough) {
         try {
@@ -271,7 +301,12 @@ export async function syncGoogleConnection(args: {
 
             // Keep DB content light; store only a snippet for UI/triage. Full bytes are in blob store.
             const ct = (dl.contentType ?? "").toLowerCase();
-            if (ct.startsWith("text/") || ct.includes("json") || ct.includes("xml") || ct.includes("csv")) {
+            if (
+              ct.startsWith("text/") ||
+              ct.includes("json") ||
+              ct.includes("xml") ||
+              ct.includes("csv")
+            ) {
               const text = dl.bytes.toString("utf8").trim();
               if (text) snippet = text.slice(0, 280);
             }
@@ -339,11 +374,20 @@ export async function syncGoogleConnection(args: {
   }
 
   const syncNow = new Date();
-  const updateData: { lastGmailSyncAt: Date; lastCalendarSyncAt: Date; lastDriveSyncAt?: Date } = {
+  const updateData: {
+    lastGmailSyncAt: Date;
+    lastCalendarSyncAt: Date;
+    lastDriveSyncAt?: Date;
+  } = {
     lastGmailSyncAt: syncNow,
     lastCalendarSyncAt: syncNow,
   };
-  const createData: { connectionId: string; lastGmailSyncAt: Date; lastCalendarSyncAt: Date; lastDriveSyncAt?: Date } = {
+  const createData: {
+    connectionId: string;
+    lastGmailSyncAt: Date;
+    lastCalendarSyncAt: Date;
+    lastDriveSyncAt?: Date;
+  } = {
     connectionId: connection.id,
     lastGmailSyncAt: syncNow,
     lastCalendarSyncAt: syncNow,
@@ -371,7 +415,11 @@ export async function syncGoogleConnection(args: {
     },
   });
 
-  return { gmailIngested: gmailData.length, calendarIngested: calendarData.length, driveIngested };
+  return {
+    gmailIngested: gmailData.length,
+    calendarIngested: calendarData.length,
+    driveIngested,
+  };
 }
 
 export async function generateFocusTasks(args: {
@@ -449,6 +497,9 @@ export async function generateFocusTasks(args: {
 
   if (!tasks.length) return 0;
 
-  const created = await prisma.task.createMany({ data: tasks, skipDuplicates: true });
+  const created = await prisma.task.createMany({
+    data: tasks,
+    skipDuplicates: true,
+  });
   return created.count;
 }

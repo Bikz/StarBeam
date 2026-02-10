@@ -12,7 +12,12 @@ import { prisma } from "@starbeam/db";
 export default async function FeedbackPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sent?: string; error?: string; source?: string; path?: string }>;
+  searchParams: Promise<{
+    sent?: string;
+    error?: string;
+    source?: string;
+    path?: string;
+  }>;
 }) {
   const session = await getServerSession(authOptions);
   const sp = await searchParams;
@@ -41,7 +46,7 @@ export default async function FeedbackPage({
   })();
 
   const activeMembership = inferredSlug
-    ? memberships.find((m) => m.workspace.slug === inferredSlug) ?? null
+    ? (memberships.find((m) => m.workspace.slug === inferredSlug) ?? null)
     : null;
 
   return (
@@ -69,8 +74,8 @@ export default async function FeedbackPage({
             {sent ? "Thanks for the feedback" : "Send feedback"}
           </h2>
           <p className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
-            This is an early beta. Send the good, the bad, and the ideas. If you include steps to
-            reproduce, we can move much faster.
+            This is an early beta. Send the good, the bad, and the ideas. If you
+            include steps to reproduce, we can move much faster.
           </p>
 
           {sent ? (
@@ -78,7 +83,10 @@ export default async function FeedbackPage({
               <div className="sb-title text-lg font-extrabold">We got it.</div>
               <div className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
                 Thank you. If you think of anything else, you can{" "}
-                <Link href="/feedback" className="text-[color:var(--sb-fg)] hover:underline">
+                <Link
+                  href="/feedback"
+                  className="text-[color:var(--sb-fg)] hover:underline"
+                >
                   send more feedback
                 </Link>
                 .
@@ -114,36 +122,39 @@ export default async function FeedbackPage({
           ) : null}
 
           {sent ? null : (
-          <form action={submitFeedback} className="mt-6 grid gap-3">
-            <input type="hidden" name="source" value={source} />
-            <input type="hidden" name="path" value={path} />
-            <input type="hidden" name="userAgent" value={ua} />
+            <form action={submitFeedback} className="mt-6 grid gap-3">
+              <input type="hidden" name="source" value={source} />
+              <input type="hidden" name="path" value={path} />
+              <input type="hidden" name="userAgent" value={ua} />
 
-            <label className="grid gap-2">
-              <div className="text-xs font-extrabold sb-title">Message</div>
-              <textarea
-                name="message"
-                rows={6}
-                className="sb-textarea"
-                placeholder="What happened? What should happen? Any links or screenshots?"
-              />
-            </label>
+              <label className="grid gap-2">
+                <div className="text-xs font-extrabold sb-title">Message</div>
+                <textarea
+                  name="message"
+                  rows={6}
+                  className="sb-textarea"
+                  placeholder="What happened? What should happen? Any links or screenshots?"
+                />
+              </label>
 
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                type="submit"
-                className={sbButtonClass({
-                  variant: "primary",
-                  className: "h-11 px-6 text-sm font-extrabold",
-                })}
-              >
-                Send
-              </button>
-              <Link href="/dashboard" className="text-sm text-[color:var(--sb-muted)] hover:underline">
-                Back to dashboard
-              </Link>
-            </div>
-          </form>
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="submit"
+                  className={sbButtonClass({
+                    variant: "primary",
+                    className: "h-11 px-6 text-sm font-extrabold",
+                  })}
+                >
+                  Send
+                </button>
+                <Link
+                  href="/dashboard"
+                  className="text-sm text-[color:var(--sb-muted)] hover:underline"
+                >
+                  Back to dashboard
+                </Link>
+              </div>
+            </form>
           )}
         </div>
       </div>

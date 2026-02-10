@@ -33,4 +33,3 @@ export function sbButtonClass(opts?: {
 
   return cx(variantClass, sizeClass, opts?.className);
 }
-

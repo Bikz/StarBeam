@@ -57,7 +57,12 @@ export function parseSignedState(token: string): SignedState {
   const payloadJson = base64urlToBuffer(payloadB64).toString("utf8");
   const parsed = JSON.parse(payloadJson) as SignedState;
   if (parsed?.v !== 1) throw new Error("Invalid state version");
-  if (!parsed.userId || !parsed.workspaceId || !parsed.workspaceSlug || !parsed.nonce) {
+  if (
+    !parsed.userId ||
+    !parsed.workspaceId ||
+    !parsed.workspaceSlug ||
+    !parsed.nonce
+  ) {
     throw new Error("Invalid state payload");
   }
 

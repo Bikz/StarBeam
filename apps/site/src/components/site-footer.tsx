@@ -25,8 +25,8 @@ export default function SiteFooter({
                   Get the pulse in your menu bar.
                 </div>
                 <p className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed max-w-xl">
-                  A calm, cited pulse each morning: what changed, why it matters,
-                  and what to do next.
+                  A calm, cited pulse each morning: what changed, why it
+                  matters, and what to do next.
                 </p>
               </div>
               <a

@@ -66,7 +66,10 @@ export function encryptBytes(plaintext: Buffer, key: Buffer): Buffer {
 }
 
 export function decryptBytes(ciphertextEnc: Buffer, key: Buffer): Buffer {
-  if (ciphertextEnc.byteLength < BYTES_MAGIC.byteLength + BYTES_IV_LEN + BYTES_TAG_LEN + 1) {
+  if (
+    ciphertextEnc.byteLength <
+    BYTES_MAGIC.byteLength + BYTES_IV_LEN + BYTES_TAG_LEN + 1
+  ) {
     throw new Error("Invalid ciphertext format");
   }
 

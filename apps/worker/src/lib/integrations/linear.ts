@@ -38,7 +38,10 @@ function decryptToken(enc: string): string {
   return decryptString(enc, encKey());
 }
 
-function toSnippet(text: string | null | undefined, maxLen = 280): string | null {
+function toSnippet(
+  text: string | null | undefined,
+  maxLen = 280,
+): string | null {
   if (typeof text !== "string") return null;
   const t = text.trim();
   if (!t) return null;
@@ -65,7 +68,10 @@ async function linearGraphql<T>(args: {
         Authorization: `Bearer ${args.token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ query: args.query, variables: args.variables ?? {} }),
+      body: JSON.stringify({
+        query: args.query,
+        variables: args.variables ?? {},
+      }),
       cache: "no-store",
     },
     label: args.label,
@@ -89,7 +95,10 @@ export async function syncLinearConnection(args: {
     where: { id: args.connectionId },
   });
   if (!connection) throw new Error("Linear connection not found");
-  if (connection.workspaceId !== args.workspaceId || connection.ownerUserId !== args.userId) {
+  if (
+    connection.workspaceId !== args.workspaceId ||
+    connection.ownerUserId !== args.userId
+  ) {
     throw new Error("Linear connection workspace/user mismatch");
   }
 
@@ -134,14 +143,17 @@ export async function syncLinearConnection(args: {
     const occurredAt =
       parseDate(it.updatedAt) ?? parseDate(it.createdAt) ?? new Date();
 
-    const identifier = typeof it.identifier === "string" ? it.identifier.trim() : "";
+    const identifier =
+      typeof it.identifier === "string" ? it.identifier.trim() : "";
     const titleBase = (it.title ?? "").trim() || "(untitled)";
     const title = identifier ? `${identifier} ${titleBase}` : titleBase;
 
     const url = typeof it.url === "string" ? it.url : null;
     const snippet = toSnippet(it.description);
     const contentText =
-      typeof it.description === "string" ? it.description.trim().slice(0, 50_000) : null;
+      typeof it.description === "string"
+        ? it.description.trim().slice(0, 50_000)
+        : null;
 
     const metadata = {
       identifier: identifier || null,
@@ -224,4 +236,3 @@ export async function syncLinearConnection(args: {
 export function isAuthRevoked(err: unknown): boolean {
   return err instanceof HttpError && (err.status === 401 || err.status === 403);
 }
-

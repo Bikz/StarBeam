@@ -48,7 +48,10 @@ export function middleware(request: NextRequest) {
 
   if (reqHost === canonicalHost) return NextResponse.next();
 
-  const target = new URL(request.nextUrl.pathname + request.nextUrl.search, origin);
+  const target = new URL(
+    request.nextUrl.pathname + request.nextUrl.search,
+    origin,
+  );
   return NextResponse.redirect(target, 308);
 }
 

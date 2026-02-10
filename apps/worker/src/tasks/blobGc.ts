@@ -11,7 +11,10 @@ function parseIntEnv(name: string, fallback: number): number {
 
 export async function blob_gc(): Promise<void> {
   const graceDays = Math.max(1, parseIntEnv("STARB_BLOB_GC_GRACE_DAYS", 14));
-  const batch = Math.min(1000, Math.max(1, parseIntEnv("STARB_BLOB_GC_BATCH", 200)));
+  const batch = Math.min(
+    1000,
+    Math.max(1, parseIntEnv("STARB_BLOB_GC_BATCH", 200)),
+  );
 
   const now = new Date();
   const cutoff = new Date(now.getTime() - graceDays * 24 * 60 * 60 * 1000);
@@ -33,4 +36,3 @@ export async function blob_gc(): Promise<void> {
     await prisma.blob.delete({ where: { id: b.id } }).catch(() => undefined);
   }
 }
-

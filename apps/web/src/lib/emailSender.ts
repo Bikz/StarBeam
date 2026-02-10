@@ -14,7 +14,10 @@ export async function sendEmail(payload: EmailPayload): Promise<void> {
 
     const port = Number(process.env.SMTP_PORT ?? "587") || 587;
     const secure = String(process.env.SMTP_SECURE ?? "").toLowerCase();
-    const useSecure = secure === "1" || secure === "true" || (port === 465 && secure !== "false");
+    const useSecure =
+      secure === "1" ||
+      secure === "true" ||
+      (port === 465 && secure !== "false");
 
     const user = process.env.SMTP_USER ?? "";
     const pass = process.env.SMTP_PASS ?? "";

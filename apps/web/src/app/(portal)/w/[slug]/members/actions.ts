@@ -51,4 +51,3 @@ export async function createInvite(workspaceSlug: string, formData: FormData) {
 
   redirect(`/w/${workspaceSlug}/members?invite=${encodeURIComponent(token)}`);
 }
-

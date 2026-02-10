@@ -51,48 +51,64 @@ export async function nightly_workspace_run(payload: unknown) {
   try {
     const runAt = new Date();
 
-    const [workspace, initialProfile, memberships, initialGoals, announcements, departments] =
-      await Promise.all([
-        prisma.workspace.findUnique({
-          where: { id: workspaceId },
-          select: { id: true, name: true, slug: true },
-        }),
-        prisma.workspaceProfile.findUnique({
-          where: { workspaceId },
-          select: { websiteUrl: true, description: true, competitorDomains: true },
-        }),
-        prisma.membership.findMany({
-          where: { workspaceId },
-          select: { userId: true, user: { select: { timezone: true } } },
-        }),
-        prisma.goal.findMany({
-          where: { workspaceId, active: true },
-          select: { id: true, title: true, body: true, priority: true, departmentId: true },
-          orderBy: [{ priority: "asc" }, { createdAt: "desc" }],
-          take: 10,
-        }),
-        prisma.announcement.findMany({
-          where: { workspaceId, pinned: true },
-          select: {
-            id: true,
-            title: true,
-            body: true,
-            dismissals: { select: { userId: true } },
-          },
-          orderBy: { createdAt: "desc" },
-          take: 10,
-        }),
-        prisma.department.findMany({
-          where: { workspaceId, enabled: true },
-          select: {
-            id: true,
-            name: true,
-            promptTemplate: true,
-            memberships: { select: { userId: true } },
-          },
-          orderBy: { createdAt: "asc" },
-        }),
-      ]);
+    const [
+      workspace,
+      initialProfile,
+      memberships,
+      initialGoals,
+      announcements,
+      departments,
+    ] = await Promise.all([
+      prisma.workspace.findUnique({
+        where: { id: workspaceId },
+        select: { id: true, name: true, slug: true },
+      }),
+      prisma.workspaceProfile.findUnique({
+        where: { workspaceId },
+        select: {
+          websiteUrl: true,
+          description: true,
+          competitorDomains: true,
+        },
+      }),
+      prisma.membership.findMany({
+        where: { workspaceId },
+        select: { userId: true, user: { select: { timezone: true } } },
+      }),
+      prisma.goal.findMany({
+        where: { workspaceId, active: true },
+        select: {
+          id: true,
+          title: true,
+          body: true,
+          priority: true,
+          departmentId: true,
+        },
+        orderBy: [{ priority: "asc" }, { createdAt: "desc" }],
+        take: 10,
+      }),
+      prisma.announcement.findMany({
+        where: { workspaceId, pinned: true },
+        select: {
+          id: true,
+          title: true,
+          body: true,
+          dismissals: { select: { userId: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+      }),
+      prisma.department.findMany({
+        where: { workspaceId, enabled: true },
+        select: {
+          id: true,
+          name: true,
+          promptTemplate: true,
+          memberships: { select: { userId: true } },
+        },
+        orderBy: { createdAt: "asc" },
+      }),
+    ]);
 
     if (!workspace) throw new Error("Workspace not found");
 
@@ -100,7 +116,8 @@ export async function nightly_workspace_run(payload: unknown) {
     let goals = initialGoals;
 
     const membershipByUserId = new Map<string, { timezone: string }>();
-    for (const m of memberships) membershipByUserId.set(m.userId, { timezone: m.user.timezone });
+    for (const m of memberships)
+      membershipByUserId.set(m.userId, { timezone: m.user.timezone });
 
     const allMemberUserIds = memberships.map((m) => m.userId);
     const memberUserIds = targetUserId ? [targetUserId] : allMemberUserIds;
@@ -108,54 +125,64 @@ export async function nightly_workspace_run(payload: unknown) {
       throw new Error("Target user is not a workspace member");
     }
 
-    const [googleConnections, githubConnections, linearConnections, notionConnections] =
-      await Promise.all([
-        prisma.googleConnection.findMany({
-          where: {
-            workspaceId,
-            ownerUserId: { in: memberUserIds },
-            status: { in: ["CONNECTED", "ERROR"] },
-          },
-          select: { id: true, ownerUserId: true, googleAccountEmail: true },
-          orderBy: { createdAt: "desc" },
-        }),
-        prisma.gitHubConnection.findMany({
-          where: {
-            workspaceId,
-            ownerUserId: { in: memberUserIds },
-            status: { in: ["CONNECTED", "ERROR"] },
-          },
-          select: { id: true, ownerUserId: true, githubLogin: true },
-          orderBy: { createdAt: "desc" },
-        }),
-        prisma.linearConnection.findMany({
-          where: {
-            workspaceId,
-            ownerUserId: { in: memberUserIds },
-            status: { in: ["CONNECTED", "ERROR"] },
-          },
-          select: { id: true, ownerUserId: true, linearUserEmail: true },
-          orderBy: { createdAt: "desc" },
-        }),
-        prisma.notionConnection.findMany({
-          where: {
-            workspaceId,
-            ownerUserId: { in: memberUserIds },
-            status: { in: ["CONNECTED", "ERROR"] },
-          },
-          select: { id: true, ownerUserId: true, notionWorkspaceName: true },
-          orderBy: { createdAt: "desc" },
-        }),
-      ]);
+    const [
+      googleConnections,
+      githubConnections,
+      linearConnections,
+      notionConnections,
+    ] = await Promise.all([
+      prisma.googleConnection.findMany({
+        where: {
+          workspaceId,
+          ownerUserId: { in: memberUserIds },
+          status: { in: ["CONNECTED", "ERROR"] },
+        },
+        select: { id: true, ownerUserId: true, googleAccountEmail: true },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.gitHubConnection.findMany({
+        where: {
+          workspaceId,
+          ownerUserId: { in: memberUserIds },
+          status: { in: ["CONNECTED", "ERROR"] },
+        },
+        select: { id: true, ownerUserId: true, githubLogin: true },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.linearConnection.findMany({
+        where: {
+          workspaceId,
+          ownerUserId: { in: memberUserIds },
+          status: { in: ["CONNECTED", "ERROR"] },
+        },
+        select: { id: true, ownerUserId: true, linearUserEmail: true },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.notionConnection.findMany({
+        where: {
+          workspaceId,
+          ownerUserId: { in: memberUserIds },
+          status: { in: ["CONNECTED", "ERROR"] },
+        },
+        select: { id: true, ownerUserId: true, notionWorkspaceName: true },
+        orderBy: { createdAt: "desc" },
+      }),
+    ]);
 
-    const googleConnectionsByUser = new Map<string, Array<{ id: string; email: string }>>();
+    const googleConnectionsByUser = new Map<
+      string,
+      Array<{ id: string; email: string }>
+    >();
     for (const c of googleConnections) {
       const list = googleConnectionsByUser.get(c.ownerUserId) ?? [];
       list.push({ id: c.id, email: c.googleAccountEmail });
       googleConnectionsByUser.set(c.ownerUserId, list);
     }
 
-    const githubConnectionsByUser = new Map<string, Array<{ id: string; login: string }>>();
+    const githubConnectionsByUser = new Map<
+      string,
+      Array<{ id: string; login: string }>
+    >();
     for (const c of githubConnections) {
       const list = githubConnectionsByUser.get(c.ownerUserId) ?? [];
       list.push({ id: c.id, login: c.githubLogin });
@@ -187,10 +214,17 @@ export async function nightly_workspace_run(payload: unknown) {
 
     const codexExecEnabled = isTruthyEnv(process.env.STARB_CODEX_EXEC_ENABLED);
     const codexModel = process.env.STARB_CODEX_MODEL_DEFAULT ?? "gpt-5.2-codex";
-    const codexReasoningEffortRaw = (process.env.STARB_CODEX_REASONING_EFFORT ?? "medium")
+    const codexReasoningEffortRaw = (
+      process.env.STARB_CODEX_REASONING_EFFORT ?? "medium"
+    )
       .trim()
       .toLowerCase();
-    const codexReasoningEffort: "minimal" | "low" | "medium" | "high" | "xhigh" =
+    const codexReasoningEffort:
+      | "minimal"
+      | "low"
+      | "medium"
+      | "high"
+      | "xhigh" =
       codexReasoningEffortRaw === "minimal" ||
       codexReasoningEffortRaw === "low" ||
       codexReasoningEffortRaw === "high" ||
@@ -211,17 +245,21 @@ export async function nightly_workspace_run(payload: unknown) {
     // "Wow from day one": when running the first pulse (auto-first or explicit run),
     // try to auto-bootstrap a profile + starter goals to give Codex clearer direction.
     try {
-      const meta = typeof jobRun.meta === "object" && jobRun.meta ? jobRun.meta : null;
+      const meta =
+        typeof jobRun.meta === "object" && jobRun.meta ? jobRun.meta : null;
       const source =
-        meta && "source" in meta && typeof (meta as { source?: unknown }).source === "string"
+        meta &&
+        "source" in meta &&
+        typeof (meta as { source?: unknown }).source === "string"
           ? String((meta as { source: string }).source)
           : null;
       const triggeredByUserId =
         meta &&
         "triggeredByUserId" in meta &&
-        typeof (meta as { triggeredByUserId?: unknown }).triggeredByUserId === "string"
+        typeof (meta as { triggeredByUserId?: unknown }).triggeredByUserId ===
+          "string"
           ? String((meta as { triggeredByUserId: string }).triggeredByUserId)
-          : memberUserIds[0] ?? null;
+          : (memberUserIds[0] ?? null);
 
       const isFirstRunSource = source === "auto-first" || source === "web";
       const needsBootstrap = !profile || goals.length === 0;
@@ -242,11 +280,21 @@ export async function nightly_workspace_run(payload: unknown) {
         [profile, goals] = await Promise.all([
           prisma.workspaceProfile.findUnique({
             where: { workspaceId },
-            select: { websiteUrl: true, description: true, competitorDomains: true },
+            select: {
+              websiteUrl: true,
+              description: true,
+              competitorDomains: true,
+            },
           }),
           prisma.goal.findMany({
             where: { workspaceId, active: true },
-            select: { id: true, title: true, body: true, priority: true, departmentId: true },
+            select: {
+              id: true,
+              title: true,
+              body: true,
+              priority: true,
+              departmentId: true,
+            },
             orderBy: [{ priority: "asc" }, { createdAt: "desc" }],
             take: 10,
           }),
@@ -257,7 +305,9 @@ export async function nightly_workspace_run(payload: unknown) {
       onPartialError(`Workspace bootstrap failed: ${msg}`);
     }
 
-    const legacyOverride = (process.env.STARB_LEGACY_DEPT_WEB_RESEARCH_ENABLED ?? "")
+    const legacyOverride = (
+      process.env.STARB_LEGACY_DEPT_WEB_RESEARCH_ENABLED ?? ""
+    )
       .trim()
       .toLowerCase();
     const legacyDeptWebResearchEnabled = legacyOverride
@@ -289,7 +339,8 @@ export async function nightly_workspace_run(payload: unknown) {
     };
 
     for (const userId of memberUserIds) {
-      const tzRaw = (membershipByUserId.get(userId)?.timezone ?? "UTC").trim() || "UTC";
+      const tzRaw =
+        (membershipByUserId.get(userId)?.timezone ?? "UTC").trim() || "UTC";
       const timezone = isValidIanaTimeZone(tzRaw) ? tzRaw : "UTC";
       const editionDate = startOfDayKeyUtcForTimeZone(runAt, timezone);
 
@@ -316,8 +367,10 @@ export async function nightly_workspace_run(payload: unknown) {
         codexEstimates.runs += 1;
         codexEstimates.promptBytes += codexPulse.estimate.promptBytes;
         codexEstimates.contextBytes += codexPulse.estimate.contextBytes;
-        codexEstimates.approxInputTokens += codexPulse.estimate.approxInputTokens;
-        codexEstimates.approxOutputTokens += codexPulse.estimate.approxOutputTokens;
+        codexEstimates.approxInputTokens +=
+          codexPulse.estimate.approxInputTokens;
+        codexEstimates.approxOutputTokens +=
+          codexPulse.estimate.approxOutputTokens;
         codexEstimates.durationMs += codexPulse.estimate.durationMs;
       }
 
@@ -415,9 +468,10 @@ export async function nightly_workspace_run(payload: unknown) {
         for (const c of codexPulse.output.cards) {
           const mapped =
             c.department && codexPulse.departmentNameToId.has(c.department)
-              ? codexPulse.departmentNameToId.get(c.department) ?? null
+              ? (codexPulse.departmentNameToId.get(c.department) ?? null)
               : null;
-          const departmentId = mapped && memberDeptIds.has(mapped) ? mapped : null;
+          const departmentId =
+            mapped && memberDeptIds.has(mapped) ? mapped : null;
 
           if (c.kind === "WEB_RESEARCH") {
             cards.push({
@@ -441,7 +495,9 @@ export async function nightly_workspace_run(payload: unknown) {
               body: c.body,
               why: c.why,
               action: c.action,
-              sources: c.citations.length ? toJsonCitations(c.citations) : undefined,
+              sources: c.citations.length
+                ? toJsonCitations(c.citations)
+                : undefined,
               priority: 650 - internalIdx,
             });
             internalIdx += 1;
@@ -466,7 +522,9 @@ export async function nightly_workspace_run(payload: unknown) {
         finishedAt: new Date(),
         errorSummary,
         meta: {
-          ...(typeof jobRun.meta === "object" && jobRun.meta ? (jobRun.meta as object) : {}),
+          ...(typeof jobRun.meta === "object" && jobRun.meta
+            ? (jobRun.meta as object)
+            : {}),
           codex: {
             model: codexModel,
             reasoningEffort: codexReasoningEffort,

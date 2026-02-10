@@ -6,4 +6,3 @@ export function macosDownloadUrl(): string | null {
   const raw = (process.env.NEXT_PUBLIC_MACOS_DOWNLOAD_URL || "").trim();
   return raw ? raw : null;
 }
-

@@ -9,4 +9,3 @@ export default async function OnboardingRedirect({
   const { slug } = await params;
   redirect(`/w/${slug}/settings`);
 }
-

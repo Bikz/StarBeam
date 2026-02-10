@@ -33,6 +33,7 @@ export NOTARY_PROFILE=starbeam-notary
 ```
 
 Notes:
+
 - `notarytool store-credentials` will prompt for your app-specific password. Prefer the prompt over passing `--password` to avoid leaking secrets via shell history.
 - You can debug failed notarization submissions with:
   - `xcrun notarytool log <submission-id> --keychain-profile "starbeam-notary"`
@@ -156,5 +157,6 @@ scripts/macos/upload_r2.sh
 ```
 
 Notes:
+
 - If `downloads.starbeamhq.com` is not yet active, Sparkle updates will not work.
 - You can temporarily point `SUFeedURL` to the bucket's `r2.dev` URL for testing.

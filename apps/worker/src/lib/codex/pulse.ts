@@ -171,7 +171,9 @@ function buildPulsePrompt(args: {
     "",
     "Card rules:",
     "- Total cards: 3-7 max (fewer is fine if there isn't credible signal).",
-    args.includeWebResearch ? "- WEB_RESEARCH cards must have 1-6 citations." : "",
+    args.includeWebResearch
+      ? "- WEB_RESEARCH cards must have 1-6 citations."
+      : "",
     "- INTERNAL cards can have 0 citations, but should reference source item URLs when possible.",
     "- Each card body should be 2-4 lines.",
     "",
@@ -180,9 +182,24 @@ function buildPulsePrompt(args: {
 
 export async function generatePulseCardsWithCodexExec(args: {
   workspace: { id: string; name: string; slug: string };
-  profile: { websiteUrl?: string | null; description?: string | null; competitorDomains?: string[] | null } | null;
-  goals: Array<{ id: string; title: string; body?: string | null; priority: string; departmentId?: string | null }>;
-  departments: Array<{ id: string; name: string; promptTemplate: string; memberships: Array<{ userId: string }> }>;
+  profile: {
+    websiteUrl?: string | null;
+    description?: string | null;
+    competitorDomains?: string[] | null;
+  } | null;
+  goals: Array<{
+    id: string;
+    title: string;
+    body?: string | null;
+    priority: string;
+    departmentId?: string | null;
+  }>;
+  departments: Array<{
+    id: string;
+    name: string;
+    promptTemplate: string;
+    memberships: Array<{ userId: string }>;
+  }>;
   userId: string;
   model?: string;
   reasoningEffort?: "minimal" | "low" | "medium" | "high" | "xhigh";
@@ -210,13 +227,14 @@ export async function generatePulseCardsWithCodexExec(args: {
       "utf8",
     );
 
-    const { dir, cleanup, departmentNameToId } = await materializeWorkspaceContextForCodex({
-      workspace: args.workspace,
-      profile: args.profile,
-      goals: args.goals,
-      departments: args.departments,
-      userId: args.userId,
-    });
+    const { dir, cleanup, departmentNameToId } =
+      await materializeWorkspaceContextForCodex({
+        workspace: args.workspace,
+        profile: args.profile,
+        goals: args.goals,
+        departments: args.departments,
+        userId: args.userId,
+      });
 
     try {
       const departmentNames = args.departments
@@ -246,7 +264,9 @@ export async function generatePulseCardsWithCodexExec(args: {
 
       if (res.exitCode !== 0) {
         const hint = res.stderr.trim() || res.stdout.trim();
-        throw new Error(`codex exec failed (exit ${res.exitCode}). ${hint}`.trim());
+        throw new Error(
+          `codex exec failed (exit ${res.exitCode}). ${hint}`.trim(),
+        );
       }
 
       const text = await fs.readFile(outputPath, "utf8");
@@ -259,7 +279,13 @@ export async function generatePulseCardsWithCodexExec(args: {
       return {
         output,
         departmentNameToId,
-        estimate: { promptBytes, contextBytes, approxInputTokens, approxOutputTokens, durationMs },
+        estimate: {
+          promptBytes,
+          contextBytes,
+          approxInputTokens,
+          approxOutputTokens,
+          durationMs,
+        },
       };
     } finally {
       await cleanup();

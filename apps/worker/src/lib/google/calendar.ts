@@ -62,7 +62,10 @@ export async function listPrimaryEvents(args: {
     if (pageToken) params.set("pageToken", pageToken);
 
     const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params.toString()}`;
-    const resp = await googleGetJson<CalendarListResponse>(url, args.accessToken);
+    const resp = await googleGetJson<CalendarListResponse>(
+      url,
+      args.accessToken,
+    );
 
     const items = Array.isArray(resp.items) ? resp.items : [];
     for (const e of items) {
@@ -70,7 +73,8 @@ export async function listPrimaryEvents(args: {
       if (out.length >= args.maxResults) break;
     }
 
-    pageToken = typeof resp.nextPageToken === "string" ? resp.nextPageToken : undefined;
+    pageToken =
+      typeof resp.nextPageToken === "string" ? resp.nextPageToken : undefined;
     if (!pageToken) break;
   }
 

@@ -21,7 +21,10 @@ function canManage(role: string): boolean {
   return role === "ADMIN" || role === "MANAGER";
 }
 
-export async function createDepartment(workspaceSlug: string, formData: FormData) {
+export async function createDepartment(
+  workspaceSlug: string,
+  formData: FormData,
+) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) throw new Error("Unauthorized");
 
@@ -56,7 +59,10 @@ export async function createDepartment(workspaceSlug: string, formData: FormData
 
     if (workspaceMembers.length) {
       await tx.departmentMembership.createMany({
-        data: workspaceMembers.map((m) => ({ departmentId: dept.id, userId: m.userId })),
+        data: workspaceMembers.map((m) => ({
+          departmentId: dept.id,
+          userId: m.userId,
+        })),
         skipDuplicates: true,
       });
     }
@@ -96,5 +102,7 @@ export async function updateDepartment(
   });
   if (res.count === 0) throw new Error("Department not found");
 
-  redirect(`/w/${workspaceSlug}/tracks?track=${encodeURIComponent(departmentId)}`);
+  redirect(
+    `/w/${workspaceSlug}/tracks?track=${encodeURIComponent(departmentId)}`,
+  );
 }

@@ -8,7 +8,11 @@ import {
   GetObjectCommand,
   DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
-import { decryptBytes, encryptBytes, parseAes256GcmKeyFromEnv } from "@starbeam/shared";
+import {
+  decryptBytes,
+  encryptBytes,
+  parseAes256GcmKeyFromEnv,
+} from "@starbeam/shared";
 
 type BlobStoreEnv = {
   endpoint: string;
@@ -26,7 +30,9 @@ function envOrEmpty(env: NodeJS.ProcessEnv, name: string): string {
   return (env[name] ?? "").trim();
 }
 
-function blobStoreEnvFromProcessEnv(env: NodeJS.ProcessEnv = process.env): BlobStoreEnv | null {
+function blobStoreEnvFromProcessEnv(
+  env: NodeJS.ProcessEnv = process.env,
+): BlobStoreEnv | null {
   const endpoint = envOrEmpty(env, "S3_ENDPOINT");
   const region = envOrEmpty(env, "S3_REGION") || "us-east-1";
   const accessKeyId = envOrEmpty(env, "S3_ACCESS_KEY_ID");
@@ -38,7 +44,9 @@ function blobStoreEnvFromProcessEnv(env: NodeJS.ProcessEnv = process.env): BlobS
   return { endpoint, region, accessKeyId, secretAccessKey, bucket };
 }
 
-export function isBlobStoreConfigured(env: NodeJS.ProcessEnv = process.env): boolean {
+export function isBlobStoreConfigured(
+  env: NodeJS.ProcessEnv = process.env,
+): boolean {
   return blobStoreEnvFromProcessEnv(env) !== null;
 }
 
@@ -55,9 +63,17 @@ function makeS3Client(env: BlobStoreEnv): S3Client {
   });
 }
 
-let cached: { env: BlobStoreEnv; client: S3Client; bucketEnsured: boolean } | null = null;
+let cached: {
+  env: BlobStoreEnv;
+  client: S3Client;
+  bucketEnsured: boolean;
+} | null = null;
 
-function getBlobStore(): { env: BlobStoreEnv; client: S3Client; bucketEnsured: boolean } | null {
+function getBlobStore(): {
+  env: BlobStoreEnv;
+  client: S3Client;
+  bucketEnsured: boolean;
+} | null {
   if (cached) return cached;
   const env = blobStoreEnvFromProcessEnv();
   if (!env) return null;
@@ -96,10 +112,16 @@ export async function verifyBlobStoreRwDelete(args?: {
 
   await ensureBucketExistsIfConfigured();
 
-  const prefix = (args?.prefix ?? "__starbeam__/health").replaceAll(/\/+/g, "/").replaceAll(/^\//g, "").replaceAll(/\/$/g, "");
+  const prefix = (args?.prefix ?? "__starbeam__/health")
+    .replaceAll(/\/+/g, "/")
+    .replaceAll(/^\//g, "")
+    .replaceAll(/\/$/g, "");
   const nonce = crypto.randomBytes(8).toString("hex");
   const key = `${prefix}/${Date.now()}-${nonce}.txt`;
-  const plaintext = Buffer.from(`starbeam_blob_store_healthcheck:${nonce}`, "utf8");
+  const plaintext = Buffer.from(
+    `starbeam_blob_store_healthcheck:${nonce}`,
+    "utf8",
+  );
 
   await store.client.send(
     new PutObjectCommand({
@@ -181,7 +203,9 @@ async function s3BodyToBuffer(body: unknown): Promise<Buffer> {
     return Buffer.from(bytes);
   }
 
-  const asyncIt = (body as { [Symbol.asyncIterator]?: unknown })?.[Symbol.asyncIterator];
+  const asyncIt = (body as { [Symbol.asyncIterator]?: unknown })?.[
+    Symbol.asyncIterator
+  ];
   if (typeof asyncIt === "function") {
     const chunks: Buffer[] = [];
     for await (const chunk of body as AsyncIterable<unknown>) {
@@ -227,7 +251,9 @@ export async function deleteObjectBestEffort(args: {
 
   const bucket = args.bucket ?? store.env.bucket;
   try {
-    await store.client.send(new DeleteObjectCommand({ Bucket: bucket, Key: args.key }));
+    await store.client.send(
+      new DeleteObjectCommand({ Bucket: bucket, Key: args.key }),
+    );
   } catch {
     // Best effort: object might already be gone or we may lack perms.
   }
@@ -242,7 +268,9 @@ export async function deleteObjectIfConfigured(args: {
 
   const bucket = args.bucket ?? store.env.bucket;
   try {
-    await store.client.send(new DeleteObjectCommand({ Bucket: bucket, Key: args.key }));
+    await store.client.send(
+      new DeleteObjectCommand({ Bucket: bucket, Key: args.key }),
+    );
     return true;
   } catch {
     return false;

@@ -68,4 +68,3 @@ export async function generateFirstPulseNow(workspaceSlug: string) {
 
   redirect(`/w/${workspaceSlug}/pulse?queued=1`);
 }
-

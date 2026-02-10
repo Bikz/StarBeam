@@ -9,7 +9,9 @@ export default async function SignOutPage({
 }) {
   const sp = await searchParams;
   const callbackUrlRaw = (sp.callbackUrl ?? "/login").trim() || "/login";
-  const callbackUrl = callbackUrlRaw.startsWith("/") ? callbackUrlRaw : "/login";
+  const callbackUrl = callbackUrlRaw.startsWith("/")
+    ? callbackUrlRaw
+    : "/login";
 
   return (
     <div className="sb-bg">
@@ -25,7 +27,10 @@ export default async function SignOutPage({
           </div>
 
           <div className="mt-8 flex flex-wrap gap-3 text-sm">
-            <Link href={callbackUrl} className="text-[color:var(--sb-muted)] hover:underline">
+            <Link
+              href={callbackUrl}
+              className="text-[color:var(--sb-muted)] hover:underline"
+            >
               Cancel
             </Link>
           </div>
@@ -34,4 +39,3 @@ export default async function SignOutPage({
     </div>
   );
 }
-

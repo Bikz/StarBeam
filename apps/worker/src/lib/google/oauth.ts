@@ -1,4 +1,8 @@
-import { decryptString, encryptString, parseAes256GcmKeyFromEnv } from "@starbeam/shared";
+import {
+  decryptString,
+  encryptString,
+  parseAes256GcmKeyFromEnv,
+} from "@starbeam/shared";
 
 type TokenRefreshResponse = {
   access_token: string;
@@ -58,7 +62,8 @@ export async function refreshGoogleAccessToken(refreshToken: string): Promise<{
   }
 
   const parsed = JSON.parse(text) as TokenRefreshResponse;
-  if (!parsed?.access_token) throw new Error("Google refresh missing access_token");
+  if (!parsed?.access_token)
+    throw new Error("Google refresh missing access_token");
 
   return {
     accessToken: parsed.access_token,
@@ -66,4 +71,3 @@ export async function refreshGoogleAccessToken(refreshToken: string): Promise<{
     scope: parsed.scope,
   };
 }
-

@@ -49,15 +49,15 @@ export default async function MembersPage({
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-        <div className="sb-card p-7">
-          <PageHeader
-            title="Current members"
-            actions={
-              <div className="text-xs text-[color:var(--sb-muted)]">
-                {members.length} total
-              </div>
-            }
-          />
+      <div className="sb-card p-7">
+        <PageHeader
+          title="Current members"
+          actions={
+            <div className="text-xs text-[color:var(--sb-muted)]">
+              {members.length} total
+            </div>
+          }
+        />
 
         <div className="mt-5 grid gap-2">
           {members.map((m) => (
@@ -79,14 +79,16 @@ export default async function MembersPage({
         </div>
       </div>
 
-        <div className="sb-card p-7">
-          <PageHeader
-            title="Invite someone"
-            description="Create a link-based invite. Invites are tied to email and expire in 7 days."
-          />
+      <div className="sb-card p-7">
+        <PageHeader
+          title="Invite someone"
+          description="Create a link-based invite. Invites are tied to email and expire in 7 days."
+        />
 
         {!isAdmin ? (
-          <div className="mt-5 sb-alert">Only admins can create invites in v0.</div>
+          <div className="mt-5 sb-alert">
+            Only admins can create invites in v0.
+          </div>
         ) : (
           <form
             action={createInvite.bind(null, membership.workspace.slug)}
@@ -106,11 +108,7 @@ export default async function MembersPage({
             </label>
             <label className="grid gap-1 text-sm">
               <span className="text-[color:var(--sb-muted)]">Role</span>
-              <select
-                name="role"
-                className="sb-select"
-                defaultValue="MEMBER"
-              >
+              <select name="role" className="sb-select" defaultValue="MEMBER">
                 <option value="MEMBER">Member</option>
                 <option value="MANAGER">Manager</option>
               </select>
@@ -129,7 +127,9 @@ export default async function MembersPage({
 
         {inviteUrl ? (
           <div className="mt-6 sb-card-inset p-4">
-            <div className="text-xs font-extrabold sb-title">New invite link</div>
+            <div className="text-xs font-extrabold sb-title">
+              New invite link
+            </div>
             <div className="mt-2 break-all text-xs text-[color:var(--sb-muted)]">
               {inviteUrl}
             </div>
@@ -152,10 +152,7 @@ export default async function MembersPage({
                     ? "expired"
                     : "active";
                 return (
-                  <div
-                    key={inv.id}
-                    className="sb-card-inset px-4 py-3 text-sm"
-                  >
+                  <div key={inv.id} className="sb-card-inset px-4 py-3 text-sm">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="font-semibold text-[color:var(--sb-fg)]">
                         {inv.email}
@@ -173,7 +170,7 @@ export default async function MembersPage({
             </div>
           )}
         </div>
-        </div>
+      </div>
     </div>
   );
 }

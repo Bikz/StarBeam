@@ -6,7 +6,10 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 
 import { authOptions } from "@/lib/auth";
-import { enqueueAutoFirstNightlyWorkspaceRun, enqueueWorkspaceBootstrap } from "@/lib/nightlyRunQueue";
+import {
+  enqueueAutoFirstNightlyWorkspaceRun,
+  enqueueWorkspaceBootstrap,
+} from "@/lib/nightlyRunQueue";
 import { consumeRateLimit } from "@/lib/rateLimit";
 
 function canManage(role: string): boolean {
@@ -99,7 +102,8 @@ export async function runNightlyNow(workspaceSlug: string) {
       await workerUtils.release();
     }
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to enqueue job";
+    const message =
+      err instanceof Error ? err.message : "Failed to enqueue job";
     await prisma.jobRun.update({
       where: { id: jobRun.id },
       data: { status: "FAILED", finishedAt: new Date(), errorSummary: message },
@@ -110,4 +114,3 @@ export async function runNightlyNow(workspaceSlug: string) {
 
   redirect(`/w/${workspaceSlug}/jobs?queued=1`);
 }
-

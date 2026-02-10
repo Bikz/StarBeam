@@ -27,11 +27,22 @@ export async function bootstrapWorkspaceConfigIfNeeded(args: {
     }),
     prisma.workspaceProfile.findUnique({
       where: { workspaceId: args.workspaceId },
-      select: { id: true, websiteUrl: true, description: true, competitorDomains: true },
+      select: {
+        id: true,
+        websiteUrl: true,
+        description: true,
+        competitorDomains: true,
+      },
     }),
     prisma.goal.findMany({
       where: { workspaceId: args.workspaceId, active: true },
-      select: { id: true, title: true, body: true, priority: true, departmentId: true },
+      select: {
+        id: true,
+        title: true,
+        body: true,
+        priority: true,
+        departmentId: true,
+      },
       orderBy: { createdAt: "desc" },
       take: 10,
     }),
@@ -41,7 +52,12 @@ export async function bootstrapWorkspaceConfigIfNeeded(args: {
 
   let departments = await prisma.department.findMany({
     where: { workspaceId: args.workspaceId, enabled: true },
-    select: { id: true, name: true, promptTemplate: true, memberships: { select: { userId: true } } },
+    select: {
+      id: true,
+      name: true,
+      promptTemplate: true,
+      memberships: { select: { userId: true } },
+    },
     orderBy: { createdAt: "asc" },
   });
 
@@ -49,7 +65,12 @@ export async function bootstrapWorkspaceConfigIfNeeded(args: {
     // Ensure a default track exists so goals can always be scoped.
     const dept = await prisma.$transaction(async (tx) => {
       const created = await tx.department.create({
-        data: { workspaceId: args.workspaceId, name: "General", promptTemplate: "", enabled: true },
+        data: {
+          workspaceId: args.workspaceId,
+          name: "General",
+          promptTemplate: "",
+          enabled: true,
+        },
       });
 
       const members = await tx.membership.findMany({
@@ -59,7 +80,10 @@ export async function bootstrapWorkspaceConfigIfNeeded(args: {
 
       if (members.length) {
         await tx.departmentMembership.createMany({
-          data: members.map((m) => ({ departmentId: created.id, userId: m.userId })),
+          data: members.map((m) => ({
+            departmentId: created.id,
+            userId: m.userId,
+          })),
           skipDuplicates: true,
         });
       }
@@ -67,7 +91,10 @@ export async function bootstrapWorkspaceConfigIfNeeded(args: {
       // Ensure the triggering user is in the default track.
       await tx.departmentMembership.upsert({
         where: {
-          departmentId_userId: { departmentId: created.id, userId: args.triggeredByUserId },
+          departmentId_userId: {
+            departmentId: created.id,
+            userId: args.triggeredByUserId,
+          },
         },
         update: {},
         create: { departmentId: created.id, userId: args.triggeredByUserId },
@@ -105,7 +132,9 @@ export async function bootstrapWorkspaceConfigIfNeeded(args: {
   }
 
   if (!args.codex.available) {
-    throw new Error("Codex is not available for bootstrap (missing key/binary/disabled).");
+    throw new Error(
+      "Codex is not available for bootstrap (missing key/binary/disabled).",
+    );
   }
 
   const { output: bootstrap } = await bootstrapWorkspaceWithCodexExec({
@@ -137,12 +166,22 @@ export async function bootstrapWorkspaceConfigIfNeeded(args: {
     });
     wroteProfile = true;
   } else {
-    const websiteUrl = isBlank(existingProfile.websiteUrl) ? bootstrap.profile.websiteUrl : undefined;
-    const description = isBlank(existingProfile.description) ? bootstrap.profile.description : undefined;
+    const websiteUrl = isBlank(existingProfile.websiteUrl)
+      ? bootstrap.profile.websiteUrl
+      : undefined;
+    const description = isBlank(existingProfile.description)
+      ? bootstrap.profile.description
+      : undefined;
     const competitorDomains =
-      existingProfile.competitorDomains.length === 0 ? bootstrap.profile.competitorDomains : undefined;
+      existingProfile.competitorDomains.length === 0
+        ? bootstrap.profile.competitorDomains
+        : undefined;
 
-    if (websiteUrl !== undefined || description !== undefined || competitorDomains !== undefined) {
+    if (
+      websiteUrl !== undefined ||
+      description !== undefined ||
+      competitorDomains !== undefined
+    ) {
       await prisma.workspaceProfile.update({
         where: { id: existingProfile.id },
         data: { websiteUrl, description, competitorDomains },

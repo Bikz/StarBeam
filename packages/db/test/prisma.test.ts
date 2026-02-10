@@ -8,4 +8,3 @@ test("db package exports a Prisma client", async () => {
   assert.equal(typeof mod.prisma.$connect, "function");
   assert.equal(typeof mod.prisma.$disconnect, "function");
 });
-

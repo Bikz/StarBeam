@@ -62,4 +62,3 @@ export async function disableBetaKey(id: string) {
 
   redirect("/admin/beta-keys?disabled=1");
 }
-

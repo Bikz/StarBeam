@@ -54,7 +54,9 @@ export async function joinWaitlist(formData: FormData) {
     select: { referralCode: true },
   });
   if (existing) {
-    redirect(`/waitlist/thanks?code=${encodeURIComponent(existing.referralCode)}`);
+    redirect(
+      `/waitlist/thanks?code=${encodeURIComponent(existing.referralCode)}`,
+    );
   }
 
   const referralCode = parsed.data.ref?.trim() ?? "";

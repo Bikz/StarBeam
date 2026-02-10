@@ -5,7 +5,10 @@ import { sbButtonClass } from "@starbeam/shared";
 import type { ActiveWorkspace, ShellUser } from "@/components/app-shell";
 import { IconSearch } from "@/components/sb-icons";
 
-function sectionLabel(pathname: string, activeWorkspace: ActiveWorkspace): string {
+function sectionLabel(
+  pathname: string,
+  activeWorkspace: ActiveWorkspace,
+): string {
   if (pathname === "/dashboard") return "Dashboard";
   if (pathname === "/workspaces") return "Workspaces";
   if (pathname.startsWith("/feedback")) return "Feedback";
@@ -23,11 +26,17 @@ function sectionLabel(pathname: string, activeWorkspace: ActiveWorkspace): strin
       { label: "Runs", href: `${base}/jobs` },
     ];
 
-    const match = map.find((m) => pathname === m.href || pathname.startsWith(`${m.href}/`));
+    const match = map.find(
+      (m) => pathname === m.href || pathname.startsWith(`${m.href}/`),
+    );
     if (match) return match.label;
 
     // Legacy / auxiliary routes that still matter to core journeys.
-    if (pathname === `${base}/profile` || pathname.startsWith(`${base}/profile/`)) return "Settings";
+    if (
+      pathname === `${base}/profile` ||
+      pathname.startsWith(`${base}/profile/`)
+    )
+      return "Settings";
     if (
       pathname === `${base}/goals` ||
       pathname.startsWith(`${base}/goals/`) ||
@@ -36,9 +45,11 @@ function sectionLabel(pathname: string, activeWorkspace: ActiveWorkspace): strin
     ) {
       return "Tracks";
     }
-    if (pathname === `${base}/google` || pathname.startsWith(`${base}/google/`)) return "Integrations";
+    if (pathname === `${base}/google` || pathname.startsWith(`${base}/google/`))
+      return "Integrations";
 
-    if (pathname === base || pathname.startsWith(`${base}/`)) return "Workspace";
+    if (pathname === base || pathname.startsWith(`${base}/`))
+      return "Workspace";
   }
 
   return "Starbeam";

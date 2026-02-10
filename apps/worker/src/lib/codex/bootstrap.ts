@@ -24,7 +24,9 @@ const CodexWorkspaceBootstrapOutputSchema = z.object({
   goals: z.array(BootstrapGoalSchema).min(1).max(5),
 });
 
-type CodexWorkspaceBootstrapOutput = z.infer<typeof CodexWorkspaceBootstrapOutputSchema>;
+type CodexWorkspaceBootstrapOutput = z.infer<
+  typeof CodexWorkspaceBootstrapOutputSchema
+>;
 
 function bootstrapOutputJsonSchema(): unknown {
   return {
@@ -39,7 +41,11 @@ function bootstrapOutputJsonSchema(): unknown {
         properties: {
           websiteUrl: { type: "string", format: "uri" },
           description: { type: "string" },
-          competitorDomains: { type: "array", items: { type: "string" }, maxItems: 10 },
+          competitorDomains: {
+            type: "array",
+            items: { type: "string" },
+            maxItems: 10,
+          },
         },
       },
       goals: {
@@ -61,7 +67,10 @@ function bootstrapOutputJsonSchema(): unknown {
   };
 }
 
-function buildBootstrapPrompt(args: { workspaceName: string; enableWebSearch: boolean }): string {
+function buildBootstrapPrompt(args: {
+  workspaceName: string;
+  enableWebSearch: boolean;
+}): string {
   return [
     "You are Starbeam, a workspace onboarding assistant.",
     "",
@@ -103,9 +112,24 @@ function buildBootstrapPrompt(args: { workspaceName: string; enableWebSearch: bo
 
 export async function bootstrapWorkspaceWithCodexExec(args: {
   workspace: { id: string; name: string; slug: string };
-  profile: { websiteUrl?: string | null; description?: string | null; competitorDomains?: string[] | null } | null;
-  goals: Array<{ id: string; title: string; body?: string | null; priority: string; departmentId?: string | null }>;
-  departments: Array<{ id: string; name: string; promptTemplate: string; memberships: Array<{ userId: string }> }>;
+  profile: {
+    websiteUrl?: string | null;
+    description?: string | null;
+    competitorDomains?: string[] | null;
+  } | null;
+  goals: Array<{
+    id: string;
+    title: string;
+    body?: string | null;
+    priority: string;
+    departmentId?: string | null;
+  }>;
+  departments: Array<{
+    id: string;
+    name: string;
+    promptTemplate: string;
+    memberships: Array<{ userId: string }>;
+  }>;
   userId: string;
   model?: string;
   reasoningEffort?: "minimal" | "low" | "medium" | "high" | "xhigh";
@@ -120,7 +144,9 @@ export async function bootstrapWorkspaceWithCodexExec(args: {
     durationMs: number;
   };
 }> {
-  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "starbeam-codex-bootstrap-"));
+  const tmp = await fs.mkdtemp(
+    path.join(os.tmpdir(), "starbeam-codex-bootstrap-"),
+  );
   const schemaPath = path.join(tmp, "bootstrap.schema.json");
   const outputPath = path.join(tmp, "bootstrap.output.json");
   const enableWebSearch = Boolean(args.enableWebSearch);
@@ -164,7 +190,9 @@ export async function bootstrapWorkspaceWithCodexExec(args: {
 
       if (res.exitCode !== 0) {
         const hint = res.stderr.trim() || res.stdout.trim();
-        throw new Error(`codex exec failed (exit ${res.exitCode}). ${hint}`.trim());
+        throw new Error(
+          `codex exec failed (exit ${res.exitCode}). ${hint}`.trim(),
+        );
       }
 
       const text = await fs.readFile(outputPath, "utf8");
@@ -172,7 +200,16 @@ export async function bootstrapWorkspaceWithCodexExec(args: {
       const output = CodexWorkspaceBootstrapOutputSchema.parse(parsedJson);
       const approxInputTokens = Math.ceil((promptBytes + contextBytes) / 4);
       const approxOutputTokens = Math.ceil(Buffer.byteLength(text, "utf8") / 4);
-      return { output, estimate: { promptBytes, contextBytes, approxInputTokens, approxOutputTokens, durationMs } };
+      return {
+        output,
+        estimate: {
+          promptBytes,
+          contextBytes,
+          approxInputTokens,
+          approxOutputTokens,
+          durationMs,
+        },
+      };
     } finally {
       await cleanup();
     }

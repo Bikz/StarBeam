@@ -30,4 +30,3 @@ test("sbButtonClass: size mapping works", () => {
 test("sbButtonClass: appends className", () => {
   assert.match(sbButtonClass({ className: "extra-class" }), /\bextra-class\b/);
 });
-

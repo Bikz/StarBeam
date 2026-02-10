@@ -16,7 +16,10 @@ export default function Loading() {
               <div className="sb-skeleton h-3 w-28 rounded-lg" />
               <div className="mt-3 grid gap-2">
                 {CONNECTION_ROWS.map((rowKey) => (
-                  <div key={rowKey} className="sb-skeleton h-12 w-full rounded-xl" />
+                  <div
+                    key={rowKey}
+                    className="sb-skeleton h-12 w-full rounded-xl"
+                  />
                 ))}
               </div>
             </div>

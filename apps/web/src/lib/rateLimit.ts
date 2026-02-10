@@ -35,4 +35,3 @@ export async function consumeRateLimit(args: {
 
   return row;
 }
-

@@ -138,7 +138,9 @@ export default async function AnnouncementsPage({
         />
 
         {!manageable ? (
-          <div className="mt-5 sb-alert">Only managers/admins can post announcements.</div>
+          <div className="mt-5 sb-alert">
+            Only managers/admins can post announcements.
+          </div>
         ) : (
           <form
             action={createAnnouncement.bind(null, membership.workspace.slug)}
@@ -156,7 +158,9 @@ export default async function AnnouncementsPage({
               />
             </label>
             <label className="grid gap-1 text-sm">
-              <span className="text-[color:var(--sb-muted)]">Body (optional)</span>
+              <span className="text-[color:var(--sb-muted)]">
+                Body (optional)
+              </span>
               <textarea
                 name="body"
                 placeholder="One or two lines of context."

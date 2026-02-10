@@ -8,7 +8,8 @@ import { isAdminEmail } from "@/lib/admin";
 
 export default async function FeedbackAdminPage() {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.email || !isAdminEmail(session.user.email)) redirect("/login");
+  if (!session?.user?.email || !isAdminEmail(session.user.email))
+    redirect("/login");
 
   const items = await prisma.feedback.findMany({
     orderBy: { createdAt: "desc" },
@@ -26,14 +27,13 @@ export default async function FeedbackAdminPage() {
 
           <div className="mt-8">
             {items.length === 0 ? (
-              <div className="text-sm text-[color:var(--sb-muted)]">No feedback yet.</div>
+              <div className="text-sm text-[color:var(--sb-muted)]">
+                No feedback yet.
+              </div>
             ) : (
               <div className="grid gap-3">
                 {items.map((f) => (
-                  <div
-                    key={f.id}
-                    className="sb-card-inset p-5"
-                  >
+                  <div key={f.id} className="sb-card-inset p-5">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="text-sm font-semibold text-[color:var(--sb-fg)]">
                         {f.email || f.userId || "unknown"}

@@ -3,7 +3,10 @@ import { encryptString, parseAes256GcmKeyFromEnv } from "@starbeam/shared";
 import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/lib/auth";
-import { enqueueAutoFirstNightlyWorkspaceRun, enqueueWorkspaceBootstrap } from "@/lib/nightlyRunQueue";
+import {
+  enqueueAutoFirstNightlyWorkspaceRun,
+  enqueueWorkspaceBootstrap,
+} from "@/lib/nightlyRunQueue";
 
 export async function requireMembership(workspaceSlug: string): Promise<{
   userId: string;
@@ -73,7 +76,9 @@ export async function scheduleAutoFirstPulseIfNeeded(args: {
   }
 }
 
-export async function fetchGitHubViewer(token: string): Promise<{ login: string }> {
+export async function fetchGitHubViewer(
+  token: string,
+): Promise<{ login: string }> {
   const resp = await fetch("https://api.github.com/user", {
     method: "GET",
     headers: {
@@ -121,9 +126,12 @@ export async function fetchLinearViewer(token: string): Promise<{
     throw new Error("Linear auth failed.");
   }
 
-  const id = typeof parsed.data?.viewer?.id === "string" ? parsed.data.viewer.id : "";
+  const id =
+    typeof parsed.data?.viewer?.id === "string" ? parsed.data.viewer.id : "";
   const email =
-    typeof parsed.data?.viewer?.email === "string" ? parsed.data.viewer.email : undefined;
+    typeof parsed.data?.viewer?.email === "string"
+      ? parsed.data.viewer.email
+      : undefined;
 
   if (!id) throw new Error("Linear auth failed (missing viewer.id).");
   return { id, email };

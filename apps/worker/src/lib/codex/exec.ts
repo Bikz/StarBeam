@@ -8,7 +8,10 @@ function truncate(s: string, maxLen: number): string {
   return `${s.slice(0, maxLen)}\n…(truncated)`;
 }
 
-async function makeEphemeralHome(): Promise<{ dir: string; env: NodeJS.ProcessEnv }> {
+async function makeEphemeralHome(): Promise<{
+  dir: string;
+  env: NodeJS.ProcessEnv;
+}> {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), "starbeam-codex-home-"));
   const xdgConfig = path.join(dir, ".config");
   const xdgState = path.join(dir, ".local", "state");
@@ -45,7 +48,9 @@ export async function isCodexInstalled(): Promise<boolean> {
     });
     return exitCode === 0;
   } finally {
-    await fs.rm(homeDir, { recursive: true, force: true }).catch(() => undefined);
+    await fs
+      .rm(homeDir, { recursive: true, force: true })
+      .catch(() => undefined);
   }
 }
 
@@ -66,7 +71,9 @@ export async function runCodexExec(args: {
       // Non-interactive worker job: never ask for approvals.
       "-a",
       "never",
-      ...(args.reasoningEffort ? ["-c", `model_reasoning_effort=${args.reasoningEffort}`] : []),
+      ...(args.reasoningEffort
+        ? ["-c", `model_reasoning_effort=${args.reasoningEffort}`]
+        : []),
       ...(args.enableWebSearch ? ["--search"] : []),
       "exec",
       "-C",
@@ -109,7 +116,8 @@ export async function runCodexExec(args: {
     proc.stdin.end();
 
     const exitCode = await new Promise<number>((resolve, reject) => {
-      const timeoutMs = typeof args.timeoutMs === "number" ? args.timeoutMs : 4 * 60 * 1000;
+      const timeoutMs =
+        typeof args.timeoutMs === "number" ? args.timeoutMs : 4 * 60 * 1000;
       const t = setTimeout(() => {
         proc.kill("SIGKILL");
         reject(new Error(`codex exec timed out after ${timeoutMs}ms`));
@@ -128,6 +136,8 @@ export async function runCodexExec(args: {
 
     return { exitCode, stdout, stderr };
   } finally {
-    await fs.rm(homeDir, { recursive: true, force: true }).catch(() => undefined);
+    await fs
+      .rm(homeDir, { recursive: true, force: true })
+      .catch(() => undefined);
   }
 }

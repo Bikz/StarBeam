@@ -17,11 +17,16 @@ export async function POST(request: Request) {
   try {
     body = await request.json();
   } catch {
-    return jsonError({ error: "invalid_request", errorDescription: "Invalid JSON" });
+    return jsonError({
+      error: "invalid_request",
+      errorDescription: "Invalid JSON",
+    });
   }
 
-  const obj = body && typeof body === "object" ? (body as Record<string, unknown>) : {};
-  const refreshToken = typeof obj.refreshToken === "string" ? obj.refreshToken : "";
+  const obj =
+    body && typeof body === "object" ? (body as Record<string, unknown>) : {};
+  const refreshToken =
+    typeof obj.refreshToken === "string" ? obj.refreshToken : "";
   if (!refreshToken) {
     return jsonError({
       error: "invalid_request",
@@ -50,7 +55,10 @@ export async function POST(request: Request) {
   });
   if (!access?.betaAccessGrantedAt) {
     return jsonError(
-      { error: "access_denied", errorDescription: "Private beta access required" },
+      {
+        error: "access_denied",
+        errorDescription: "Private beta access required",
+      },
       403,
     );
   }

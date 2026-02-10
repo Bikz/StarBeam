@@ -17,9 +17,12 @@ export async function enqueueDeleteBlobs(args: {
   const workerUtils = await makeWorkerUtils({ connectionString });
   try {
     // Best effort; if it fails we still consider the disconnect successful.
-    await workerUtils.addJob("delete_blobs", { blobs: args.blobs }, { maxAttempts: 5 });
+    await workerUtils.addJob(
+      "delete_blobs",
+      { blobs: args.blobs },
+      { maxAttempts: 5 },
+    );
   } finally {
     await workerUtils.release();
   }
 }
-

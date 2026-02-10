@@ -84,4 +84,3 @@ export async function provisionNewUser(userId: string): Promise<void> {
     await ensurePersonalWorkspaceForUser(tx, userId);
   });
 }
-

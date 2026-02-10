@@ -25,9 +25,7 @@ import { authOptions } from "@/lib/auth";
 import PageHeader from "@/components/page-header";
 
 function statusPill(status: string) {
-  return (
-    <div className="sb-pill">{status.toLowerCase()}</div>
-  );
+  return <div className="sb-pill">{status.toLowerCase()}</div>;
 }
 
 export default async function IntegrationsPage({
@@ -35,7 +33,11 @@ export default async function IntegrationsPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ connected?: string; disconnected?: string; error?: string }>;
+  searchParams: Promise<{
+    connected?: string;
+    disconnected?: string;
+    error?: string;
+  }>;
 }) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) redirect("/");
@@ -48,25 +50,41 @@ export default async function IntegrationsPage({
   });
   if (!membership) notFound();
 
-  const [googleConnections, githubConnections, linearConnections, notionConnections] =
-    await Promise.all([
-      prisma.googleConnection.findMany({
-        where: { workspaceId: membership.workspace.id, ownerUserId: session.user.id },
-        orderBy: { createdAt: "desc" },
-      }),
-      prisma.gitHubConnection.findMany({
-        where: { workspaceId: membership.workspace.id, ownerUserId: session.user.id },
-        orderBy: { createdAt: "desc" },
-      }),
-      prisma.linearConnection.findMany({
-        where: { workspaceId: membership.workspace.id, ownerUserId: session.user.id },
-        orderBy: { createdAt: "desc" },
-      }),
-      prisma.notionConnection.findMany({
-        where: { workspaceId: membership.workspace.id, ownerUserId: session.user.id },
-        orderBy: { createdAt: "desc" },
-      }),
-    ]);
+  const [
+    googleConnections,
+    githubConnections,
+    linearConnections,
+    notionConnections,
+  ] = await Promise.all([
+    prisma.googleConnection.findMany({
+      where: {
+        workspaceId: membership.workspace.id,
+        ownerUserId: session.user.id,
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.gitHubConnection.findMany({
+      where: {
+        workspaceId: membership.workspace.id,
+        ownerUserId: session.user.id,
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.linearConnection.findMany({
+      where: {
+        workspaceId: membership.workspace.id,
+        ownerUserId: session.user.id,
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.notionConnection.findMany({
+      where: {
+        workspaceId: membership.workspace.id,
+        ownerUserId: session.user.id,
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+  ]);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
@@ -90,7 +108,9 @@ export default async function IntegrationsPage({
           ) : null}
 
           <div className="mt-6 flex flex-wrap items-center gap-3">
-            <form action={startGoogleConnect.bind(null, membership.workspace.slug)}>
+            <form
+              action={startGoogleConnect.bind(null, membership.workspace.slug)}
+            >
               <button
                 type="submit"
                 className={sbButtonClass({
@@ -104,7 +124,9 @@ export default async function IntegrationsPage({
           </div>
 
           <div className="mt-7">
-            <div className="text-xs font-extrabold sb-title">Your connections</div>
+            <div className="text-xs font-extrabold sb-title">
+              Your connections
+            </div>
             {googleConnections.length === 0 ? (
               <div className="mt-2 text-sm text-[color:var(--sb-muted)]">
                 No connections yet.
@@ -112,10 +134,7 @@ export default async function IntegrationsPage({
             ) : (
               <div className="mt-3 grid gap-2">
                 {googleConnections.map((c) => (
-                  <div
-                    key={c.id}
-                    className="sb-card-inset px-4 py-3 text-sm"
-                  >
+                  <div key={c.id} className="sb-card-inset px-4 py-3 text-sm">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="font-semibold text-[color:var(--sb-fg)]">
                         {c.googleAccountEmail}
@@ -123,7 +142,8 @@ export default async function IntegrationsPage({
                       {statusPill(c.status)}
                     </div>
                     <div className="mt-1 text-xs text-[color:var(--sb-muted)]">
-                      Scopes: {c.scopes.length ? c.scopes.join(", ") : "unknown"}
+                      Scopes:{" "}
+                      {c.scopes.length ? c.scopes.join(", ") : "unknown"}
                     </div>
                     <div className="mt-3 flex gap-2">
                       <form
@@ -169,7 +189,9 @@ export default async function IntegrationsPage({
             className="mt-5 grid gap-3"
           >
             <label className="grid gap-2">
-              <div className="text-xs font-extrabold sb-title">Personal access token</div>
+              <div className="text-xs font-extrabold sb-title">
+                Personal access token
+              </div>
               <input
                 name="token"
                 type="password"
@@ -181,18 +203,24 @@ export default async function IntegrationsPage({
             </label>
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="grid gap-2">
-                <div className="text-xs font-extrabold sb-title">Repo scope</div>
+                <div className="text-xs font-extrabold sb-title">
+                  Repo scope
+                </div>
                 <select
                   name="mode"
                   defaultValue="SELECTED"
                   className="sb-select"
                 >
-                  <option value="SELECTED">Selected repos only (recommended)</option>
+                  <option value="SELECTED">
+                    Selected repos only (recommended)
+                  </option>
                   <option value="ALL">All accessible repos</option>
                 </select>
               </label>
               <label className="grid gap-2">
-                <div className="text-xs font-extrabold sb-title">Selected repos</div>
+                <div className="text-xs font-extrabold sb-title">
+                  Selected repos
+                </div>
                 <textarea
                   name="repos"
                   rows={3}
@@ -202,8 +230,8 @@ export default async function IntegrationsPage({
               </label>
             </div>
             <div className="text-[11px] text-[color:var(--sb-muted)] leading-relaxed">
-              Tip: keep workspace context scoped. If you choose Selected, Starbeam won’t ingest
-              GitHub until you list one or more repos.
+              Tip: keep workspace context scoped. If you choose Selected,
+              Starbeam won’t ingest GitHub until you list one or more repos.
             </div>
             <div>
               <button
@@ -219,7 +247,9 @@ export default async function IntegrationsPage({
           </form>
 
           <div className="mt-7">
-            <div className="text-xs font-extrabold sb-title">Your connections</div>
+            <div className="text-xs font-extrabold sb-title">
+              Your connections
+            </div>
             {githubConnections.length === 0 ? (
               <div className="mt-2 text-sm text-[color:var(--sb-muted)]">
                 No connections yet.
@@ -227,10 +257,7 @@ export default async function IntegrationsPage({
             ) : (
               <div className="mt-3 grid gap-2">
                 {githubConnections.map((c) => (
-                  <div
-                    key={c.id}
-                    className="sb-card-inset px-4 py-3 text-sm"
-                  >
+                  <div key={c.id} className="sb-card-inset px-4 py-3 text-sm">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="font-semibold text-[color:var(--sb-fg)]">
                         {c.githubLogin}
@@ -247,22 +274,30 @@ export default async function IntegrationsPage({
                         className="grid w-full gap-2"
                       >
                         <div className="grid gap-1">
-                          <div className="text-[11px] font-extrabold sb-title">Repo scope</div>
+                          <div className="text-[11px] font-extrabold sb-title">
+                            Repo scope
+                          </div>
                           <select
                             name="mode"
                             defaultValue={c.repoSelectionMode}
                             className="sb-select sb-select-compact"
                           >
                             <option value="ALL">All accessible repos</option>
-                            <option value="SELECTED">Selected repos only</option>
+                            <option value="SELECTED">
+                              Selected repos only
+                            </option>
                           </select>
                         </div>
 
                         <div className="grid gap-1">
-                          <div className="text-[11px] font-extrabold sb-title">Selected repos</div>
+                          <div className="text-[11px] font-extrabold sb-title">
+                            Selected repos
+                          </div>
                           <textarea
                             name="repos"
-                            defaultValue={(c.selectedRepoFullNames ?? []).join("\n")}
+                            defaultValue={(c.selectedRepoFullNames ?? []).join(
+                              "\n",
+                            )}
                             rows={3}
                             className="sb-textarea sb-textarea-compact"
                             placeholder={"owner/repo\nowner/another-repo"}
@@ -273,7 +308,8 @@ export default async function IntegrationsPage({
                           {c.repoSelectionMode === "SELECTED" &&
                           (c.selectedRepoFullNames ?? []).length === 0 ? (
                             <div className="text-[11px] text-[color:var(--sb-muted)]">
-                              No repos selected yet, so GitHub sync will be skipped.
+                              No repos selected yet, so GitHub sync will be
+                              skipped.
                             </div>
                           ) : null}
                         </div>
@@ -357,7 +393,9 @@ export default async function IntegrationsPage({
           </form>
 
           <div className="mt-7">
-            <div className="text-xs font-extrabold sb-title">Your connections</div>
+            <div className="text-xs font-extrabold sb-title">
+              Your connections
+            </div>
             {linearConnections.length === 0 ? (
               <div className="mt-2 text-sm text-[color:var(--sb-muted)]">
                 No connections yet.
@@ -365,10 +403,7 @@ export default async function IntegrationsPage({
             ) : (
               <div className="mt-3 grid gap-2">
                 {linearConnections.map((c) => (
-                  <div
-                    key={c.id}
-                    className="sb-card-inset px-4 py-3 text-sm"
-                  >
+                  <div key={c.id} className="sb-card-inset px-4 py-3 text-sm">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="font-semibold text-[color:var(--sb-fg)]">
                         {c.linearUserEmail ?? c.linearUserId}
@@ -419,7 +454,9 @@ export default async function IntegrationsPage({
             className="mt-5 grid gap-3"
           >
             <label className="grid gap-2">
-              <div className="text-xs font-extrabold sb-title">Integration token</div>
+              <div className="text-xs font-extrabold sb-title">
+                Integration token
+              </div>
               <input
                 name="token"
                 type="password"
@@ -443,7 +480,9 @@ export default async function IntegrationsPage({
           </form>
 
           <div className="mt-7">
-            <div className="text-xs font-extrabold sb-title">Your connections</div>
+            <div className="text-xs font-extrabold sb-title">
+              Your connections
+            </div>
             {notionConnections.length === 0 ? (
               <div className="mt-2 text-sm text-[color:var(--sb-muted)]">
                 No connections yet.
@@ -451,10 +490,7 @@ export default async function IntegrationsPage({
             ) : (
               <div className="mt-3 grid gap-2">
                 {notionConnections.map((c) => (
-                  <div
-                    key={c.id}
-                    className="sb-card-inset px-4 py-3 text-sm"
-                  >
+                  <div key={c.id} className="sb-card-inset px-4 py-3 text-sm">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="font-semibold text-[color:var(--sb-fg)]">
                         {c.notionWorkspaceName ?? c.notionBotId}
@@ -504,8 +540,10 @@ export default async function IntegrationsPage({
           <PageHeader title="Next" />
           <div className="mt-3 grid gap-3 text-sm text-[color:var(--sb-muted)] leading-relaxed">
             <div>
-              After you connect an integration, go to <span className="sb-title">Runs</span> and click{" "}
-              <span className="sb-title">Run now</span> to ingest and generate an updated pulse.
+              After you connect an integration, go to{" "}
+              <span className="sb-title">Runs</span> and click{" "}
+              <span className="sb-title">Run now</span> to ingest and generate
+              an updated pulse.
             </div>
           </div>
         </div>
