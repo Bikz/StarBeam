@@ -20,6 +20,20 @@ struct APIClient {
     var expiresIn: Int
   }
 
+  struct TaskPayload: Codable, Equatable {
+    var task: Task
+  }
+
+  struct Task: Codable, Equatable {
+    var id: String
+    var title: String
+    var body: String
+    var status: String
+    var createdAt: Date?
+    var updatedAt: Date?
+    var snoozedUntil: Date?
+  }
+
   struct APIErrorPayload: Codable, Equatable {
     var error: String
     var errorDescription: String?
@@ -132,6 +146,58 @@ struct APIClient {
 
     let overview = try decode(Overview.self, from: data)
     return (overview: overview, rawJSON: data)
+  }
+
+  func createTask(workspaceID: String, title: String, body: String?, accessToken: String, refreshToken: String) async throws -> TaskPayload {
+    let url = try urlForPath("/api/v1/macos/tasks/create")
+    var request = URLRequest(url: url)
+    request.httpMethod = "POST"
+    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+    request.setValue(refreshToken, forHTTPHeaderField: "X-Starbeam-Refresh-Token")
+
+    var payload: [String: Any] = [
+      "workspaceId": workspaceID,
+      "title": title,
+    ]
+    if let body, !body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+      payload["body"] = body
+    }
+    request.httpBody = try JSONSerialization.data(withJSONObject: payload)
+
+    let (data, response) = try await urlSession.data(for: request)
+    let http = try requireHTTP(response)
+    if (200...299).contains(http.statusCode) {
+      return try decode(TaskPayload.self, from: data)
+    }
+    if let payload = try? decode(APIErrorPayload.self, from: data) {
+      throw APIError.oauth(code: payload.error, description: payload.errorDescription)
+    }
+    throw APIError.http(statusCode: http.statusCode, body: String(decoding: data, as: UTF8.self))
+  }
+
+  func updateTaskStatus(workspaceID: String, taskID: String, status: String, accessToken: String, refreshToken: String) async throws -> TaskPayload {
+    let url = try urlForPath("/api/v1/macos/tasks/update")
+    var request = URLRequest(url: url)
+    request.httpMethod = "POST"
+    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+    request.setValue(refreshToken, forHTTPHeaderField: "X-Starbeam-Refresh-Token")
+    request.httpBody = try JSONEncoder().encode([
+      "workspaceId": workspaceID,
+      "taskId": taskID,
+      "status": status,
+    ])
+
+    let (data, response) = try await urlSession.data(for: request)
+    let http = try requireHTTP(response)
+    if (200...299).contains(http.statusCode) {
+      return try decode(TaskPayload.self, from: data)
+    }
+    if let payload = try? decode(APIErrorPayload.self, from: data) {
+      throw APIError.oauth(code: payload.error, description: payload.errorDescription)
+    }
+    throw APIError.http(statusCode: http.statusCode, body: String(decoding: data, as: UTF8.self))
   }
 
   private func urlForPath(_ path: String) throws -> URL {

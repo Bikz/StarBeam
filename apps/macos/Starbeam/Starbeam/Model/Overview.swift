@@ -43,6 +43,7 @@ struct Overview: Codable, Equatable {
   var bumpMessage: String?
   var pulse: [PulseCard]
   var focus: [FocusItem]
+  var completedFocus: [FocusItem]?
   var calendar: [CalendarItem]
   var generatedAt: Date?
 }

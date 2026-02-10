@@ -174,6 +174,182 @@ final class AppModel {
     auth.isSignedIn && !settings.workspaceID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
   }
 
+  private func noticeForRefreshAuthFailure(_ error: Error) -> AppError? {
+    let debug = String(describing: error)
+
+    guard let apiError = error as? APIClient.APIError else { return nil }
+    switch apiError {
+    case .oauth(let code, let description):
+      switch code {
+      case "invalid_token", "expired_token":
+        return AppError(
+          title: "Session expired",
+          message: "Please sign in again to continue syncing.",
+          debugDetails: debug
+        )
+      case "invalid_request":
+        return AppError(
+          title: "Sign-in required",
+          message: "Your session is incomplete. Please sign in again.",
+          debugDetails: debug
+        )
+      case "access_denied":
+        let msg = (description ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        return AppError(
+          title: "Access required",
+          message: msg.isEmpty ? "Private beta access required." : msg,
+          debugDetails: debug
+        )
+      default:
+        return nil
+      }
+    case .http(let statusCode, _):
+      // Only use this helper when the HTTP error is known to have occurred during
+      // a refresh-token refresh attempt (not during normal overview fetch).
+      if statusCode == 401 {
+        return AppError(
+          title: "Session expired",
+          message: "Please sign in again to continue syncing.",
+          debugDetails: debug
+        )
+      }
+      return nil
+    default:
+      return nil
+    }
+  }
+
+  private func refreshActiveSessionIfNeeded(
+    client: APIClient,
+    activeSession: inout AuthStore.Session,
+    skewSeconds: TimeInterval = 60
+  ) async throws {
+    if activeSession.expiresAt > Date().addingTimeInterval(skewSeconds) { return }
+
+    let refreshed = try await client.deviceRefresh(refreshToken: activeSession.refreshToken)
+    let expiresAt = Date().addingTimeInterval(TimeInterval(refreshed.expiresIn))
+    let updated = AuthStore.Session(
+      accessToken: refreshed.accessToken,
+      refreshToken: refreshed.refreshToken,
+      expiresAt: expiresAt,
+      user: activeSession.user,
+      workspaces: activeSession.workspaces
+    )
+    try auth.saveSession(updated)
+    activeSession = updated
+  }
+
+  func addTodo(title: String, details: String? = nil) async {
+    guard auth.isSignedIn else { return }
+    guard var activeSession = auth.session else { return }
+
+    let workspaceID = settings.workspaceID.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !workspaceID.isEmpty else {
+      lastError = AppError(
+        title: "Missing workspace",
+        message: "Choose a primary workspace in Settings to add todos.",
+        debugDetails: "SettingsStore.workspaceID is empty."
+      )
+      return
+    }
+
+    let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmedTitle.isEmpty else { return }
+
+    let baseURLString = settings.serverBaseURL.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard let baseURL = URL(string: baseURLString) else {
+      lastError = AppError(
+        title: "Invalid server URL",
+        message: "Check Settings → Advanced → Server base URL.",
+        debugDetails: baseURLString
+      )
+      return
+    }
+
+    let client = APIClient(baseURL: baseURL)
+
+    do {
+      do {
+        try await refreshActiveSessionIfNeeded(client: client, activeSession: &activeSession)
+      } catch {
+        if let notice = noticeForRefreshAuthFailure(error) {
+          signOut(notice: notice)
+          return
+        }
+        throw error
+      }
+
+      _ = try await client.createTask(
+        workspaceID: workspaceID,
+        title: trimmedTitle,
+        body: details,
+        accessToken: activeSession.accessToken,
+        refreshToken: activeSession.refreshToken
+      )
+
+      await refresh()
+    } catch {
+      if let notice = noticeForRefreshAuthFailure(error) {
+        signOut(notice: notice)
+        return
+      }
+      lastError = AppError(
+        title: "Couldn’t add todo",
+        message: "Try again.",
+        debugDetails: String(describing: error)
+      )
+    }
+  }
+
+  func setTodoDone(taskID: String, isDone: Bool) async {
+    guard auth.isSignedIn else { return }
+    guard var activeSession = auth.session else { return }
+
+    let workspaceID = settings.workspaceID.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !workspaceID.isEmpty else { return }
+
+    let trimmedID = taskID.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmedID.isEmpty else { return }
+
+    let baseURLString = settings.serverBaseURL.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard let baseURL = URL(string: baseURLString) else { return }
+
+    let client = APIClient(baseURL: baseURL)
+    let status = isDone ? "DONE" : "OPEN"
+
+    do {
+      do {
+        try await refreshActiveSessionIfNeeded(client: client, activeSession: &activeSession)
+      } catch {
+        if let notice = noticeForRefreshAuthFailure(error) {
+          signOut(notice: notice)
+          return
+        }
+        throw error
+      }
+
+      _ = try await client.updateTaskStatus(
+        workspaceID: workspaceID,
+        taskID: trimmedID,
+        status: status,
+        accessToken: activeSession.accessToken,
+        refreshToken: activeSession.refreshToken
+      )
+
+      await refresh()
+    } catch {
+      if let notice = noticeForRefreshAuthFailure(error) {
+        signOut(notice: notice)
+        return
+      }
+      lastError = AppError(
+        title: "Couldn’t update todo",
+        message: "Try again.",
+        debugDetails: String(describing: error)
+      )
+    }
+  }
+
   func configureAutoRefreshLoop() {
     autoRefreshTask?.cancel()
     autoRefreshTask = nil
@@ -293,25 +469,6 @@ final class AppModel {
     var activeSession = session
     let hadPulse = (overview?.pulse.isEmpty == false)
 
-    func applyRefreshedSession(_ refreshed: APIClient.DeviceRefreshResponse) throws {
-      let expiresAt = Date().addingTimeInterval(TimeInterval(refreshed.expiresIn))
-      let updated = AuthStore.Session(
-        accessToken: refreshed.accessToken,
-        refreshToken: refreshed.refreshToken,
-        expiresAt: expiresAt,
-        user: activeSession.user,
-        workspaces: activeSession.workspaces
-      )
-      try auth.saveSession(updated)
-      activeSession = updated
-    }
-
-    func refreshIfNeeded(skewSeconds: TimeInterval = 60) async throws {
-      if activeSession.expiresAt > Date().addingTimeInterval(skewSeconds) { return }
-      let refreshed = try await client.deviceRefresh(refreshToken: activeSession.refreshToken)
-      try applyRefreshedSession(refreshed)
-    }
-
     func maybeHandleAuthGate(_ error: Error) -> Bool {
       // If the server is enforcing private beta access, treat it as a hard auth failure:
       // clear cached pulses, sign out, and show a signed-out notice.
@@ -351,7 +508,15 @@ final class AppModel {
     }
 
     do {
-      try await refreshIfNeeded()
+      do {
+        try await refreshActiveSessionIfNeeded(client: client, activeSession: &activeSession)
+      } catch {
+        if let notice = noticeForRefreshAuthFailure(error) {
+          signOut(notice: notice)
+          return
+        }
+        throw error
+      }
       let result = try await client.fetchOverview(
         workspaceID: workspaceID,
         accessToken: activeSession.accessToken,
@@ -393,7 +558,15 @@ final class AppModel {
       // If the access token expired early, refresh and retry once.
       if case APIClient.APIError.http(let statusCode, _) = error, statusCode == 401 {
         do {
-          try await refreshIfNeeded(skewSeconds: 0)
+          do {
+            try await refreshActiveSessionIfNeeded(client: client, activeSession: &activeSession, skewSeconds: 0)
+          } catch {
+            if let notice = noticeForRefreshAuthFailure(error) {
+              signOut(notice: notice)
+              return
+            }
+            throw error
+          }
           let retry = try await client.fetchOverview(
             workspaceID: workspaceID,
             accessToken: activeSession.accessToken,

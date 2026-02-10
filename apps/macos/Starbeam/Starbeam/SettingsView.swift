@@ -7,6 +7,8 @@ struct SettingsView: View {
 
   @Environment(AppModel.self) private var model
 
+  @State private var showAdvanced: Bool = false
+
   init(
     onRequestSignIn: @escaping () -> Void = {},
     onSignedOut: @escaping () -> Void = {}
@@ -20,135 +22,33 @@ struct SettingsView: View {
     @Bindable var settings = model.settings
 
     Form {
-      Section("Appearance") {
-        Picker("Mode", selection: $settings.appearanceMode) {
-          ForEach(StarbeamAppearanceMode.allCases) { mode in
-            Text(mode.displayName).tag(mode.rawValue)
-          }
-        }
-        .pickerStyle(.segmented)
-
-        Picker("Style", selection: $settings.visualStyle) {
-          ForEach(StarbeamVisualStyle.allCases) { s in
-            Text(s.displayName).tag(s.rawValue)
-          }
-        }
-        .pickerStyle(.segmented)
-
-        Text("Glass is neutral and system-native. Chroma brings back the colorful background.")
-          .font(.footnote)
-          .foregroundStyle(.secondary)
-      }
-
-      Section("Account") {
-        if model.auth.isSignedIn {
-          Text("Signed in")
-            .foregroundStyle(.secondary)
-
-          if let session = model.auth.session {
-            VStack(alignment: .leading, spacing: 4) {
-              Text(session.user.email)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .textSelection(.enabled)
-
-              let tokenOK = !session.accessToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-              Text("Access token: \(tokenOK ? "present" : "missing") · Expires: \(session.expiresAt.formatted(date: .abbreviated, time: .shortened))")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-            }
-            .padding(.top, 2)
-          }
-
-          Button("Sign out") {
-            model.signOut()
-            onSignedOut()
-          }
-        } else {
-          Text("Not signed in")
-            .foregroundStyle(.secondary)
-
-          Button("Sign in") {
-            onRequestSignIn()
-          }
-          .keyboardShortcut(.defaultAction)
-        }
-      }
-
-      Section("Server") {
-        VStack(alignment: .leading, spacing: 6) {
-          TextField("Base URL", text: $settings.serverBaseURL)
-            .textFieldStyle(.roundedBorder)
-
-          Text("Used for device sign-in and API requests. Default: https://app.starbeamhq.com")
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-
-          HStack(spacing: 10) {
-            Button("Clear local cache") {
-              model.clearCache()
-            }
-
-            Text("Clears last successful overview JSON stored in Application Support.")
-              .font(.footnote)
-              .foregroundStyle(.secondary)
-          }
-        }
-      }
-
-      Section("Dashboard") {
-        VStack(alignment: .leading, spacing: 6) {
-          TextField("Dashboard URL", text: $settings.dashboardBaseURL)
-            .textFieldStyle(.roundedBorder)
-
-          TextField("Submit idea URL", text: $settings.submitIdeaURL)
-            .textFieldStyle(.roundedBorder)
-
-          Text("These links open in your default browser.")
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-
-          HStack(spacing: 10) {
-            Button("Open web pulse") {
-              if let url = model.dashboardURL(kind: .pulse) {
-                NSWorkspace.shared.open(url)
-              }
-            }
-            .disabled(model.dashboardURL(kind: .pulse) == nil)
-
-            Button("Submit idea…") {
-              let raw = settings.submitIdeaURL.trimmingCharacters(in: .whitespacesAndNewlines)
-              if let url = URL(string: raw) {
-                NSWorkspace.shared.open(url)
-              }
-            }
-          }
-          .padding(.top, 4)
-        }
-      }
-
       Section("Workspace") {
         VStack(alignment: .leading, spacing: 6) {
-          if let session = model.auth.session, !session.workspaces.isEmpty {
-            Picker("Workspace", selection: $settings.workspaceID) {
+          if !model.auth.isSignedIn {
+            Text("Sign in to choose a workspace.")
+              .font(.footnote)
+              .foregroundStyle(.secondary)
+
+            Button("Sign in") { onRequestSignIn() }
+              .keyboardShortcut(.defaultAction)
+          } else if let session = model.auth.session, !session.workspaces.isEmpty {
+            Picker("Primary workspace", selection: $settings.workspaceID) {
               ForEach(session.workspaces) { ws in
                 Text(ws.name).tag(ws.id)
               }
             }
             .pickerStyle(.menu)
-
-            if !settings.workspaceID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-              Text("Workspace ID: \(settings.workspaceID)")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .textSelection(.enabled)
-            }
           } else {
-            TextField("Workspace ID", text: $settings.workspaceID)
-              .textFieldStyle(.roundedBorder)
+            Text("No workspaces found for this account.")
+              .font(.footnote)
+              .foregroundStyle(.secondary)
+
+            Text("Try signing out and signing back in.")
+              .font(.footnote)
+              .foregroundStyle(.secondary)
           }
 
-          Text("Required for overview sync (used as workspace_id in /api/v1/macos/overview).")
+          Text("This is the workspace shown first. You can swipe left/right in the menu bar to switch between workspaces.")
             .font(.footnote)
             .foregroundStyle(.secondary)
         }
@@ -172,19 +72,105 @@ struct SettingsView: View {
           .foregroundStyle(.secondary)
       }
 
+      Section("Appearance") {
+        Picker("Mode", selection: $settings.appearanceMode) {
+          ForEach(StarbeamAppearanceMode.allCases) { mode in
+            Text(mode.displayName).tag(mode.rawValue)
+          }
+        }
+        .pickerStyle(.segmented)
+
+        Picker("Style", selection: $settings.visualStyle) {
+          ForEach(StarbeamVisualStyle.allCases) { s in
+            Text(s.displayName).tag(s.rawValue)
+          }
+        }
+        .pickerStyle(.segmented)
+
+        Text("Glass is neutral and system-native. Chroma brings back the colorful background.")
+          .font(.footnote)
+          .foregroundStyle(.secondary)
+      }
+
+      Section("Advanced") {
+        DisclosureGroup("Advanced settings", isExpanded: $showAdvanced) {
+          VStack(alignment: .leading, spacing: 10) {
+            Text("These settings are for troubleshooting and self-hosting. Most users should keep the defaults.")
+              .font(.footnote)
+              .foregroundStyle(.secondary)
+              .fixedSize(horizontal: false, vertical: true)
+
+            TextField("Server base URL", text: $settings.serverBaseURL)
+              .textFieldStyle(.roundedBorder)
+
+            TextField("Web dashboard URL", text: $settings.dashboardBaseURL)
+              .textFieldStyle(.roundedBorder)
+
+            TextField("Submit idea URL", text: $settings.submitIdeaURL)
+              .textFieldStyle(.roundedBorder)
+
+            HStack(spacing: 10) {
+              Button("Clear local cache") { model.clearCache() }
+
+              Text("Clears last successful overview JSON stored in Application Support.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            }
+
+            HStack(spacing: 10) {
+              Button("Open web pulse") {
+                if let url = model.dashboardURL(kind: .pulse) {
+                  NSWorkspace.shared.open(url)
+                }
+              }
+              .disabled(model.dashboardURL(kind: .pulse) == nil)
+
+              Button("Submit idea…") {
+                let raw = settings.submitIdeaURL.trimmingCharacters(in: .whitespacesAndNewlines)
+                if let url = URL(string: raw) {
+                  NSWorkspace.shared.open(url)
+                }
+              }
+            }
+            .padding(.top, 2)
+          }
+          .padding(.top, 6)
+        }
+      }
+
       Section("Updates") {
         VStack(alignment: .leading, spacing: 8) {
           Button("Check for updates…") {
             model.updater.checkForUpdates()
           }
 
-          Text("Direct-download builds use Sparkle for updates: download silently, ask before install.")
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-
           Text("Version: \(appVersionString())")
             .font(.footnote)
             .foregroundStyle(.secondary)
+        }
+      }
+
+      Section("Account") {
+        if model.auth.isSignedIn {
+          Text("Signed in")
+            .foregroundStyle(.secondary)
+
+          if let session = model.auth.session {
+            Text(session.user.email)
+              .font(.footnote)
+              .foregroundStyle(.secondary)
+              .textSelection(.enabled)
+          }
+
+          Button("Sign out") {
+            model.signOut()
+            onSignedOut()
+          }
+        } else {
+          Text("Not signed in")
+            .foregroundStyle(.secondary)
+
+          Button("Sign in") { onRequestSignIn() }
         }
       }
     }
