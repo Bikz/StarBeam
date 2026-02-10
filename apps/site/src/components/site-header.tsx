@@ -5,9 +5,11 @@ import { sbButtonClass } from "@starbeam/shared";
 export default function SiteHeader({
   appOrigin,
   minimal = false,
+  home = false,
 }: {
   appOrigin: string;
   minimal?: boolean;
+  home?: boolean;
 }) {
   return (
     <header className="sb-marketing-shell">
@@ -39,33 +41,67 @@ export default function SiteHeader({
             className="flex flex-wrap items-center gap-2"
             aria-label="Primary navigation"
           >
-            <Link
-              href="/download"
-              className={sbButtonClass({
-                variant: "ghost",
-                className: "px-4 py-2 text-xs font-semibold",
-              })}
-            >
-              Download
-            </Link>
-            <a
-              href={`${appOrigin}/login`}
-              className={sbButtonClass({
-                variant: "ghost",
-                className: "px-4 py-2 text-xs font-semibold",
-              })}
-            >
-              Sign in
-            </a>
-            <a
-              href={`${appOrigin}/login?mode=waitlist`}
-              className={sbButtonClass({
-                variant: "primary",
-                className: "px-4 py-2 text-xs font-extrabold",
-              })}
-            >
-              Join waitlist
-            </a>
+            {home ? (
+              <>
+                <Link
+                  href="/download"
+                  className={sbButtonClass({
+                    variant: "ghost",
+                    className: "px-4 py-2 text-xs font-semibold",
+                  })}
+                >
+                  Download
+                </Link>
+                <a
+                  href={`${appOrigin}/login`}
+                  className={sbButtonClass({
+                    variant: "ghost",
+                    className: "px-4 py-2 text-xs font-semibold",
+                  })}
+                >
+                  Sign in
+                </a>
+                <Link
+                  href="/#waitlist"
+                  className={sbButtonClass({
+                    variant: "primary",
+                    className: "px-4 py-2 text-xs font-extrabold",
+                  })}
+                >
+                  Join waitlist
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/download"
+                  className={sbButtonClass({
+                    variant: "ghost",
+                    className: "px-4 py-2 text-xs font-semibold",
+                  })}
+                >
+                  Download
+                </Link>
+                <a
+                  href={`${appOrigin}/login`}
+                  className={sbButtonClass({
+                    variant: "ghost",
+                    className: "px-4 py-2 text-xs font-semibold",
+                  })}
+                >
+                  Sign in
+                </a>
+                <a
+                  href={`${appOrigin}/login?mode=waitlist`}
+                  className={sbButtonClass({
+                    variant: "primary",
+                    className: "px-4 py-2 text-xs font-extrabold",
+                  })}
+                >
+                  Join waitlist
+                </a>
+              </>
+            )}
           </nav>
         )}
       </div>

@@ -56,7 +56,7 @@ export default async function Home({
         Skip to content
       </a>
       <div className="mx-auto max-w-6xl px-6 py-12 sm:py-16">
-        <SiteHeader appOrigin={app} />
+        <SiteHeader appOrigin={app} home />
 
         <main id="main" className="mt-10">
           <section className="sb-marketing-shell">
@@ -89,6 +89,7 @@ export default async function Home({
                   </p>
 
                   <form
+                    id="waitlist"
                     action={`${app}/login`}
                     method="GET"
                     className="mt-7 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end"
@@ -135,21 +136,17 @@ export default async function Home({
                     referral link.
                   </div>
 
-                <div className="mt-7 flex flex-wrap items-center gap-4 text-xs">
-                  <a
-                    href={`${app}/login`}
-                    className="font-semibold text-[color:var(--sb-fg)] hover:underline"
-                  >
-                    Sign in
-                  </a>
-                  <a
-                    href="/download"
-                    className="font-semibold text-[color:var(--sb-muted)] hover:text-[color:var(--sb-fg)] hover:underline"
-                  >
-                    Download macOS app
-                  </a>
+                  <div className="mt-3 text-xs text-[color:var(--sb-muted)] leading-relaxed">
+                    Already invited?{" "}
+                    <a
+                      href={`${app}/login`}
+                      className="font-semibold text-[color:var(--sb-fg)] hover:underline"
+                    >
+                      Sign in
+                    </a>
+                    .
+                  </div>
                 </div>
-              </div>
 
                 <div className="relative">
                   <div className="pointer-events-none absolute -inset-6 rounded-[30px] bg-[radial-gradient(600px_420px_at_40%_40%,rgba(0,0,0,0.08),transparent_60%)] dark:bg-[radial-gradient(600px_420px_at_40%_40%,rgba(255,255,255,0.10),transparent_60%)]" />
@@ -251,15 +248,6 @@ export default async function Home({
                 </ol>
                 <div className="mt-7 flex flex-wrap items-center gap-4">
                   <a
-                    href={`${app}/login?mode=waitlist`}
-                    className={sbButtonClass({
-                      variant: "primary",
-                      className: "px-5 py-2.5 text-xs font-extrabold",
-                    })}
-                  >
-                    Join waitlist
-                  </a>
-                  <a
                     href="/faq"
                     className="text-xs font-semibold text-[color:var(--sb-muted)] hover:text-[color:var(--sb-fg)] hover:underline"
                   >
@@ -282,49 +270,10 @@ export default async function Home({
             </div>
           </section>
 
-          <section className="mt-10 sb-marketing-shell">
-            <div className="sb-card p-7 sm:p-8 relative overflow-hidden">
-              <div className="sb-orbit" aria-hidden />
-              <div className="relative grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-                <div>
-                  <div className="sb-title text-2xl font-extrabold">
-                    Get the pulse in your menu bar.
-                  </div>
-                  <p className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed max-w-xl">
-                    Download the macOS app for the cleanest “once a day”
-                    experience, then use the web app to connect tools and set
-                    context.
-                  </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-4 lg:justify-end">
-                  <a
-                    href="/download"
-                    className={sbButtonClass({
-                      variant: "primary",
-                      className: "px-5 py-2.5 text-xs font-extrabold",
-                    })}
-                  >
-                    Download for macOS
-                  </a>
-                  <a
-                    href={`${app}/login`}
-                    className="text-xs font-semibold text-[color:var(--sb-muted)] hover:text-[color:var(--sb-fg)] hover:underline"
-                  >
-                    Sign in
-                  </a>
-                  <a
-                    href={`${app}/login?mode=waitlist`}
-                    className="text-xs font-semibold text-[color:var(--sb-muted)] hover:text-[color:var(--sb-fg)] hover:underline"
-                  >
-                    Join waitlist
-                  </a>
-                </div>
-              </div>
-            </div>
-          </section>
+          {/* Home-only promo CTA lives in the footer. */}
         </main>
 
-        <SiteFooter appOrigin={app} supportEmail={email} />
+        <SiteFooter appOrigin={app} supportEmail={email} homePromo={{ ctaHref: "#waitlist" }} />
       </div>
     </div>
   );
