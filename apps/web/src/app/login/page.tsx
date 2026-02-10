@@ -85,36 +85,18 @@ export default async function LoginPage({
                 <div className="text-xs font-extrabold sb-title">What you get</div>
                 <ul className="mt-2 grid gap-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
                   <li>
-                    <span className="font-semibold text-[color:var(--sb-fg)]">Pulse</span>{" "}
-                    cards for what matters today (focus, calendar, updates).
+                    <span className="font-semibold text-[color:var(--sb-fg)]">One calm pulse</span>{" "}
+                    each morning: what changed, why it matters, and what to do next.
                   </li>
                   <li>
-                    <span className="font-semibold text-[color:var(--sb-fg)]">One minute</span>{" "}
-                    each morning. No inbox mining.
+                    <span className="font-semibold text-[color:var(--sb-fg)]">Citations by default</span>{" "}
+                    so you can verify quickly and move on.
                   </li>
                   <li>
-                    <span className="font-semibold text-[color:var(--sb-fg)]">macOS app</span>{" "}
-                    signs in via device approval, then stays synced.
+                    <span className="font-semibold text-[color:var(--sb-fg)]">Context-aware</span>{" "}
+                    with goals and pinned announcements to keep your team aligned.
                   </li>
                 </ul>
-              </div>
-
-              <div className="sb-card-inset p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="text-xs font-extrabold sb-title">Today’s pulse (preview)</div>
-                  <div className="sb-kbd">7:30 AM</div>
-                </div>
-                <div className="mt-3 grid gap-2">
-                  <div className="h-10 rounded-xl border border-[color:var(--sb-divider)] bg-[color:var(--sb-inset-bg)] p-3">
-                    <div className="sb-skeleton h-3 w-[62%] rounded-lg" />
-                  </div>
-                  <div className="h-10 rounded-xl border border-[color:var(--sb-divider)] bg-[color:var(--sb-inset-bg)] p-3">
-                    <div className="sb-skeleton h-3 w-[78%] rounded-lg" />
-                  </div>
-                  <div className="h-10 rounded-xl border border-[color:var(--sb-divider)] bg-[color:var(--sb-inset-bg)] p-3">
-                    <div className="sb-skeleton h-3 w-[55%] rounded-lg" />
-                  </div>
-                </div>
               </div>
             </div>
 
