@@ -143,6 +143,7 @@ export default function EmailCodeSignIn({
       {step === "email" ? (
         <form
           className="grid gap-3"
+          autoComplete="on"
           onSubmit={(e) => {
             e.preventDefault();
             if (!canContinue) return;
@@ -157,7 +158,9 @@ export default function EmailCodeSignIn({
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@company.com…"
-              autoComplete="email"
+              // Safari/iCloud Keychain behaves best with "username" for email-code auth.
+              autoComplete="username"
+              autoCapitalize="none"
               spellCheck={false}
               className="sb-input"
               disabled={busy}
@@ -180,6 +183,7 @@ export default function EmailCodeSignIn({
           <div className="grid gap-2">
             <div className="text-xs font-extrabold sb-title">6-digit code</div>
             <input
+              name="code"
               inputMode="numeric"
               pattern="[0-9]*"
               value={code}
@@ -190,6 +194,9 @@ export default function EmailCodeSignIn({
               disabled={busy}
             />
           </div>
+
+          {/* Safari/iCloud Passwords popover can overlap the actions; keep a buffer below the code field. */}
+          <div className="h-16 sm:h-14" aria-hidden />
 
           <div className="flex flex-wrap items-center gap-2">
             <button
