@@ -155,20 +155,20 @@ export default function EmailCodeSignIn({
               name="email"
               type="email"
               value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@company.com…"
-            autoComplete="email"
-            spellCheck={false}
-            className="sb-input"
-            disabled={busy}
-          />
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@company.com…"
+              autoComplete="email"
+              spellCheck={false}
+              className="sb-input"
+              disabled={busy}
+            />
           </label>
 
           <button
             type="submit"
             className={sbButtonClass({
               variant: "primary",
-              className: "h-11 px-5 text-sm font-extrabold",
+              className: "h-11 w-full px-5 text-sm font-extrabold",
             })}
             disabled={!canContinue}
           >
@@ -186,7 +186,7 @@ export default function EmailCodeSignIn({
               onChange={(e) => setCode(e.target.value)}
               placeholder="123456"
               autoComplete="one-time-code"
-              className="sb-input font-mono tracking-widest"
+              className="sb-input font-mono tracking-widest text-center text-[16px] sm:text-[18px]"
               disabled={busy}
             />
           </div>
