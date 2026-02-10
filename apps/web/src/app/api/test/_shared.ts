@@ -19,6 +19,15 @@ function isLoopback(ip: string): boolean {
   return false;
 }
 
+function isLocalHostname(hostname: string): boolean {
+  const h = hostname.trim().toLowerCase();
+  if (!h) return false;
+  if (h === "localhost" || h === "127.0.0.1" || h === "::1") return true;
+  // Common local setup for app subdomain routing.
+  if (h.endsWith(".localhost")) return true;
+  return false;
+}
+
 export function requireTestEndpoints(request: Request): NextResponse | null {
   // Never allow these endpoints in production.
   if (process.env.NODE_ENV === "production") {
@@ -32,6 +41,12 @@ export function requireTestEndpoints(request: Request): NextResponse | null {
   // Optional: lock to loopback by default.
   const allowNonLocal = isTruthy(process.env.STARB_TEST_ALLOW_NONLOCAL);
   if (!allowNonLocal) {
+    // Prefer hostname checks since CI/local dev typically don't set proxy IP headers.
+    const url = new URL(request.url);
+    if (!isLocalHostname(url.hostname)) {
+      return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    }
+
     const ip = clientIp(request.headers);
     if (ip && !isLoopback(ip)) {
       return NextResponse.json({ error: "forbidden" }, { status: 403 });
