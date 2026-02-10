@@ -3,6 +3,9 @@ docs/
 
 ## Accidental / local-only workspace artifacts
 apps/apps/
+.agent/
+.agents/
+.factory/
 
 ## Node / JS
 node_modules/
