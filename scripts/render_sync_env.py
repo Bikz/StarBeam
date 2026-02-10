@@ -13,6 +13,11 @@ Auth:
 
 This script is additive: it merges keys into existing service env vars and does not
 wipe unknown keys.
+
+Note: updating env vars on Render may already trigger a deploy depending on how the
+service is configured. To avoid accidental overlapping deploys (duplicate builds),
+this script does NOT explicitly trigger deploys by default. Use --deploy if you
+want it to.
 """
 
 from __future__ import annotations
@@ -119,6 +124,11 @@ def main() -> int:
     ap.add_argument("--env-id", default=DEFAULT_ENV_ID)
     ap.add_argument("--web-name", default=DEFAULT_WEB_NAME)
     ap.add_argument("--worker-name", default=DEFAULT_WORKER_NAME)
+    ap.add_argument(
+        "--deploy",
+        action="store_true",
+        help="Trigger a deploy after updating env vars (disabled by default to avoid overlapping deploys).",
+    )
     args = ap.parse_args()
 
     cfg = _read_render_cli_yaml()
@@ -198,13 +208,24 @@ def main() -> int:
 
         return current
 
-    def put_env_vars(service_id: str, updates: dict[str, str]) -> None:
-        merged = get_env_vars(service_id)
+    def put_env_vars(service_id: str, updates: dict[str, str]) -> list[str]:
+        current = get_env_vars(service_id)
+        merged = dict(current)
+        changed: list[str] = []
+
         for k, v in updates.items():
-            if v:
-                merged[k] = v
+            if not v:
+                continue
+            if current.get(k) != v:
+                changed.append(k)
+            merged[k] = v
+
+        if not changed:
+            return []
+
         payload = [{"key": k, "value": v} for k, v in sorted(merged.items())]
         _api(host, key, "PUT", f"/services/{service_id}/env-vars", payload)
+        return sorted(changed)
 
     common = {
         "NODE_ENV": "production",
@@ -258,18 +279,36 @@ def main() -> int:
         if kv.get(k):
             worker_env[k] = kv[k]
 
-    put_env_vars(str(web["id"]), web_env)
-    put_env_vars(str(worker["id"]), worker_env)
+    web_changed = put_env_vars(str(web["id"]), web_env)
+    worker_changed = put_env_vars(str(worker["id"]), worker_env)
 
-    # Kick deploys after env update (does not clear build cache).
-    _api(host, key, "POST", f"/services/{web['id']}/deploys", {"clearCache": "do_not_clear"})
-    _api(host, key, "POST", f"/services/{worker['id']}/deploys", {"clearCache": "do_not_clear"})
+    deploys_triggered = False
+    if args.deploy and (web_changed or worker_changed):
+        # Optional: explicitly trigger deploys after env update (does not clear build cache).
+        _api(
+            host,
+            key,
+            "POST",
+            f"/services/{web['id']}/deploys",
+            {"clearCache": "do_not_clear"},
+        )
+        _api(
+            host,
+            key,
+            "POST",
+            f"/services/{worker['id']}/deploys",
+            {"clearCache": "do_not_clear"},
+        )
+        deploys_triggered = True
 
     missing = [k for k in ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "OPENAI_API_KEY"] if not kv.get(k)]
     result = {
         "envId": args.env_id,
         "webServiceId": web["id"],
         "workerServiceId": worker["id"],
+        "webChangedKeys": web_changed,
+        "workerChangedKeys": worker_changed,
+        "deploysTriggered": deploys_triggered,
         "missingLocally": missing,
     }
     print(json.dumps(result, indent=2))

@@ -44,6 +44,16 @@ After pushing a commit to `main`, verify the deploy ran migrations in pre-deploy
 2. In the Prisma output, confirm it either applies migrations or prints `No pending migrations to apply.`
 3. Confirm the service is `live` and `GET /api/health` returns `200`.
 
+## Avoid Duplicate Builds / Overlapping Deploys
+
+Render deploys can overlap when multiple triggers fire for the same commit (for example: auto-deploy from a git push plus an API-triggered deploy from an env-sync script). This often shows up as "Deploy canceled… Another deploy started."
+
+To keep deploys clean and avoid duplicate builds:
+
+1. Prefer auto-deploy on git push for routine changes.
+2. Only run `scripts/render_sync_env.py` / `scripts/render_set_email_env.py` when you actually changed env vars.
+3. Those scripts do **not** trigger deploys by default. If you need them to, pass `--deploy`.
+
 ## Required Environment Variables
 
 Web (`starbeam-web`):

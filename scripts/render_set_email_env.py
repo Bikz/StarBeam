@@ -11,6 +11,11 @@ Auth:
 
 Inputs:
   - Reads from .env.local (repo root) first, then .env.
+
+Note: updating env vars on Render may already trigger a deploy depending on how the
+service is configured. To avoid accidental overlapping deploys (duplicate builds),
+this script does NOT explicitly trigger deploys by default. Use --deploy if you
+want it to.
 """
 
 from __future__ import annotations
@@ -90,6 +95,11 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--env-id", default=DEFAULT_ENV_ID)
     ap.add_argument("--web-name", default=DEFAULT_WEB_NAME)
+    ap.add_argument(
+        "--deploy",
+        action="store_true",
+        help="Trigger a deploy after updating env vars (disabled by default to avoid overlapping deploys).",
+    )
     args = ap.parse_args()
 
     cfg = _read_render_cli_yaml()
@@ -168,11 +178,20 @@ def main() -> int:
 
     merged = dict(current)
     merged.update(updates)
-    payload = [{"key": k, "value": v} for k, v in sorted(merged.items())]
-    _api(host, key, "PUT", f"/services/{service_id}/env-vars", payload)
+    changed = sorted([k for k, v in updates.items() if current.get(k) != v])
+    if changed:
+        payload = [{"key": k, "value": v} for k, v in sorted(merged.items())]
+        _api(host, key, "PUT", f"/services/{service_id}/env-vars", payload)
 
-    # Kick a deploy (no cache clear).
-    _api(host, key, "POST", f"/services/{service_id}/deploys", {"clearCache": "do_not_clear"})
+        # Optional: kick a deploy (no cache clear).
+        if args.deploy:
+            _api(
+                host,
+                key,
+                "POST",
+                f"/services/{service_id}/deploys",
+                {"clearCache": "do_not_clear"},
+            )
 
     # Print only non-secret metadata.
     print(
@@ -181,7 +200,8 @@ def main() -> int:
                 "envId": args.env_id,
                 "webServiceId": service_id,
                 "updatedKeys": sorted(list(updates.keys())),
-                "deployTriggered": True,
+                "changedKeys": changed,
+                "deployTriggered": bool(args.deploy and changed),
             },
             indent=2,
         )
