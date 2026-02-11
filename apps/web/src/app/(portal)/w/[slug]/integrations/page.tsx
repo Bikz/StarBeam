@@ -87,7 +87,7 @@ export default async function IntegrationsPage({
   ]);
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+    <div className="grid items-start gap-6 lg:grid-cols-[1.1fr_0.9fr]">
       <div className="grid gap-6">
         <div className="sb-card p-7" id="google">
           <PageHeader
@@ -524,29 +524,33 @@ export default async function IntegrationsPage({
         </div>
       </div>
 
-      <div className="grid gap-6">
-        <div className="sb-card p-7">
-          <PageHeader title="Privacy" />
-          <div className="mt-3 grid gap-3 text-sm text-[color:var(--sb-muted)] leading-relaxed">
-            <div>Token-based connectors are stored encrypted.</div>
-            <div>
-              Managers cannot view employee raw connected-tool data. Connections
-              are per-user and scoped to a workspace.
-            </div>
-          </div>
-        </div>
+      <div className="grid content-start gap-6">
+        <aside className="sb-card p-6 sm:p-7">
+          <PageHeader title="More info" size="sm" as="h3" />
 
-        <div className="sb-card p-7">
-          <PageHeader title="Next" />
-          <div className="mt-3 grid gap-3 text-sm text-[color:var(--sb-muted)] leading-relaxed">
-            <div>
-              After you connect an integration, go to{" "}
-              <span className="sb-title">Runs</span> and click{" "}
-              <span className="sb-title">Run now</span> to ingest and generate
-              an updated pulse.
-            </div>
+          <div className="mt-4 grid gap-4">
+            <section className="sb-card-inset p-4">
+              <div className="text-xs font-extrabold sb-title">Privacy</div>
+              <div className="mt-2 grid gap-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
+                <div>Token-based connectors are stored encrypted.</div>
+                <div>
+                  Managers cannot view employee raw connected-tool data.
+                  Connections are per-user and scoped to a workspace.
+                </div>
+              </div>
+            </section>
+
+            <section className="sb-card-inset p-4">
+              <div className="text-xs font-extrabold sb-title">Next</div>
+              <div className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
+                After you connect an integration, go to{" "}
+                <span className="sb-title">Runs</span> and click{" "}
+                <span className="sb-title">Run now</span> to ingest and generate
+                an updated pulse.
+              </div>
+            </section>
           </div>
-        </div>
+        </aside>
       </div>
     </div>
   );
