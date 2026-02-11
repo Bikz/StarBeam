@@ -1,4 +1,3 @@
-import Link from "next/link";
 /* eslint-disable react-hooks/purity */
 
 import { notFound, redirect } from "next/navigation";
@@ -47,22 +46,9 @@ export default async function MembersPage({
 
   const inviteToken = sp.invite;
   const inviteUrl = inviteToken ? `${webOrigin()}/invite/${inviteToken}` : null;
-  const base = `/w/${membership.workspace.slug}`;
 
   return (
     <div className="grid gap-3">
-      <div>
-        <Link
-          href={`${base}/settings`}
-          className={sbButtonClass({
-            variant: "ghost",
-            className: "h-9 px-3 text-xs font-semibold",
-          })}
-        >
-          Back to Settings
-        </Link>
-      </div>
-
       <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
         <div className="sb-card p-7">
           <PageHeader
