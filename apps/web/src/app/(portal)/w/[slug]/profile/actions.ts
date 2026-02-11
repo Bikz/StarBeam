@@ -35,6 +35,52 @@ const UpsertProfileSchema = z.object({
   competitorDomainsRaw: z.string().max(4000).optional(),
 });
 
+const UpsertPersonalProfileSchema = z.object({
+  jobTitle: z.string().max(120).optional(),
+  about: z.string().max(4000).optional(),
+});
+
+export async function upsertPersonalProfile(
+  workspaceSlug: string,
+  formData: FormData,
+) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  const membership = await prisma.membership.findFirst({
+    where: { userId: session.user.id, workspace: { slug: workspaceSlug } },
+    include: { workspace: true },
+  });
+  if (!membership) throw new Error("Not a member");
+
+  const parsed = UpsertPersonalProfileSchema.safeParse({
+    jobTitle: String(formData.get("jobTitle") ?? "").trim() || undefined,
+    about: String(formData.get("about") ?? "").trim() || undefined,
+  });
+  if (!parsed.success) throw new Error("Invalid personal profile");
+
+  await prisma.workspaceMemberProfile.upsert({
+    where: {
+      workspaceId_userId: {
+        workspaceId: membership.workspace.id,
+        userId: session.user.id,
+      },
+    },
+    update: {
+      jobTitle: parsed.data.jobTitle ?? null,
+      about: parsed.data.about ?? null,
+    },
+    create: {
+      workspaceId: membership.workspace.id,
+      userId: session.user.id,
+      jobTitle: parsed.data.jobTitle ?? null,
+      about: parsed.data.about ?? null,
+    },
+  });
+
+  redirect(`/w/${workspaceSlug}/profile?saved=personal`);
+}
+
 export async function upsertWorkspaceProfile(
   workspaceSlug: string,
   formData: FormData,
@@ -83,5 +129,5 @@ export async function upsertWorkspaceProfile(
     },
   });
 
-  redirect(`/w/${workspaceSlug}/profile?saved=1`);
+  redirect(`/w/${workspaceSlug}/profile?saved=workspace`);
 }

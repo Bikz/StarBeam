@@ -19,15 +19,39 @@ const CreateGoalSchema = z.object({
   targetDate: z.string().optional(),
 });
 
+const CreatePersonalGoalSchema = z.object({
+  title: z.string().min(3).max(160),
+  body: z.string().max(8000).optional(),
+  targetWindow: z.string().max(120).optional(),
+});
+
+const UpdatePersonalGoalSchema = z.object({
+  title: z.string().min(3).max(160),
+  body: z.string().max(8000).optional(),
+  targetWindow: z.string().max(120).optional(),
+  active: z.enum(["on"]).optional(),
+});
+
+async function requireWorkspaceMembership(args: {
+  workspaceSlug: string;
+  userId: string;
+}) {
+  const membership = await prisma.membership.findFirst({
+    where: { userId: args.userId, workspace: { slug: args.workspaceSlug } },
+    include: { workspace: true },
+  });
+  if (!membership) throw new Error("Not a member");
+  return membership;
+}
+
 export async function createGoal(workspaceSlug: string, formData: FormData) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) throw new Error("Unauthorized");
 
-  const membership = await prisma.membership.findFirst({
-    where: { userId: session.user.id, workspace: { slug: workspaceSlug } },
-    include: { workspace: true },
+  const membership = await requireWorkspaceMembership({
+    workspaceSlug,
+    userId: session.user.id,
   });
-  if (!membership) throw new Error("Not a member");
   if (!canManage(membership.role)) throw new Error("Managers/Admins only");
 
   const parsed = CreateGoalSchema.safeParse({
@@ -80,11 +104,10 @@ export async function toggleGoalActive(workspaceSlug: string, goalId: string) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) throw new Error("Unauthorized");
 
-  const membership = await prisma.membership.findFirst({
-    where: { userId: session.user.id, workspace: { slug: workspaceSlug } },
-    include: { workspace: true },
+  const membership = await requireWorkspaceMembership({
+    workspaceSlug,
+    userId: session.user.id,
   });
-  if (!membership) throw new Error("Not a member");
   if (!canManage(membership.role)) throw new Error("Managers/Admins only");
 
   const goal = await prisma.goal.findFirst({
@@ -115,11 +138,10 @@ export async function deleteGoal(workspaceSlug: string, goalId: string) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) throw new Error("Unauthorized");
 
-  const membership = await prisma.membership.findFirst({
-    where: { userId: session.user.id, workspace: { slug: workspaceSlug } },
-    include: { workspace: true },
+  const membership = await requireWorkspaceMembership({
+    workspaceSlug,
+    userId: session.user.id,
   });
-  if (!membership) throw new Error("Not a member");
   if (!canManage(membership.role)) throw new Error("Managers/Admins only");
 
   const goal = await prisma.goal.findFirst({
@@ -133,4 +155,138 @@ export async function deleteGoal(workspaceSlug: string, goalId: string) {
   redirect(
     `/w/${workspaceSlug}/tracks?track=${encodeURIComponent(goal.departmentId ?? "")}`,
   );
+}
+
+export async function createPersonalGoal(
+  workspaceSlug: string,
+  formData: FormData,
+) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  const membership = await requireWorkspaceMembership({
+    workspaceSlug,
+    userId: session.user.id,
+  });
+
+  const parsed = CreatePersonalGoalSchema.safeParse({
+    title: String(formData.get("title") ?? ""),
+    body: String(formData.get("body") ?? ""),
+    targetWindow: String(formData.get("targetWindow") ?? ""),
+  });
+  if (!parsed.success) throw new Error("Invalid personal goal");
+
+  await prisma.personalGoal.create({
+    data: {
+      workspaceId: membership.workspace.id,
+      userId: session.user.id,
+      title: parsed.data.title.trim(),
+      body: (parsed.data.body ?? "").trim(),
+      targetWindow: parsed.data.targetWindow?.trim() || null,
+      active: true,
+    },
+  });
+
+  redirect(`/w/${workspaceSlug}/tracks?section=personal`);
+}
+
+export async function updatePersonalGoal(
+  workspaceSlug: string,
+  personalGoalId: string,
+  formData: FormData,
+) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  const membership = await requireWorkspaceMembership({
+    workspaceSlug,
+    userId: session.user.id,
+  });
+
+  const parsed = UpdatePersonalGoalSchema.safeParse({
+    title: String(formData.get("title") ?? ""),
+    body: String(formData.get("body") ?? ""),
+    targetWindow: String(formData.get("targetWindow") ?? ""),
+    active: formData.get("active") ? "on" : undefined,
+  });
+  if (!parsed.success) throw new Error("Invalid personal goal");
+
+  const goal = await prisma.personalGoal.findFirst({
+    where: {
+      id: personalGoalId,
+      workspaceId: membership.workspace.id,
+      userId: session.user.id,
+    },
+    select: { id: true },
+  });
+  if (!goal) throw new Error("Personal goal not found");
+
+  await prisma.personalGoal.update({
+    where: { id: goal.id },
+    data: {
+      title: parsed.data.title.trim(),
+      body: (parsed.data.body ?? "").trim(),
+      targetWindow: parsed.data.targetWindow?.trim() || null,
+      active: Boolean(parsed.data.active),
+    },
+  });
+
+  redirect(`/w/${workspaceSlug}/tracks?section=personal`);
+}
+
+export async function togglePersonalGoalActive(
+  workspaceSlug: string,
+  personalGoalId: string,
+) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  const membership = await requireWorkspaceMembership({
+    workspaceSlug,
+    userId: session.user.id,
+  });
+
+  const goal = await prisma.personalGoal.findFirst({
+    where: {
+      id: personalGoalId,
+      workspaceId: membership.workspace.id,
+      userId: session.user.id,
+    },
+    select: { id: true, active: true },
+  });
+  if (!goal) throw new Error("Personal goal not found");
+
+  await prisma.personalGoal.update({
+    where: { id: goal.id },
+    data: { active: !goal.active },
+  });
+
+  redirect(`/w/${workspaceSlug}/tracks?section=personal`);
+}
+
+export async function deletePersonalGoal(
+  workspaceSlug: string,
+  personalGoalId: string,
+) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  const membership = await requireWorkspaceMembership({
+    workspaceSlug,
+    userId: session.user.id,
+  });
+
+  const goal = await prisma.personalGoal.findFirst({
+    where: {
+      id: personalGoalId,
+      workspaceId: membership.workspace.id,
+      userId: session.user.id,
+    },
+    select: { id: true },
+  });
+  if (!goal) throw new Error("Personal goal not found");
+
+  await prisma.personalGoal.delete({ where: { id: goal.id } });
+
+  redirect(`/w/${workspaceSlug}/tracks?section=personal`);
 }

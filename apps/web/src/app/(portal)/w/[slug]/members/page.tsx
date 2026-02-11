@@ -6,10 +6,18 @@ import { sbButtonClass } from "@starbeam/shared";
 
 import { prisma } from "@starbeam/db";
 
-import { createInvite } from "@/app/(portal)/w/[slug]/members/actions";
+import {
+  assignMemberPrimaryTrack,
+  createInvite,
+} from "@/app/(portal)/w/[slug]/members/actions";
 import PageHeader from "@/components/page-header";
 import { authOptions } from "@/lib/auth";
 import { webOrigin } from "@/lib/webOrigin";
+import { isContextSplitEnabled } from "@/lib/flags";
+
+function canManage(role: string): boolean {
+  return role === "ADMIN" || role === "MANAGER";
+}
 
 export default async function MembersPage({
   params,
@@ -30,11 +38,13 @@ export default async function MembersPage({
   if (!membership) notFound();
 
   const isAdmin = membership.role === "ADMIN";
+  const manageable = canManage(membership.role);
+  const contextSplitEnabled = isContextSplitEnabled();
 
-  const [members, invites] = await Promise.all([
+  const [members, invites, departments] = await Promise.all([
     prisma.membership.findMany({
       where: { workspaceId: membership.workspace.id },
-      include: { user: true },
+      include: { user: true, primaryDepartment: true },
       orderBy: { createdAt: "asc" },
     }),
     prisma.invite.findMany({
@@ -42,7 +52,20 @@ export default async function MembersPage({
       orderBy: { createdAt: "desc" },
       take: 20,
     }),
+    contextSplitEnabled
+      ? prisma.department.findMany({
+          where: {
+            workspaceId: membership.workspace.id,
+            OR: [{ enabled: true }, { name: "General" }],
+          },
+          orderBy: { createdAt: "asc" },
+          select: { id: true, name: true, enabled: true },
+        })
+      : Promise.resolve([]),
   ]);
+
+  const generalDepartmentId =
+    departments.find((d) => d.name === "General")?.id ?? departments[0]?.id;
 
   const inviteToken = sp.invite;
   const inviteUrl = inviteToken ? `${webOrigin()}/invite/${inviteToken}` : null;
@@ -73,8 +96,52 @@ export default async function MembersPage({
                   <div className="text-xs text-[color:var(--sb-muted)]">
                     {m.user.name || "No name"} - {m.role.toLowerCase()}
                   </div>
+                  {contextSplitEnabled ? (
+                    <div className="mt-1 text-xs text-[color:var(--sb-muted)]">
+                      Primary track: {m.primaryDepartment?.name ?? "General"}
+                    </div>
+                  ) : null}
                 </div>
-                <div className="sb-pill">{m.userId.slice(0, 8)}</div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  {contextSplitEnabled &&
+                  manageable &&
+                  departments.length > 0 ? (
+                    <form
+                      action={assignMemberPrimaryTrack.bind(
+                        null,
+                        membership.workspace.slug,
+                        m.userId,
+                      )}
+                      className="flex items-center gap-2"
+                    >
+                      <select
+                        name="primaryDepartmentId"
+                        className="sb-select sb-select-compact"
+                        defaultValue={
+                          m.primaryDepartmentId ?? generalDepartmentId
+                        }
+                      >
+                        {departments.map((d) => (
+                          <option key={d.id} value={d.id}>
+                            {d.name}
+                            {!d.enabled ? " (disabled)" : ""}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="submit"
+                        className={sbButtonClass({
+                          variant: "secondary",
+                          className: "px-3 py-2 text-xs font-semibold",
+                        })}
+                      >
+                        Save track
+                      </button>
+                    </form>
+                  ) : null}
+                  <div className="sb-pill">{m.userId.slice(0, 8)}</div>
+                </div>
               </div>
             ))}
           </div>

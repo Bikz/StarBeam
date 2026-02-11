@@ -50,7 +50,7 @@ export async function ensurePersonalWorkspaceForUser(
   });
 
   if (!existing) {
-    await tx.workspace.create({
+    const created = await tx.workspace.create({
       data: {
         slug,
         name: "Personal",
@@ -66,7 +66,22 @@ export async function ensurePersonalWorkspaceForUser(
           },
         },
       },
+      include: {
+        departments: {
+          where: { name: "General" },
+          select: { id: true },
+          take: 1,
+        },
+      },
     });
+
+    const generalDepartmentId = created.departments[0]?.id ?? null;
+    if (generalDepartmentId) {
+      await tx.membership.updateMany({
+        where: { workspaceId: created.id, userId },
+        data: { primaryDepartmentId: generalDepartmentId },
+      });
+    }
     return;
   }
 
@@ -76,6 +91,25 @@ export async function ensurePersonalWorkspaceForUser(
     update: {},
     create: { workspaceId: existing.id, userId, role: "ADMIN" },
   });
+
+  const general = await tx.department.findFirst({
+    where: { workspaceId: existing.id, name: "General" },
+    select: { id: true },
+  });
+
+  if (general?.id) {
+    await tx.membership.updateMany({
+      where: {
+        workspaceId: existing.id,
+        userId,
+        OR: [
+          { primaryDepartmentId: null },
+          { primaryDepartmentId: { not: general.id } },
+        ],
+      },
+      data: { primaryDepartmentId: general.id },
+    });
+  }
 }
 
 export async function provisionNewUser(userId: string): Promise<void> {

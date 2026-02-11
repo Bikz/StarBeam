@@ -43,7 +43,7 @@ export async function createOrgWorkspace(formData: FormData) {
     slug = `${initialSlug}-${Math.floor(Math.random() * 10000)}`;
   }
 
-  await prisma.workspace.create({
+  const workspace = await prisma.workspace.create({
     data: {
       slug,
       name: parsed.data.name,
@@ -61,7 +61,22 @@ export async function createOrgWorkspace(formData: FormData) {
         },
       },
     },
+    include: {
+      departments: {
+        where: { name: "General" },
+        select: { id: true },
+        take: 1,
+      },
+    },
   });
+
+  const generalDepartmentId = workspace.departments[0]?.id ?? null;
+  if (generalDepartmentId) {
+    await prisma.membership.updateMany({
+      where: { workspaceId: workspace.id, userId: session.user.id },
+      data: { primaryDepartmentId: generalDepartmentId },
+    });
+  }
 
   revalidatePath("/dashboard");
   redirect("/dashboard");

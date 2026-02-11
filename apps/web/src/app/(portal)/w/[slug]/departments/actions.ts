@@ -52,20 +52,16 @@ export async function createDepartment(
       },
     });
 
-    const workspaceMembers = await tx.membership.findMany({
-      where: { workspaceId: membership.workspace.id },
-      select: { userId: true },
-    });
-
-    if (workspaceMembers.length) {
-      await tx.departmentMembership.createMany({
-        data: workspaceMembers.map((m) => ({
+    await tx.departmentMembership.upsert({
+      where: {
+        departmentId_userId: {
           departmentId: dept.id,
-          userId: m.userId,
-        })),
-        skipDuplicates: true,
-      });
-    }
+          userId: session.user.id,
+        },
+      },
+      update: {},
+      create: { departmentId: dept.id, userId: session.user.id },
+    });
 
     return dept.id;
   });
@@ -95,12 +91,43 @@ export async function updateDepartment(
   if (!parsed.success) throw new Error("Invalid update");
 
   const promptTemplate = (parsed.data.promptTemplate ?? "").trim();
+  const enabled = Boolean(parsed.data.enabled);
 
-  const res = await prisma.department.updateMany({
+  const existing = await prisma.department.findFirst({
     where: { id: departmentId, workspaceId: membership.workspace.id },
-    data: { promptTemplate, enabled: Boolean(parsed.data.enabled) },
+    select: { id: true, name: true },
   });
-  if (res.count === 0) throw new Error("Department not found");
+  if (!existing) throw new Error("Department not found");
+  if (existing.name === "General" && !enabled) {
+    throw new Error("General track cannot be disabled");
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.department.update({
+      where: { id: departmentId },
+      data: { promptTemplate, enabled },
+    });
+
+    if (!enabled) {
+      const general = await tx.department.findFirst({
+        where: { workspaceId: membership.workspace.id, name: "General" },
+        select: { id: true },
+      });
+      if (general?.id) {
+        await tx.membership.updateMany({
+          where: {
+            workspaceId: membership.workspace.id,
+            primaryDepartmentId: departmentId,
+          },
+          data: { primaryDepartmentId: general.id },
+        });
+
+        await tx.departmentMembership.deleteMany({
+          where: { departmentId },
+        });
+      }
+    }
+  });
 
   redirect(
     `/w/${workspaceSlug}/tracks?track=${encodeURIComponent(departmentId)}`,

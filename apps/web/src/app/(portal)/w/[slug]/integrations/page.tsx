@@ -89,6 +89,13 @@ export default async function IntegrationsPage({
   return (
     <div className="grid items-start gap-6 lg:grid-cols-[1.1fr_0.9fr]">
       <div className="grid gap-6">
+        <div className="sb-card p-7">
+          <PageHeader
+            title="Personal integrations"
+            description="Connections on this page are personal. They only affect your own pulse context, and raw connected-tool data is not shared with managers or teammates."
+          />
+        </div>
+
         <div className="sb-card p-7" id="google">
           <PageHeader
             title="Google (OAuth, read-only)"

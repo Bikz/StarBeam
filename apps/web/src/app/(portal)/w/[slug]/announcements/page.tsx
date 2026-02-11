@@ -268,6 +268,13 @@ export default async function AnnouncementsPage({
             actions={listHeaderActions}
           />
 
+          {manageable ? (
+            <div className="mt-3 text-xs text-[color:var(--sb-muted)]">
+              Only workspace admins/managers can post, edit, pin, or delete
+              announcements.
+            </div>
+          ) : null}
+
           {announcements.length === 0 ? (
             <div className="mt-5 sb-alert">
               {manageable

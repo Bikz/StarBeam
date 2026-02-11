@@ -33,6 +33,18 @@ export async function acceptInvite(token: string) {
   }
 
   await prisma.$transaction(async (tx) => {
+    const generalDept = await tx.department.findFirst({
+      where: { workspaceId: invite.workspaceId, name: "General" },
+      select: { id: true },
+    });
+    const defaultDept =
+      generalDept ??
+      (await tx.department.findFirst({
+        where: { workspaceId: invite.workspaceId, enabled: true },
+        orderBy: { createdAt: "asc" },
+        select: { id: true },
+      }));
+
     await tx.membership.upsert({
       where: {
         workspaceId_userId: {
@@ -45,8 +57,20 @@ export async function acceptInvite(token: string) {
         workspaceId: invite.workspaceId,
         userId: session.user.id,
         role: invite.role,
+        primaryDepartmentId: defaultDept?.id ?? null,
       },
     });
+
+    if (defaultDept) {
+      await tx.membership.updateMany({
+        where: {
+          workspaceId: invite.workspaceId,
+          userId: session.user.id,
+          primaryDepartmentId: null,
+        },
+        data: { primaryDepartmentId: defaultDept.id },
+      });
+    }
 
     // Treat a workspace invite as product access (private beta).
     await tx.user.update({
@@ -54,13 +78,6 @@ export async function acceptInvite(token: string) {
       data: { betaAccessGrantedAt: new Date() },
     });
 
-    // Default behavior: if the workspace has a "default" department, add the user
-    // to it so they see department-scoped pulse content without extra setup.
-    const defaultDept = await tx.department.findFirst({
-      where: { workspaceId: invite.workspaceId, enabled: true },
-      orderBy: { createdAt: "asc" },
-      select: { id: true },
-    });
     if (defaultDept) {
       await tx.departmentMembership.upsert({
         where: {
