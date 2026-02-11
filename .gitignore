@@ -17,6 +17,7 @@ yarn-error.log*
 ## Env
 .env
 .env.*.local
+.env.local.vercel_*.bak
 
 ## Next.js
 .next/
