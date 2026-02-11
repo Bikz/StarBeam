@@ -1,6 +1,11 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
+  "globalPassThroughEnv": [
+    "DATABASE_URL",
+    "DIRECT_DATABASE_URL",
+    "STARB_DATABASE_URL"
+  ],
   "tasks": {
     "dev": {
       "cache": false,
