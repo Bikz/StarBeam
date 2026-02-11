@@ -21,6 +21,9 @@ export default async function LoginPage({
   const session = await getServerSession(authOptions);
   if (session?.user?.id) {
     const status = await ensureBetaEligibilityProcessed(session.user.id);
+    if (!status) {
+      redirect("/api/auth/signout?callbackUrl=/login");
+    }
     redirect(status.hasAccess ? `/w/personal-${session.user.id}` : "/beta");
   }
 

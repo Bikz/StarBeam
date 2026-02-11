@@ -25,6 +25,7 @@ export default async function BetaPage({
   if (ref) redirect("/beta/claim?next=/beta");
 
   const status = await ensureBetaEligibilityProcessed(session.user.id);
+  if (!status) redirect("/api/auth/signout?callbackUrl=/login");
   if (status.hasAccess) redirect(`/w/personal-${session.user.id}`);
 
   const sp = await searchParams;

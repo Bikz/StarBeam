@@ -5,6 +5,16 @@ import { prisma } from "@starbeam/db";
 import { isAdminEmail } from "@/lib/admin";
 import { ensureReferralCodeForUser } from "@/lib/userProvisioning";
 
+export type BetaEligibilityStatus = {
+  hasAccess: boolean;
+  referralCode: string;
+  referralCount: number;
+};
+
+function isMissingUserError(error: unknown): boolean {
+  return error instanceof Error && error.message === "User not found";
+}
+
 export async function referralCountForUser(userId: string): Promise<number> {
   return prisma.user.count({
     where: {
@@ -14,11 +24,9 @@ export async function referralCountForUser(userId: string): Promise<number> {
   });
 }
 
-export async function ensureBetaEligibilityProcessed(userId: string): Promise<{
-  hasAccess: boolean;
-  referralCode: string;
-  referralCount: number;
-}> {
+export async function ensureBetaEligibilityProcessed(
+  userId: string,
+): Promise<BetaEligibilityStatus | null> {
   const [user, referralCount] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
@@ -32,11 +40,19 @@ export async function ensureBetaEligibilityProcessed(userId: string): Promise<{
     referralCountForUser(userId),
   ]);
 
-  if (!user) throw new Error("User not found");
+  if (!user) return null;
 
-  const referralCode =
-    user.referralCode ??
-    (await prisma.$transaction((tx) => ensureReferralCodeForUser(tx, userId)));
+  let referralCode = user.referralCode;
+  if (!referralCode) {
+    try {
+      referralCode = await prisma.$transaction((tx) =>
+        ensureReferralCodeForUser(tx, userId),
+      );
+    } catch (error) {
+      if (isMissingUserError(error)) return null;
+      throw error;
+    }
+  }
 
   // Admin allowlist bypasses the beta gate (useful for internal testing / ops).
   if (isAdminEmail(user.email)) {
@@ -68,5 +84,8 @@ export async function requireBetaAccessOrRedirect(
   userId: string,
 ): Promise<void> {
   const status = await ensureBetaEligibilityProcessed(userId);
+  if (!status) {
+    redirect("/api/auth/signout?callbackUrl=/login");
+  }
   if (!status.hasAccess) redirect("/beta");
 }
