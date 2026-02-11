@@ -28,7 +28,7 @@ function LegacyProfileCard(args: {
       <div className="sb-card p-7">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <div className="sb-title text-xl">Company profile</div>
+            <h2 className="sb-title text-xl">Company profile</h2>
             <p className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
               This is the shared context Starbeam uses for web research prompts
               and department pulses.
@@ -104,7 +104,7 @@ function LegacyProfileCard(args: {
       </div>
 
       <div className="sb-card p-7">
-        <div className="sb-title text-xl">What to enter</div>
+        <h3 className="sb-title text-xl">What to enter</h3>
         <div className="mt-3 grid gap-3 text-sm text-[color:var(--sb-muted)] leading-relaxed">
           <div>
             <span className="font-semibold text-[color:var(--sb-fg)]">
@@ -194,7 +194,7 @@ export default async function WorkspaceProfilePage({
       <section className="sb-card p-7">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <div className="sb-title text-xl">Personal profile</div>
+            <h2 className="sb-title text-xl">Personal profile</h2>
             <p className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
               This context is used only for your individual pulses in this
               workspace.
@@ -245,7 +245,7 @@ export default async function WorkspaceProfilePage({
       <section className="sb-card p-7">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <div className="sb-title text-xl">Workspace profile</div>
+            <h2 className="sb-title text-xl">Workspace profile</h2>
             <p className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
               This profile is shared with all members in this workspace and is
               used to align team-level pulse context.

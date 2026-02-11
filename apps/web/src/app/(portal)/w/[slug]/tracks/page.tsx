@@ -458,7 +458,7 @@ export default async function TracksPage({
         <section id="personal-goals" className="sb-card p-7">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <div className="sb-title text-xl">Personal goals</div>
+              <h2 className="sb-title text-xl">Personal goals</h2>
               <p className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
                 These goals are private to your own pulse. Keep this focused on
                 what you want to accomplish over the next month or two.
@@ -661,7 +661,7 @@ export default async function TracksPage({
 
       {contextSplitEnabled ? (
         <section className="sb-card p-7">
-          <div className="sb-title text-xl">Workspace goals</div>
+          <h2 className="sb-title text-xl">Workspace goals</h2>
           <p className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
             Shared goals and tracks are managed by workspace admins/managers.
           </p>

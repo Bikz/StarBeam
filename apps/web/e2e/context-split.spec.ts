@@ -62,7 +62,7 @@ test("context split: profile/goals/members/integrations ownership is clear", asy
     .fill("I lead growth and care about activation and retention signals.");
   await page.getByRole("button", { name: "Save personal profile" }).click();
   await expect(page).toHaveURL(
-    new RegExp(`/w/${slug}/profile\?saved=personal$`),
+    new RegExp(`/w/${slug}/profile\\?saved=personal$`),
   );
 
   await page.goto(`/w/${slug}/tracks`);
@@ -90,7 +90,7 @@ test("context split: profile/goals/members/integrations ownership is clear", asy
   await page
     .locator('input[name="name"][placeholder="Marketing"]')
     .fill(marketingName);
-  await page.getByRole("button", { name: "Create" }).click();
+  await page.getByRole("button", { name: "Create", exact: true }).click();
   await expect(page.getByText(marketingName).first()).toBeVisible();
 
   const workspaceGoal = "Increase launch awareness";
