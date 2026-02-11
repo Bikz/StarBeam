@@ -43,7 +43,8 @@ export default defineConfig({
   ],
   webServer: {
     // Avoid `pnpm run ... -- ...` argument edge cases; call Next directly.
-    command: "pnpm --filter @starbeam/web exec next dev -p 3000",
+    // Force webpack for e2e stability; Turbopack can panic in long-running dev sessions.
+    command: "pnpm --filter @starbeam/web exec next dev --webpack -p 3000",
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

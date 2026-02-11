@@ -192,6 +192,20 @@ export function IconChevronRight(props: SvgProps) {
   );
 }
 
+export function IconSidebarPanel(props: SvgProps) {
+  return (
+    <svg
+      aria-hidden="true"
+      role="presentation"
+      focusable="false"
+      {...baseProps(props)}
+    >
+      <rect x="3.5" y="4.5" width="17" height="15" rx="2.5" />
+      <path d="M9 4.5v15" />
+    </svg>
+  );
+}
+
 export function IconLogout(props: SvgProps) {
   return (
     <svg

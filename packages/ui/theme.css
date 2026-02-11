@@ -277,103 +277,105 @@ body[data-sb-surface="marketing"] .sb-title {
   letter-spacing: -0.02em;
 }
 
-:where(.sb-btn) {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  border-radius: 999px;
-  border: 1px solid var(--sb-card-border);
-  background: var(--sb-btn-bg);
-  box-shadow: var(--sb-btn-shadow);
-  cursor: pointer;
-  user-select: none;
-  text-decoration: none;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-  transition:
-    transform 180ms ease,
-    box-shadow 180ms ease,
-    filter 180ms ease,
-    background 180ms ease,
-    border-color 180ms ease,
-    color 180ms ease,
-    opacity 180ms ease;
-}
-
-.sb-btn:active {
-  transform: translateY(0);
-  box-shadow: var(--sb-btn-press-shadow);
-  filter: brightness(0.985);
-}
-
-.sb-btn[aria-pressed="true"] {
-  transform: translateY(0);
-  box-shadow: var(--sb-btn-press-shadow);
-  filter: brightness(0.99) saturate(1.02);
-}
-
-.sb-btn:focus-visible {
-  outline: none;
-  box-shadow:
-    0 0 0 4px var(--sb-ring),
-    var(--sb-shadow);
-}
-
-.sb-btn-primary {
-  border-color: transparent;
-  background: var(--sb-btn-primary-solid-bg);
-  color: var(--sb-btn-primary-solid-fg);
-  box-shadow: var(--sb-btn-primary-solid-shadow);
-}
-
-.sb-btn-ghost {
-  border-color: transparent;
-  background: transparent;
-  box-shadow: none;
-}
-
-.sb-btn:disabled,
-.sb-btn[aria-disabled="true"] {
-  opacity: 0.55;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-  filter: none;
-}
-
-.sb-btn[aria-disabled="true"] {
-  pointer-events: none;
-}
-
-.sb-btn[aria-busy="true"],
-.sb-btn[data-loading="true"] {
-  cursor: progress;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .sb-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: var(--sb-shadow);
-    filter: saturate(1.05);
+@layer components {
+  :where(.sb-btn) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 999px;
+    border: 1px solid var(--sb-card-border);
+    background: var(--sb-btn-bg);
+    box-shadow: var(--sb-btn-shadow);
+    cursor: pointer;
+    user-select: none;
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    transition:
+      transform 180ms ease,
+      box-shadow 180ms ease,
+      filter 180ms ease,
+      background 180ms ease,
+      border-color 180ms ease,
+      color 180ms ease,
+      opacity 180ms ease;
   }
 
-  .sb-btn-primary:hover {
-    filter: brightness(1.03);
+  .sb-btn:active {
+    transform: translateY(0);
+    box-shadow: var(--sb-btn-press-shadow);
+    filter: brightness(0.985);
   }
 
-  .sb-btn-ghost:hover {
+  .sb-btn[aria-pressed="true"] {
+    transform: translateY(0);
+    box-shadow: var(--sb-btn-press-shadow);
+    filter: brightness(0.99) saturate(1.02);
+  }
+
+  .sb-btn:focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 4px var(--sb-ring),
+      var(--sb-shadow);
+  }
+
+  .sb-btn-primary {
+    border-color: transparent;
+    background: var(--sb-btn-primary-solid-bg);
+    color: var(--sb-btn-primary-solid-fg);
+    box-shadow: var(--sb-btn-primary-solid-shadow);
+  }
+
+  .sb-btn-ghost {
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .sb-btn:disabled,
+  .sb-btn[aria-disabled="true"] {
+    opacity: 0.55;
+    cursor: not-allowed;
     transform: none;
     box-shadow: none;
     filter: none;
-    background: var(--sb-btn-ghost-hover-bg);
   }
-}
 
-.sb-btn-ghost:active {
-  background: var(--sb-btn-ghost-hover-bg);
-  box-shadow: none;
-  filter: none;
+  .sb-btn[aria-disabled="true"] {
+    pointer-events: none;
+  }
+
+  .sb-btn[aria-busy="true"],
+  .sb-btn[data-loading="true"] {
+    cursor: progress;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .sb-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: var(--sb-shadow);
+      filter: saturate(1.05);
+    }
+
+    .sb-btn-primary:hover {
+      filter: brightness(1.03);
+    }
+
+    .sb-btn-ghost:hover {
+      transform: none;
+      box-shadow: none;
+      filter: none;
+      background: var(--sb-btn-ghost-hover-bg);
+    }
+  }
+
+  .sb-btn-ghost:active {
+    background: var(--sb-btn-ghost-hover-bg);
+    box-shadow: none;
+    filter: none;
+  }
 }
 
 .sb-kbd {

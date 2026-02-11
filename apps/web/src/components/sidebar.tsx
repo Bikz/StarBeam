@@ -14,8 +14,6 @@ import type {
 import type { UiMode } from "@/components/ui-mode";
 import { useUiMode } from "@/components/ui-mode";
 import {
-  IconChevronLeft,
-  IconChevronRight,
   IconClock,
   IconGrid,
   IconHome,
@@ -24,6 +22,7 @@ import {
   IconMessage,
   IconPlug,
   IconSettings,
+  IconSidebarPanel,
   IconSpark,
   IconUser,
   IconUsers,
@@ -364,11 +363,7 @@ export default function Sidebar({
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             title={collapsed ? "Expand" : "Collapse"}
           >
-            {collapsed ? (
-              <IconChevronRight className="h-5 w-5" />
-            ) : (
-              <IconChevronLeft className="h-5 w-5" />
-            )}
+            <IconSidebarPanel className="h-5 w-5" />
           </button>
         ) : null}
       </div>

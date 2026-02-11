@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { sbButtonClass } from "@starbeam/shared";
@@ -38,22 +37,9 @@ export default async function WorkspaceProfilePage({
 
   const saved = Boolean(sp.saved);
   const competitorText = (profile?.competitorDomains ?? []).join("\n");
-  const base = `/w/${membership.workspace.slug}`;
 
   return (
     <div className="grid gap-3">
-      <div>
-        <Link
-          href={`${base}/settings`}
-          className={sbButtonClass({
-            variant: "ghost",
-            className: "h-9 px-3 text-xs font-semibold",
-          })}
-        >
-          Back to Settings
-        </Link>
-      </div>
-
       <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="sb-card p-7">
           <div className="flex flex-wrap items-start justify-between gap-4">
