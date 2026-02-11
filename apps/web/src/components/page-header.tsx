@@ -21,23 +21,26 @@ export default function PageHeader({
     size === "lg" ? "text-2xl" : size === "sm" ? "text-lg" : "text-xl";
 
   return (
-    <header className="flex flex-wrap items-start justify-between gap-4">
-      <div className="min-w-0">
+    <header className="grid gap-2">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <Heading
-          className={["sb-title font-extrabold leading-tight", titleClass].join(
-            " ",
-          )}
+          className={[
+            "sb-title min-w-0 font-extrabold leading-tight",
+            titleClass,
+          ].join(" ")}
         >
           {title}
         </Heading>
-        {description ? (
-          <div className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
-            {description}
+        {actions ? (
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {actions}
           </div>
         ) : null}
       </div>
-      {actions ? (
-        <div className="flex items-center gap-2">{actions}</div>
+      {description ? (
+        <div className="text-sm text-[color:var(--sb-muted)] leading-relaxed">
+          {description}
+        </div>
       ) : null}
     </header>
   );
