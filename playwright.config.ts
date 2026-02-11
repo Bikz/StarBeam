@@ -21,13 +21,23 @@ function mergeAdminEmails(
   return Array.from(all).join(",");
 }
 
+function mergeAdminEmailList(
+  existing: string | undefined,
+  required: string[],
+): string {
+  return required.reduce(
+    (acc, email) => mergeAdminEmails(acc, email),
+    existing ?? "",
+  );
+}
+
 export default defineConfig({
   testDir: "apps/web/e2e",
   timeout: 60_000,
   expect: { timeout: 10_000 },
   // Keep this smoke-focused and deterministic.
   fullyParallel: false,
-  workers: process.env.CI ? 1 : undefined,
+  workers: 1,
   reporter: process.env.CI ? [["github"], ["list"]] : [["list"]],
   use: {
     baseURL,
@@ -52,11 +62,13 @@ export default defineConfig({
       ...process.env,
       // Required so E2E can mint OTP codes deterministically.
       STARB_TEST_ENDPOINTS: "1",
+      STARB_TEST_RESET_ENABLED: process.env.STARB_TEST_RESET_ENABLED ?? "1",
       // Avoid beta gate redirects for the E2E user.
-      STARB_ADMIN_EMAILS: mergeAdminEmails(
-        process.env.STARB_ADMIN_EMAILS,
+      STARB_ADMIN_EMAILS: mergeAdminEmailList(process.env.STARB_ADMIN_EMAILS, [
         "e2e-admin@starbeamhq.com",
-      ),
+        "e2e-admin-announcements@starbeamhq.com",
+        "e2e-admin-contextsplit@starbeamhq.com",
+      ]),
       // Sensible defaults for local runs when env isn't set.
       AUTH_SECRET: process.env.AUTH_SECRET ?? "dev_only_test_secret_change_me",
       AUTH_URL: process.env.AUTH_URL ?? baseURL,
@@ -66,6 +78,12 @@ export default defineConfig({
       // Keep feature-flagged IA deterministic in e2e.
       STARB_CONTEXT_SPLIT_V1: process.env.STARB_CONTEXT_SPLIT_V1 ?? "1",
       STARB_PULSE_MIN5_V1: process.env.STARB_PULSE_MIN5_V1 ?? "1",
+      STARB_ANN_MUT_USER_LIMIT_1M:
+        process.env.STARB_ANN_MUT_USER_LIMIT_1M ?? "200",
+      STARB_ANN_MUT_WORKSPACE_LIMIT_1M:
+        process.env.STARB_ANN_MUT_WORKSPACE_LIMIT_1M ?? "500",
+      STARB_SKIP_ANNOUNCEMENT_REFRESH:
+        process.env.STARB_SKIP_ANNOUNCEMENT_REFRESH ?? "1",
     },
   },
 });

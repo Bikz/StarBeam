@@ -20,6 +20,30 @@ function canManage(role: string): boolean {
   return role === "ADMIN" || role === "MANAGER";
 }
 
+function queryParamValue(
+  raw: string | string[] | undefined,
+): string | undefined {
+  if (typeof raw === "string") return raw;
+  if (Array.isArray(raw))
+    return typeof raw[0] === "string" ? raw[0] : undefined;
+  return undefined;
+}
+
+const NOTICE_COPY: Record<string, string> = {
+  created: "Announcement posted.",
+  updated: "Announcement updated.",
+  deleted: "Announcement deleted.",
+  dismissed: "Announcement dismissed for you.",
+};
+
+const ERROR_COPY: Record<string, string> = {
+  edit_not_found: "That announcement no longer exists.",
+  invalid_input: "Please check the form and try again.",
+  not_found: "Announcement not found.",
+  confirm_required: "Please confirm deletion before continuing.",
+  forbidden: "You do not have permission for that action.",
+};
+
 export default async function AnnouncementsPage({
   params,
   searchParams,
@@ -32,10 +56,10 @@ export default async function AnnouncementsPage({
 
   const { slug } = await params;
   const sp = (await searchParams) ?? {};
-  const composeRaw = sp.compose;
-  const editRaw = sp.edit;
-  const compose = composeRaw === "1";
-  const edit = typeof editRaw === "string" ? editRaw : "";
+  const compose = queryParamValue(sp.compose) === "1";
+  const edit = queryParamValue(sp.edit) ?? "";
+  const notice = queryParamValue(sp.notice) ?? "";
+  const error = queryParamValue(sp.error) ?? "";
 
   const membership = await prisma.membership.findFirst({
     where: { userId: session.user.id, workspace: { slug } },
@@ -70,11 +94,17 @@ export default async function AnnouncementsPage({
 
   const base = `/w/${membership.workspace.slug}`;
 
-  const panelOpen = manageable && (compose || Boolean(edit));
   const editingAnnouncement = edit
     ? (announcements.find((a) => a.id === edit) ?? null)
     : null;
-  const editNotFound = Boolean(edit) && !editingAnnouncement;
+  const editNotFound = manageable && Boolean(edit) && !editingAnnouncement;
+  if (editNotFound) {
+    redirect(`${base}/announcements?error=edit_not_found`);
+  }
+
+  const panelOpen = manageable && (compose || Boolean(editingAnnouncement));
+  const alertText =
+    (error && ERROR_COPY[error]) || (notice && NOTICE_COPY[notice]) || "";
 
   const listHeaderActions = (
     <div className="flex flex-wrap items-center gap-3">
@@ -117,9 +147,7 @@ export default async function AnnouncementsPage({
         }
       />
 
-      {editNotFound ? (
-        <div className="mt-5 sb-alert">That announcement no longer exists.</div>
-      ) : !manageable ? (
+      {!manageable ? (
         <div className="mt-5 sb-alert">
           Only managers/admins can post announcements.
         </div>
@@ -274,6 +302,8 @@ export default async function AnnouncementsPage({
               announcements.
             </div>
           ) : null}
+
+          {alertText ? <div className="mt-4 sb-alert">{alertText}</div> : null}
 
           {announcements.length === 0 ? (
             <div className="mt-5 sb-alert">

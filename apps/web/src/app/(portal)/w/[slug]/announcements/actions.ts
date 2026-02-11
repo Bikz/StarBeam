@@ -13,6 +13,25 @@ function canManage(role: string): boolean {
   return role === "ADMIN" || role === "MANAGER";
 }
 
+type AnnouncementErrorCode =
+  | "edit_not_found"
+  | "invalid_input"
+  | "not_found"
+  | "confirm_required"
+  | "forbidden";
+
+function redirectWithError(
+  workspaceSlug: string,
+  code: AnnouncementErrorCode,
+  extras?: { compose?: boolean; edit?: string },
+): never {
+  const params = new URLSearchParams();
+  params.set("error", code);
+  if (extras?.compose) params.set("compose", "1");
+  if (extras?.edit) params.set("edit", extras.edit);
+  redirect(`/w/${workspaceSlug}/announcements?${params.toString()}`);
+}
+
 const CreateAnnouncementSchema = z.object({
   title: z.string().min(3).max(90),
   body: z.string().max(8000).optional(),
@@ -20,8 +39,15 @@ const CreateAnnouncementSchema = z.object({
 });
 
 function requireDatabaseUrl(): string {
-  const connectionString = process.env.DATABASE_URL;
-  if (!connectionString) throw new Error("Missing DATABASE_URL");
+  const connectionString =
+    process.env.DATABASE_URL ||
+    process.env.STARB_DATABASE_URL ||
+    process.env.DIRECT_DATABASE_URL;
+  if (!connectionString) {
+    throw new Error(
+      "Missing database connection env (DATABASE_URL | STARB_DATABASE_URL | DIRECT_DATABASE_URL)",
+    );
+  }
   return connectionString;
 }
 
@@ -30,6 +56,10 @@ function parseEnvLimit(name: string, fallback: number): number {
   const n = raw ? Number(raw) : NaN;
   if (!Number.isFinite(n) || n <= 0) return fallback;
   return Math.floor(n);
+}
+
+function shouldSkipAnnouncementRefresh(): boolean {
+  return process.env.STARB_SKIP_ANNOUNCEMENT_REFRESH === "1";
 }
 
 async function consumeAnnouncementMutationRateLimit(args: {
@@ -52,6 +82,8 @@ async function enqueueAnnouncementsRefresh(args: {
   workspaceId: string;
   triggeredByUserId: string;
 }) {
+  if (shouldSkipAnnouncementRefresh()) return;
+
   const jobKey = `nightly_workspace_run:announcements:${args.workspaceId}`;
   const jobRunId = `announcements:${args.workspaceId}`;
 
@@ -109,6 +141,8 @@ async function enqueueDismissRefresh(args: {
   userId: string;
   triggeredByUserId: string;
 }) {
+  if (shouldSkipAnnouncementRefresh()) return;
+
   const jobKey = `nightly_workspace_run:announcements_dismiss:${args.workspaceId}:${args.userId}`;
   const jobRunId = `announcements-dismiss:${args.workspaceId}:${args.userId}`;
 
@@ -162,14 +196,17 @@ export async function createAnnouncement(
   formData: FormData,
 ) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) throw new Error("Unauthorized");
+  if (!session?.user?.id) {
+    redirectWithError(workspaceSlug, "forbidden", { compose: true });
+  }
 
   const membership = await prisma.membership.findFirst({
     where: { userId: session.user.id, workspace: { slug: workspaceSlug } },
     include: { workspace: true },
   });
-  if (!membership) throw new Error("Not a member");
-  if (!canManage(membership.role)) throw new Error("Managers/Admins only");
+  if (!membership || !canManage(membership.role)) {
+    redirectWithError(workspaceSlug, "forbidden", { compose: true });
+  }
 
   await consumeAnnouncementMutationRateLimit({
     userId: session.user.id,
@@ -181,7 +218,9 @@ export async function createAnnouncement(
     body: String(formData.get("body") ?? ""),
     pinned: formData.get("pinned") ? "on" : undefined,
   });
-  if (!parsed.success) throw new Error("Invalid announcement");
+  if (!parsed.success) {
+    redirectWithError(workspaceSlug, "invalid_input", { compose: true });
+  }
 
   await prisma.announcement.create({
     data: {
@@ -207,14 +246,17 @@ export async function updateAnnouncement(
   formData: FormData,
 ) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) throw new Error("Unauthorized");
+  if (!session?.user?.id) {
+    redirectWithError(workspaceSlug, "forbidden", { edit: announcementId });
+  }
 
   const membership = await prisma.membership.findFirst({
     where: { userId: session.user.id, workspace: { slug: workspaceSlug } },
     include: { workspace: true },
   });
-  if (!membership) throw new Error("Not a member");
-  if (!canManage(membership.role)) throw new Error("Managers/Admins only");
+  if (!membership || !canManage(membership.role)) {
+    redirectWithError(workspaceSlug, "forbidden", { edit: announcementId });
+  }
 
   await consumeAnnouncementMutationRateLimit({
     userId: session.user.id,
@@ -226,13 +268,17 @@ export async function updateAnnouncement(
     body: String(formData.get("body") ?? ""),
     pinned: formData.get("pinned") ? "on" : undefined,
   });
-  if (!parsed.success) throw new Error("Invalid announcement");
+  if (!parsed.success) {
+    redirectWithError(workspaceSlug, "invalid_input", { edit: announcementId });
+  }
 
   const existing = await prisma.announcement.findFirst({
     where: { id: announcementId, workspaceId: membership.workspace.id },
     select: { id: true },
   });
-  if (!existing) throw new Error("Announcement not found");
+  if (!existing) {
+    redirectWithError(workspaceSlug, "not_found");
+  }
 
   await prisma.announcement.update({
     where: { id: existing.id },
@@ -257,14 +303,17 @@ export async function deleteAnnouncement(
   formData: FormData,
 ) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) throw new Error("Unauthorized");
+  if (!session?.user?.id) {
+    redirectWithError(workspaceSlug, "forbidden", { edit: announcementId });
+  }
 
   const membership = await prisma.membership.findFirst({
     where: { userId: session.user.id, workspace: { slug: workspaceSlug } },
     include: { workspace: true },
   });
-  if (!membership) throw new Error("Not a member");
-  if (!canManage(membership.role)) throw new Error("Managers/Admins only");
+  if (!membership || !canManage(membership.role)) {
+    redirectWithError(workspaceSlug, "forbidden", { edit: announcementId });
+  }
 
   await consumeAnnouncementMutationRateLimit({
     userId: session.user.id,
@@ -272,13 +321,19 @@ export async function deleteAnnouncement(
   });
 
   const confirmed = formData.get("confirm") ? "on" : "";
-  if (confirmed !== "on") throw new Error("Confirm deletion");
+  if (confirmed !== "on") {
+    redirectWithError(workspaceSlug, "confirm_required", {
+      edit: announcementId,
+    });
+  }
 
   const existing = await prisma.announcement.findFirst({
     where: { id: announcementId, workspaceId: membership.workspace.id },
     select: { id: true },
   });
-  if (!existing) throw new Error("Announcement not found");
+  if (!existing) {
+    redirectWithError(workspaceSlug, "not_found");
+  }
 
   await prisma.announcement.delete({ where: { id: existing.id } });
 
@@ -295,14 +350,15 @@ export async function toggleAnnouncementPinned(
   announcementId: string,
 ) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) throw new Error("Unauthorized");
+  if (!session?.user?.id) redirectWithError(workspaceSlug, "forbidden");
 
   const membership = await prisma.membership.findFirst({
     where: { userId: session.user.id, workspace: { slug: workspaceSlug } },
     include: { workspace: true },
   });
-  if (!membership) throw new Error("Not a member");
-  if (!canManage(membership.role)) throw new Error("Managers/Admins only");
+  if (!membership || !canManage(membership.role)) {
+    redirectWithError(workspaceSlug, "forbidden");
+  }
 
   await consumeAnnouncementMutationRateLimit({
     userId: session.user.id,
@@ -312,7 +368,7 @@ export async function toggleAnnouncementPinned(
   const a = await prisma.announcement.findFirst({
     where: { id: announcementId, workspaceId: membership.workspace.id },
   });
-  if (!a) throw new Error("Announcement not found");
+  if (!a) redirectWithError(workspaceSlug, "not_found");
 
   await prisma.announcement.update({
     where: { id: a.id },
@@ -332,19 +388,19 @@ export async function dismissAnnouncement(
   announcementId: string,
 ) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) throw new Error("Unauthorized");
+  if (!session?.user?.id) redirectWithError(workspaceSlug, "forbidden");
 
   const membership = await prisma.membership.findFirst({
     where: { userId: session.user.id, workspace: { slug: workspaceSlug } },
     include: { workspace: true },
   });
-  if (!membership) throw new Error("Not a member");
+  if (!membership) redirectWithError(workspaceSlug, "forbidden");
 
   const announcement = await prisma.announcement.findFirst({
     where: { id: announcementId, workspaceId: membership.workspace.id },
     select: { id: true },
   });
-  if (!announcement) throw new Error("Announcement not found");
+  if (!announcement) redirectWithError(workspaceSlug, "not_found");
 
   await prisma.announcementDismiss.upsert({
     where: {
@@ -363,5 +419,5 @@ export async function dismissAnnouncement(
     triggeredByUserId: session.user.id,
   });
 
-  redirect(`/w/${workspaceSlug}/announcements?notice=updated`);
+  redirect(`/w/${workspaceSlug}/announcements?notice=dismissed`);
 }
