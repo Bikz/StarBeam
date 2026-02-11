@@ -21,6 +21,7 @@ const NightlyWorkspaceRunPayloadSchema = z.object({
   userId: z.string().min(1).optional(),
   includeInactive: z.boolean().optional(),
 });
+const WORKSPACE_GOALS_FETCH_LIMIT = 50;
 
 function isTruthyEnv(value: string | undefined): boolean {
   return ["1", "true", "yes"].includes((value ?? "").trim().toLowerCase());
@@ -116,7 +117,7 @@ export async function nightly_workspace_run(payload: unknown) {
           departmentId: true,
         },
         orderBy: [{ priority: "asc" }, { createdAt: "desc" }],
-        take: 10,
+        take: WORKSPACE_GOALS_FETCH_LIMIT,
       }),
       prisma.announcement.findMany({
         where: { workspaceId, pinned: true },
@@ -562,7 +563,7 @@ export async function nightly_workspace_run(payload: unknown) {
                 departmentId: true,
               },
               orderBy: [{ priority: "asc" }, { createdAt: "desc" }],
-              take: 10,
+              take: WORKSPACE_GOALS_FETCH_LIMIT,
             }),
           ]);
         }

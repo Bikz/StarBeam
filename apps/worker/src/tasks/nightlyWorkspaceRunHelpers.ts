@@ -515,16 +515,21 @@ export function buildDeterministicFallbackInternalCards(args: {
     });
   }
 
-  while (out.length < Math.min(needed, maxAdd)) {
+  let checkpointIndex = 1;
+  const target = Math.min(needed, maxAdd);
+  let attempts = 0;
+  const maxAttempts = Math.max(20, target * 5);
+  while (out.length < target && attempts < maxAttempts) {
     pushCard({
       kind: "INTERNAL",
-      title: `Daily alignment checkpoint ${out.length + 1}`,
+      title: `Daily alignment checkpoint ${checkpointIndex}`,
       body: "Write one sentence on your highest-priority outcome for today and one blocker to resolve.",
       why: "Fallback card to maintain a consistent minimum pulse size.",
       action: "Capture this in your personal notes or tasks.",
       priority: 560 - out.length,
     });
-    if (out.length >= maxAdd) break;
+    checkpointIndex += 1;
+    attempts += 1;
   }
 
   return out.slice(0, Math.min(needed, maxAdd));
