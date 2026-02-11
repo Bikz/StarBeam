@@ -22,7 +22,7 @@ export default function PageHeader({
 
   return (
     <header className="grid gap-2">
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
         <Heading
           className={[
             "sb-title min-w-0 font-extrabold leading-tight",
