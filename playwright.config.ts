@@ -63,6 +63,9 @@ export default defineConfig({
       NEXT_PUBLIC_WEB_ORIGIN: process.env.NEXT_PUBLIC_WEB_ORIGIN ?? baseURL,
       NEXT_PUBLIC_SITE_ORIGIN:
         process.env.NEXT_PUBLIC_SITE_ORIGIN ?? "http://localhost:3001",
+      // Keep feature-flagged IA deterministic in e2e.
+      STARB_CONTEXT_SPLIT_V1: process.env.STARB_CONTEXT_SPLIT_V1 ?? "1",
+      STARB_PULSE_MIN5_V1: process.env.STARB_PULSE_MIN5_V1 ?? "1",
     },
   },
 });
