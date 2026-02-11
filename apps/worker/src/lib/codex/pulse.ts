@@ -133,9 +133,12 @@ function buildPulsePrompt(args: {
     "You are running inside a materialized context directory.",
     "Important files:",
     "- workspace.json",
-    "- profile.json",
+    "- workspace-profile.json",
+    "- personal-profile.json",
     "- departments.json",
-    "- goals.json",
+    "- workspace-goals.json",
+    "- personal-goals.json",
+    "- tasks.jsonl",
     "- source-items.jsonl",
     "- blobs/ (optional; contains decrypted file snapshots)",
     "- memory/ (optional; contains prior-day base and daily journal summaries)",
@@ -156,10 +159,11 @@ function buildPulsePrompt(args: {
     "- dailyMarkdown: an additive daily journal entry for today including what changed + what pulse items you delivered today.",
     "- Keep baseMarkdown <= 2000 words; keep dailyMarkdown <= 1200 words.",
     "- Do not delete history; treat memory as append-only journaling.",
-    "- Important: profile.json and goals.json are the source of truth for configuration; if they conflict with prior memory, update baseMarkdown to reflect the latest config.",
+    "- Important: workspace-profile/personal-profile/workspace-goals/personal-goals are the source of truth for configuration; if they conflict with prior memory, update baseMarkdown to reflect the latest config.",
     "",
-    "Use the internal source items (email/calendar/drive/github/linear/notion) to create INTERNAL cards that help the user prioritize.",
-    "Use departments.json (including promptTemplate) + goals.json to keep the pulse aligned with goals and tracks.",
+    "Use the internal source items (email/calendar/drive/github/linear/notion), tasks, and goals to create INTERNAL cards that help the user prioritize.",
+    "Prioritize INTERNAL cards when internal context is strong, even if web research is available.",
+    "Use departments.json (including promptTemplate) + workspace-goals/personal-goals to keep the pulse aligned with goals and tracks.",
     "Keep it direct and actionable.",
     "",
     `Company/workspace: ${args.workspaceName}`,
@@ -193,6 +197,32 @@ export async function generatePulseCardsWithCodexExec(args: {
     body?: string | null;
     priority: string;
     departmentId?: string | null;
+  }>;
+  personalProfile?: {
+    jobTitle?: string | null;
+    about?: string | null;
+  } | null;
+  personalGoals?: Array<{
+    id: string;
+    title: string;
+    body?: string | null;
+    active: boolean;
+    targetWindow?: string | null;
+  }>;
+  tasks?: Array<{
+    id: string;
+    title: string;
+    body?: string | null;
+    status: string;
+    dueAt?: Date | null;
+    snoozedUntil?: Date | null;
+    updatedAt: Date;
+    sourceItem?: {
+      id: string;
+      type: string;
+      title: string;
+      url?: string | null;
+    } | null;
   }>;
   departments: Array<{
     id: string;
@@ -237,6 +267,9 @@ export async function generatePulseCardsWithCodexExec(args: {
         workspace: args.workspace,
         profile: args.profile,
         goals: args.goals,
+        personalProfile: args.personalProfile ?? null,
+        personalGoals: args.personalGoals ?? [],
+        tasks: args.tasks ?? [],
         departments: args.departments,
         userId: args.userId,
       });

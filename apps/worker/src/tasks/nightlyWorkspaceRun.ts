@@ -8,6 +8,7 @@ import { isValidIanaTimeZone, startOfDayKeyUtcForTimeZone } from "../lib/dates";
 import { bootstrapWorkspaceConfigIfNeeded } from "../lib/workspaceBootstrap";
 
 import {
+  buildDeterministicFallbackInternalCards,
   generateLegacyDepartmentWebResearchCards,
   priorityForGoal,
   syncUserConnectorsAndMaybeCodex,
@@ -30,6 +31,11 @@ function parseIntEnv(name: string, fallback: number): number {
   const n = raw ? Number(raw) : NaN;
   if (!Number.isFinite(n)) return fallback;
   return Math.floor(n);
+}
+
+function pulseMin5Enabled(): boolean {
+  if (process.env.STARB_PULSE_MIN5_V1 === undefined) return true;
+  return isTruthyEnv(process.env.STARB_PULSE_MIN5_V1);
 }
 
 export async function nightly_workspace_run(payload: unknown) {
@@ -75,7 +81,7 @@ export async function nightly_workspace_run(payload: unknown) {
       workspace,
       initialProfile,
       memberships,
-      initialGoals,
+      initialWorkspaceGoals,
       announcements,
       departments,
     ] = await Promise.all([
@@ -95,6 +101,7 @@ export async function nightly_workspace_run(payload: unknown) {
         where: { workspaceId },
         select: {
           userId: true,
+          primaryDepartmentId: true,
           lastActiveAt: true,
           user: { select: { timezone: true } },
         },
@@ -137,16 +144,21 @@ export async function nightly_workspace_run(payload: unknown) {
     if (!workspace) throw new Error("Workspace not found");
 
     let profile = initialProfile;
-    let goals = initialGoals;
+    let workspaceGoals = initialWorkspaceGoals;
 
     const membershipByUserId = new Map<
       string,
-      { timezone: string; lastActiveAt: Date | null }
+      {
+        timezone: string;
+        lastActiveAt: Date | null;
+        primaryDepartmentId: string | null;
+      }
     >();
     for (const m of memberships)
       membershipByUserId.set(m.userId, {
         timezone: m.user.timezone,
         lastActiveAt: m.lastActiveAt,
+        primaryDepartmentId: m.primaryDepartmentId,
       });
 
     const allMemberUserIds = memberships.map((m) => m.userId);
@@ -177,13 +189,100 @@ export async function nightly_workspace_run(payload: unknown) {
         (treatTargetAsActive && userId === targetUserId),
     );
     const activeRunUserIdSet = new Set(activeRunUserIds);
+    const pulseMinCards = 5;
+    const pulseMaxCards = 7;
+    const enforcePulseMin5 = pulseMin5Enabled();
+    const generalDepartmentId =
+      departments.find((department) => department.name === "General")?.id ??
+      null;
+
+    const sourceCutoff = new Date(runAt.getTime() - 14 * 24 * 60 * 60 * 1000);
+    const doneTaskCutoff = new Date(runAt.getTime() - 10 * 24 * 60 * 60 * 1000);
 
     const [
+      personalProfiles,
+      personalGoals,
+      userTasks,
+      sourceItemsForFallback,
       googleConnections,
       githubConnections,
       linearConnections,
       notionConnections,
     ] = await Promise.all([
+      prisma.workspaceMemberProfile.findMany({
+        where: { workspaceId, userId: { in: memberUserIds } },
+        select: { userId: true, jobTitle: true, about: true },
+      }),
+      prisma.personalGoal.findMany({
+        where: { workspaceId, userId: { in: memberUserIds } },
+        select: {
+          id: true,
+          workspaceId: true,
+          userId: true,
+          title: true,
+          body: true,
+          active: true,
+          targetWindow: true,
+          createdAt: true,
+        },
+        orderBy: [{ active: "desc" }, { createdAt: "desc" }],
+        take: 500,
+      }),
+      prisma.task.findMany({
+        where: {
+          workspaceId,
+          userId: { in: memberUserIds },
+          OR: [
+            { status: "OPEN" },
+            { status: "SNOOZED" },
+            { status: "DONE", updatedAt: { gte: doneTaskCutoff } },
+          ],
+        },
+        select: {
+          id: true,
+          userId: true,
+          title: true,
+          body: true,
+          status: true,
+          dueAt: true,
+          snoozedUntil: true,
+          updatedAt: true,
+          sourceItem: {
+            select: { id: true, type: true, title: true, url: true },
+          },
+        },
+        orderBy: [{ status: "asc" }, { updatedAt: "desc" }],
+        take: 1200,
+      }),
+      prisma.sourceItem.findMany({
+        where: {
+          workspaceId,
+          ownerUserId: { in: memberUserIds },
+          occurredAt: { gte: sourceCutoff },
+          type: {
+            in: [
+              "DRIVE_FILE",
+              "GITHUB_ISSUE",
+              "GITHUB_PULL_REQUEST",
+              "GITHUB_COMMIT",
+              "LINEAR_ISSUE",
+              "NOTION_PAGE",
+            ],
+          },
+        },
+        select: {
+          id: true,
+          ownerUserId: true,
+          type: true,
+          title: true,
+          snippet: true,
+          contentText: true,
+          url: true,
+          occurredAt: true,
+        },
+        orderBy: { occurredAt: "desc" },
+        take: 1200,
+      }),
       prisma.googleConnection.findMany({
         where: {
           workspaceId,
@@ -262,6 +361,108 @@ export async function nightly_workspace_run(payload: unknown) {
       notionConnectionsByUser.set(c.ownerUserId, list);
     }
 
+    const personalProfileByUser = new Map<
+      string,
+      { jobTitle: string | null; about: string | null }
+    >();
+    for (const p of personalProfiles) {
+      personalProfileByUser.set(p.userId, {
+        jobTitle: p.jobTitle,
+        about: p.about,
+      });
+    }
+
+    const personalGoalsByUser = new Map<
+      string,
+      Array<{
+        id: string;
+        title: string;
+        body: string;
+        active: boolean;
+        targetWindow: string | null;
+      }>
+    >();
+    for (const g of personalGoals) {
+      const list = personalGoalsByUser.get(g.userId) ?? [];
+      if (list.length >= 20) continue;
+      list.push({
+        id: g.id,
+        title: g.title,
+        body: g.body,
+        active: g.active,
+        targetWindow: g.targetWindow,
+      });
+      personalGoalsByUser.set(g.userId, list);
+    }
+
+    const tasksByUser = new Map<
+      string,
+      Array<{
+        id: string;
+        title: string;
+        body: string;
+        status: "OPEN" | "DONE" | "SNOOZED";
+        dueAt: Date | null;
+        snoozedUntil: Date | null;
+        updatedAt: Date;
+        sourceItem: {
+          id: string;
+          type: string;
+          title: string;
+          url: string | null;
+        } | null;
+      }>
+    >();
+    for (const task of userTasks) {
+      const list = tasksByUser.get(task.userId) ?? [];
+      if (list.length >= 30) continue;
+      list.push({
+        id: task.id,
+        title: task.title,
+        body: task.body,
+        status: task.status,
+        dueAt: task.dueAt,
+        snoozedUntil: task.snoozedUntil,
+        updatedAt: task.updatedAt,
+        sourceItem: task.sourceItem
+          ? {
+              id: task.sourceItem.id,
+              type: task.sourceItem.type,
+              title: task.sourceItem.title,
+              url: task.sourceItem.url,
+            }
+          : null,
+      });
+      tasksByUser.set(task.userId, list);
+    }
+
+    const sourceItemsByUser = new Map<
+      string,
+      Array<{
+        id: string;
+        type: string;
+        title: string;
+        snippet: string | null;
+        contentText: string | null;
+        url: string | null;
+        occurredAt: Date;
+      }>
+    >();
+    for (const item of sourceItemsForFallback) {
+      const list = sourceItemsByUser.get(item.ownerUserId) ?? [];
+      if (list.length >= 30) continue;
+      list.push({
+        id: item.id,
+        type: item.type,
+        title: item.title,
+        snippet: item.snippet,
+        contentText: item.contentText,
+        url: item.url,
+        occurredAt: item.occurredAt,
+      });
+      sourceItemsByUser.set(item.ownerUserId, list);
+    }
+
     const openaiApiKey = process.env.OPENAI_API_KEY ?? "";
     const openaiModel = process.env.OPENAI_MODEL_DEFAULT ?? "gpt-5";
 
@@ -322,7 +523,7 @@ export async function nightly_workspace_run(payload: unknown) {
         null;
       const isFirstRunSource =
         runSource === "auto-first" || runSource === "web";
-      const needsBootstrap = !profile || goals.length === 0;
+      const needsBootstrap = !profile || workspaceGoals.length === 0;
 
       if (isFirstRunSource && needsBootstrap && triggeredByUserId) {
         if (!codexAvailable) {
@@ -342,7 +543,7 @@ export async function nightly_workspace_run(payload: unknown) {
           });
 
           // Refresh in-memory context for the remainder of this job.
-          [profile, goals] = await Promise.all([
+          [profile, workspaceGoals] = await Promise.all([
             prisma.workspaceProfile.findUnique({
               where: { workspaceId },
               select: {
@@ -395,7 +596,7 @@ export async function nightly_workspace_run(payload: unknown) {
       model: openaiModel,
       workspace,
       profile,
-      goals,
+      goals: workspaceGoals,
       departments: legacyResearchDepartments,
       onPartialError,
     });
@@ -411,6 +612,16 @@ export async function nightly_workspace_run(payload: unknown) {
       outputTokens: 0,
       durationMs: 0,
     };
+    const cardMixTotals: Record<
+      "ANNOUNCEMENT" | "GOAL" | "WEB_RESEARCH" | "INTERNAL",
+      number
+    > = {
+      ANNOUNCEMENT: 0,
+      GOAL: 0,
+      WEB_RESEARCH: 0,
+      INTERNAL: 0,
+    };
+    let min5FallbackUsers = 0;
 
     for (const userId of memberUserIds) {
       const tzRaw =
@@ -418,13 +629,47 @@ export async function nightly_workspace_run(payload: unknown) {
       const timezone = isValidIanaTimeZone(tzRaw) ? tzRaw : "UTC";
       const editionDate = startOfDayKeyUtcForTimeZone(runAt, timezone);
       const isActiveForRun = activeRunUserIdSet.has(userId);
+      const userMembership = membershipByUserId.get(userId);
+
+      const userDepartmentMembershipIds = new Set(
+        departments
+          .filter((department) =>
+            department.memberships.some((member) => member.userId === userId),
+          )
+          .map((department) => department.id),
+      );
+      const relevantDepartmentIds = new Set<string>();
+      if (generalDepartmentId) relevantDepartmentIds.add(generalDepartmentId);
+      if (userMembership?.primaryDepartmentId) {
+        relevantDepartmentIds.add(userMembership.primaryDepartmentId);
+      }
+      if (relevantDepartmentIds.size === 0) {
+        for (const deptId of userDepartmentMembershipIds) {
+          relevantDepartmentIds.add(deptId);
+        }
+      }
+
+      const userDepartments = departments.filter((department) =>
+        relevantDepartmentIds.has(department.id),
+      );
+      const userWorkspaceGoals = workspaceGoals.filter(
+        (goal) =>
+          !goal.departmentId || relevantDepartmentIds.has(goal.departmentId),
+      );
+      const userPersonalProfile = personalProfileByUser.get(userId) ?? null;
+      const userPersonalGoals = personalGoalsByUser.get(userId) ?? [];
+      const userTasks = tasksByUser.get(userId) ?? [];
+      const userSourceItems = sourceItemsByUser.get(userId) ?? [];
 
       const codexPulse = await syncUserConnectorsAndMaybeCodex({
         workspaceId,
         workspace,
         profile,
-        goals,
-        departments,
+        goals: userWorkspaceGoals,
+        personalProfile: userPersonalProfile,
+        personalGoals: userPersonalGoals,
+        tasks: userTasks,
+        departments: userDepartments,
         userId,
         googleConnections: googleConnectionsByUser.get(userId) ?? [],
         githubConnections: githubConnectionsByUser.get(userId) ?? [],
@@ -504,7 +749,7 @@ export async function nightly_workspace_run(payload: unknown) {
         });
       }
 
-      for (const g of goals) {
+      for (const g of userWorkspaceGoals) {
         cards.push({
           editionId: edition.id,
           kind: "GOAL",
@@ -517,10 +762,7 @@ export async function nightly_workspace_run(payload: unknown) {
         });
       }
 
-      for (const dept of departments) {
-        const isMember = dept.memberships.some((m) => m.userId === userId);
-        if (!isMember) continue;
-
+      for (const dept of userDepartments) {
         const deptCards = deptCardsByDeptId.get(dept.id) ?? [];
         for (const wc of deptCards) {
           cards.push({
@@ -538,11 +780,7 @@ export async function nightly_workspace_run(payload: unknown) {
       }
 
       if (codexPulse?.output.cards.length) {
-        const memberDeptIds = new Set(
-          departments
-            .filter((d) => d.memberships.some((m) => m.userId === userId))
-            .map((d) => d.id),
-        );
+        const memberDeptIds = new Set(userDepartments.map((d) => d.id));
 
         let webIdx = 0;
         let internalIdx = 0;
@@ -586,8 +824,43 @@ export async function nightly_workspace_run(payload: unknown) {
         }
       }
 
-      if (cards.length) {
-        await prisma.pulseCard.createMany({ data: cards });
+      if (enforcePulseMin5 && cards.length < pulseMinCards) {
+        const existingTitles = new Set(cards.map((card) => card.title));
+        const fallbackCards = buildDeterministicFallbackInternalCards({
+          minCards: pulseMinCards,
+          maxCards: pulseMaxCards,
+          existingCount: cards.length,
+          existingTitles,
+          workspaceName: workspace.name,
+          personalProfile: userPersonalProfile,
+          personalGoals: userPersonalGoals,
+          workspaceGoals: userWorkspaceGoals,
+          tasks: userTasks,
+          sourceItems: userSourceItems,
+        });
+        if (fallbackCards.length > 0) {
+          min5FallbackUsers += 1;
+          for (const fallbackCard of fallbackCards) {
+            cards.push({
+              editionId: edition.id,
+              ...fallbackCard,
+            });
+          }
+        }
+      }
+
+      cards.sort((a, b) => {
+        if (b.priority !== a.priority) return b.priority - a.priority;
+        return a.title.localeCompare(b.title);
+      });
+      const cappedCards = cards.slice(0, pulseMaxCards);
+
+      for (const card of cappedCards) {
+        cardMixTotals[card.kind] += 1;
+      }
+
+      if (cappedCards.length) {
+        await prisma.pulseCard.createMany({ data: cappedCards });
       }
 
       await prisma.pulseEdition.update({
@@ -614,6 +887,13 @@ export async function nightly_workspace_run(payload: unknown) {
             activeRunUsers: activeRunUserIds.length,
             ...(codexDetect ? { detect: codexDetect } : {}),
             estimates: codexEstimates,
+            cardMix: cardMixTotals,
+            pulsePolicy: {
+              minCards: pulseMinCards,
+              maxCards: pulseMaxCards,
+              min5Enabled: enforcePulseMin5,
+              fallbackUsers: min5FallbackUsers,
+            },
           },
         },
       },

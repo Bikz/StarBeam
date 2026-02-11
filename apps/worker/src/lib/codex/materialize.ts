@@ -22,6 +22,35 @@ type GoalSummary = {
   departmentId?: string | null;
 };
 
+type PersonalProfileSummary = {
+  jobTitle?: string | null;
+  about?: string | null;
+} | null;
+
+type PersonalGoalSummary = {
+  id: string;
+  title: string;
+  body?: string | null;
+  active: boolean;
+  targetWindow?: string | null;
+};
+
+type TaskSummary = {
+  id: string;
+  title: string;
+  body?: string | null;
+  status: string;
+  dueAt?: Date | null;
+  snoozedUntil?: Date | null;
+  updatedAt: Date;
+  sourceItem?: {
+    id: string;
+    type: string;
+    title: string;
+    url?: string | null;
+  } | null;
+};
+
 type DepartmentSummary = {
   id: string;
   name: string;
@@ -64,6 +93,9 @@ export async function materializeWorkspaceContextForCodex(args: {
   workspace: WorkspaceSummary;
   profile: WorkspaceProfileSummary;
   goals: GoalSummary[];
+  personalProfile?: PersonalProfileSummary;
+  personalGoals?: PersonalGoalSummary[];
+  tasks?: TaskSummary[];
   departments: DepartmentSummary[];
   userId: string;
 }): Promise<{
@@ -92,6 +124,54 @@ export async function materializeWorkspaceContextForCodex(args: {
       JSON.stringify(args.workspace, null, 2),
       "utf8",
     ),
+    fs.writeFile(
+      path.join(dir, "workspace-profile.json"),
+      JSON.stringify(args.profile ?? null, null, 2),
+      "utf8",
+    ),
+    fs.writeFile(
+      path.join(dir, "personal-profile.json"),
+      JSON.stringify(args.personalProfile ?? null, null, 2),
+      "utf8",
+    ),
+    fs.writeFile(
+      path.join(dir, "workspace-goals.json"),
+      JSON.stringify(args.goals ?? [], null, 2),
+      "utf8",
+    ),
+    fs.writeFile(
+      path.join(dir, "personal-goals.json"),
+      JSON.stringify(args.personalGoals ?? [], null, 2),
+      "utf8",
+    ),
+    fs.writeFile(
+      path.join(dir, "tasks.jsonl"),
+      `${(args.tasks ?? [])
+        .map((task) =>
+          JSON.stringify({
+            id: task.id,
+            title: task.title,
+            body: task.body ?? "",
+            status: task.status,
+            dueAt: task.dueAt ? task.dueAt.toISOString() : null,
+            snoozedUntil: task.snoozedUntil
+              ? task.snoozedUntil.toISOString()
+              : null,
+            updatedAt: task.updatedAt.toISOString(),
+            sourceItem: task.sourceItem
+              ? {
+                  id: task.sourceItem.id,
+                  type: task.sourceItem.type,
+                  title: task.sourceItem.title,
+                  url: task.sourceItem.url ?? null,
+                }
+              : null,
+          }),
+        )
+        .join("\n")}\n`,
+      "utf8",
+    ),
+    // Legacy aliases retained for compatibility while prompts migrate.
     fs.writeFile(
       path.join(dir, "profile.json"),
       JSON.stringify(args.profile ?? null, null, 2),
@@ -290,9 +370,13 @@ export async function materializeWorkspaceContextForCodex(args: {
       "",
       "Files:",
       "- `workspace.json`",
-      "- `profile.json`",
+      "- `workspace-profile.json`",
+      "- `personal-profile.json`",
       "- `departments.json` (only departments the user belongs to)",
-      "- `goals.json`",
+      "- `workspace-goals.json`",
+      "- `personal-goals.json`",
+      "- `tasks.jsonl`",
+      "- `profile.json` / `goals.json` (legacy aliases for compatibility)",
       "- `source-items.jsonl` (recent signals; last 24h after memory is established, otherwise last 7 days)",
       "- `blobs/` (optional decrypted file snapshots, if blob store is configured)",
       "- `memory/` (optional; durable journal + base summary from previous days)",
