@@ -33,8 +33,10 @@ model User {
   usedInvites Invite[] @relation("InviteUsedBy")
 
   authoredGoals          Goal[]                 @relation("GoalAuthor")
+  personalGoals          PersonalGoal[]
   authoredAnnouncements  Announcement[]         @relation("AnnouncementAuthor")
   departmentMemberships  DepartmentMembership[]
+  workspaceMemberProfiles WorkspaceMemberProfile[]
   announcementDismissals AnnouncementDismiss[]
   authoredIdeas          IdeaSubmission[]       @relation("IdeaAuthor")
   pulseEditions          PulseEdition[]
@@ -199,8 +201,10 @@ model Workspace {
   invites     Invite[]
 
   profile         WorkspaceProfile?
+  memberProfiles  WorkspaceMemberProfile[]
   departments     Department[]
   goals           Goal[]
+  personalGoals   PersonalGoal[]
   announcements   Announcement[]
   ideaSubmissions IdeaSubmission[]
   pulseEditions   PulseEdition[]
@@ -222,14 +226,17 @@ model Membership {
   workspaceId String
   userId      String
   role        Role   @default(MEMBER)
+  primaryDepartmentId String?
   lastActiveAt DateTime?
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  primaryDepartment Department? @relation("PrimaryDepartment", fields: [primaryDepartmentId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
 
   @@unique([workspaceId, userId])
+  @@index([primaryDepartmentId])
 }
 
 model Invite {
@@ -265,6 +272,25 @@ model WorkspaceProfile {
   updatedAt DateTime @updatedAt
 }
 
+model WorkspaceMemberProfile {
+  id          String @id @default(cuid())
+  workspaceId String
+  userId      String
+
+  jobTitle String?
+  about    String?
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([workspaceId, userId])
+  @@index([workspaceId])
+  @@index([userId])
+}
+
 model Department {
   id             String  @id @default(cuid())
   workspaceId    String
@@ -274,6 +300,7 @@ model Department {
 
   workspace   Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   memberships DepartmentMembership[]
+  primaryMembers Membership[]        @relation("PrimaryDepartment")
   goals       Goal[]
   pulseCards  PulseCard[]
 
@@ -320,6 +347,26 @@ model Goal {
   @@index([workspaceId])
   @@index([departmentId])
   @@index([active])
+}
+
+model PersonalGoal {
+  id          String @id @default(cuid())
+  workspaceId String
+  userId      String
+
+  title        String
+  body         String @default("")
+  active       Boolean @default(true)
+  targetWindow String?
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId, userId])
+  @@index([workspaceId, active])
 }
 
 model Announcement {
