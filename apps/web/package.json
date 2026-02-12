@@ -11,7 +11,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --import tsx --test test/*.test.ts",
     "test:integration": "node --import tsx --test test/integration/*.test.ts",
-    "email:test": "node --import tsx scripts/send_test_email.ts"
+    "email:test": "node --import tsx scripts/send_test_email.ts",
+    "ops:weekly-summary": "node --import tsx scripts/generate_ops_weekly_summary.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",

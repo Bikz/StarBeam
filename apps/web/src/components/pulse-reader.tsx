@@ -2,9 +2,10 @@
 
 /* eslint-disable @next/next/no-img-element -- Favicon from arbitrary domains; Next/Image would require remotePatterns. */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { sbButtonClass } from "@starbeam/shared";
 
+import { recordPulseViewed } from "@/actions/record-pulse-view";
 import { submitPulseCardFeedback } from "@/actions/submit-pulse-card-feedback";
 import { IconArrowUpRight, IconCheck, IconCopy } from "@/components/sb-icons";
 import { useToast } from "@/components/toast-provider";
@@ -153,10 +154,21 @@ export default function PulseReader({
     () => ({}),
   );
   const { push } = useToast();
+  const didTrackView = useRef(false);
 
   useEffect(() => {
     setDone(readDoneSet(doneKey));
   }, [doneKey]);
+
+  useEffect(() => {
+    if (didTrackView.current) return;
+    didTrackView.current = true;
+    void recordPulseViewed({
+      workspaceSlug,
+      editionDateIso: edition.editionDateIso,
+      cardCount: cards.length,
+    });
+  }, [workspaceSlug, edition.editionDateIso, cards.length]);
 
   const now = new Date();
   const rel = relativeDay(editionDate, now);

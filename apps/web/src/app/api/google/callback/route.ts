@@ -7,6 +7,7 @@ import {
   enqueueWorkspaceBootstrap,
 } from "@/lib/nightlyRunQueue";
 import { parseSignedState } from "@/lib/signedState";
+import { recordUsageEventSafe } from "@/lib/usageEvents";
 import { webOrigin } from "@/lib/webOrigin";
 
 function googleConnectErrorCode(err: unknown): string {
@@ -173,6 +174,17 @@ export async function GET(request: Request) {
       }
     });
 
+    await recordUsageEventSafe({
+      eventType: "GOOGLE_CONNECTED",
+      source: "web",
+      workspaceId: parsedState.workspaceId,
+      userId: parsedState.userId,
+      metadata: {
+        workspaceSlug: parsedState.workspaceSlug,
+        accountEmail: email,
+      },
+    });
+
     try {
       const existingPulse = await prisma.pulseEdition.findFirst({
         where: {
@@ -199,6 +211,16 @@ export async function GET(request: Request) {
           source: "auto-first",
           runAt: new Date(Date.now() + 10 * 60 * 1000),
           jobKeyMode: "preserve_run_at",
+        });
+
+        await recordUsageEventSafe({
+          eventType: "FIRST_PULSE_QUEUED",
+          source: "web",
+          workspaceId: parsedState.workspaceId,
+          userId: parsedState.userId,
+          metadata: {
+            triggeredBy: "google_connect_callback",
+          },
         });
       }
     } catch {

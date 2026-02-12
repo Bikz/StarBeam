@@ -12,6 +12,7 @@ import { AdvancedOnly } from "@/components/ui-mode";
 import { authOptions } from "@/lib/auth";
 import { siteOrigin } from "@/lib/siteOrigin";
 import { startGoogleConnect } from "@/app/(portal)/w/[slug]/integrations/googleActions";
+import { deriveFirstPulseActivation } from "@/lib/activationState";
 
 function formatEditionDate(d: Date): string {
   return new Intl.DateTimeFormat(undefined, {
@@ -130,20 +131,118 @@ export default async function PulsePage({
     const dl = `${siteOrigin()}/download`;
     const googleConnected = googleCount > 0;
     const queued = (sp.queued ?? "").trim() === "1";
+    const activation = deriveFirstPulseActivation({
+      hasAnyPulse: false,
+      hasGoogleConnection: googleConnected,
+      googleAuthConfigured: hasGoogleAuthEnv(),
+      queuedFromQueryParam: queued,
+      bootstrapStatus: bootstrapRun?.status ?? null,
+      autoFirstStatus: autoFirstRun?.status ?? null,
+      bootstrapErrorSummary: bootstrapRun?.errorSummary,
+      autoFirstErrorSummary: autoFirstRun?.errorSummary,
+    });
 
     return (
       <div className="sb-card p-7">
-        <PageHeader
-          title="Starbeam is dreaming…"
-          description="Connect one tool, generate your first pulse, and get it delivered in your menu bar."
-        />
+        <PageHeader title={activation.title} description={activation.description} />
 
-        {queued ? (
-          <div className="mt-6 sb-alert">
-            Queued your first pulse. If you just connected Google, it can take a
-            few minutes. Refresh this page to check status.
+        <div className="mt-6 sb-card-inset p-5">
+          <div className="text-xs font-semibold tracking-wide uppercase text-[color:var(--sb-muted)]">
+            Activation state
           </div>
-        ) : null}
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            <div className="sb-pill">{activation.state}</div>
+            <span className="text-xs text-[color:var(--sb-muted)]">
+              Google {googleConnected ? "connected" : "not connected"}
+            </span>
+          </div>
+          {activation.errorDetail ? (
+            <div className="mt-3 text-xs text-[color:var(--sb-muted)] whitespace-pre-wrap">
+              {activation.errorDetail}
+            </div>
+          ) : null}
+          <div className="mt-4">
+            {activation.primaryAction === "connect_google" ? (
+              <form
+                action={startGoogleConnect.bind(
+                  null,
+                  membership.workspace.slug,
+                )}
+              >
+                <button
+                  type="submit"
+                  className={sbButtonClass({
+                    variant: "primary",
+                    className: "h-11 px-5 text-sm font-extrabold",
+                  })}
+                  disabled={!hasGoogleAuthEnv()}
+                  title={
+                    !hasGoogleAuthEnv()
+                      ? "Google OAuth not configured"
+                      : undefined
+                  }
+                >
+                  Connect Google
+                </button>
+              </form>
+            ) : null}
+
+            {activation.primaryAction === "generate_now" ? (
+              <form
+                action={generateFirstPulseNow.bind(
+                  null,
+                  membership.workspace.slug,
+                )}
+              >
+                <button
+                  type="submit"
+                  className={sbButtonClass({
+                    variant: "primary",
+                    className: "h-11 px-5 text-sm font-extrabold",
+                  })}
+                >
+                  Generate first pulse
+                </button>
+              </form>
+            ) : null}
+
+            {activation.primaryAction === "refresh" ? (
+              <Link
+                href={`${base}/pulse?queued=1`}
+                className={sbButtonClass({
+                  variant: "primary",
+                  className: "h-11 px-5 text-sm font-extrabold",
+                })}
+              >
+                Refresh status
+              </Link>
+            ) : null}
+
+            {activation.primaryAction === "open_integrations" ? (
+              <Link
+                href={`${base}/integrations`}
+                className={sbButtonClass({
+                  variant: "primary",
+                  className: "h-11 px-5 text-sm font-extrabold",
+                })}
+              >
+                Open integrations
+              </Link>
+            ) : null}
+
+            {activation.primaryAction === "open_pulse" ? (
+              <Link
+                href={`${base}/pulse`}
+                className={sbButtonClass({
+                  variant: "primary",
+                  className: "h-11 px-5 text-sm font-extrabold",
+                })}
+              >
+                Open pulse
+              </Link>
+            ) : null}
+          </div>
+        </div>
 
         <div className="mt-6 grid gap-3">
           <div className="sb-card-inset p-5">
@@ -172,8 +271,8 @@ export default async function PulsePage({
                 <button
                   type="submit"
                   className={sbButtonClass({
-                    variant: "primary",
-                    className: "h-11 px-5 text-sm font-extrabold",
+                    variant: "secondary",
+                    className: "h-11 px-5 text-sm font-semibold",
                   })}
                   disabled={!hasGoogleAuthEnv()}
                   title={
@@ -236,8 +335,8 @@ export default async function PulsePage({
                 <button
                   type="submit"
                   className={sbButtonClass({
-                    variant: "primary",
-                    className: "h-11 px-5 text-sm font-extrabold",
+                    variant: "secondary",
+                    className: "h-11 px-5 text-sm font-semibold",
                   })}
                 >
                   Generate now

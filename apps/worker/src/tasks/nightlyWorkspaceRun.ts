@@ -661,6 +661,10 @@ export async function nightly_workspace_run(payload: unknown) {
       const userPersonalGoals = personalGoalsByUser.get(userId) ?? [];
       const userTasks = tasksByUser.get(userId) ?? [];
       const userSourceItems = sourceItemsByUser.get(userId) ?? [];
+      const hadReadyEditionBefore = await prisma.pulseEdition.findFirst({
+        where: { workspaceId, userId, status: "READY" },
+        select: { id: true },
+      });
 
       const codexPulse = await syncUserConnectorsAndMaybeCodex({
         workspaceId,
@@ -868,6 +872,28 @@ export async function nightly_workspace_run(payload: unknown) {
         where: { id: edition.id },
         data: { status: "READY" },
       });
+
+      if (!hadReadyEditionBefore) {
+        const existingFirstReadyEvent = await prisma.usageEvent.findFirst({
+          where: { workspaceId, userId, eventType: "FIRST_PULSE_READY" },
+          select: { id: true },
+        });
+        if (!existingFirstReadyEvent) {
+          await prisma.usageEvent.create({
+            data: {
+              workspaceId,
+              userId,
+              eventType: "FIRST_PULSE_READY",
+              source: "worker",
+              metadata: {
+                editionId: edition.id,
+                jobRunId: jobRun.id,
+                runSource,
+              },
+            },
+          });
+        }
+      }
     }
 
     await prisma.jobRun.update({

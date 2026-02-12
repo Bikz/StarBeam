@@ -50,7 +50,9 @@ model User {
   tasks                  Task[]
   blobs                  Blob[]               @relation("UserBlobs")
   betaKeyRedemptions     BetaKeyRedemption[]
-  feedbackSubmissions    Feedback[]
+  feedbackSubmissions    Feedback[]           @relation("FeedbackSubmittedBy")
+  triagedFeedback        Feedback[]           @relation("FeedbackTriagedBy")
+  usageEvents            UsageEvent[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -150,19 +152,82 @@ model BetaKeyRedemption {
 model Feedback {
   id     String @id @default(cuid())
   userId String?
+  triagedByUserId String?
   email  String?
   message String
   source  String @default("") // web | macos | etc.
   path    String @default("")
   userAgent String @default("")
+  category FeedbackCategory?
+  triageStatus FeedbackTriageStatus @default(NEW)
+  triageNote String @default("")
+  triagedAt DateTime?
 
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user User? @relation("FeedbackSubmittedBy", fields: [userId], references: [id], onDelete: SetNull)
+  triagedBy User? @relation("FeedbackTriagedBy", fields: [triagedByUserId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
 
   @@index([userId])
+  @@index([triagedByUserId])
   @@index([createdAt])
   @@index([source])
+  @@index([triageStatus, createdAt])
+  @@index([category, createdAt])
+}
+
+enum FeedbackCategory {
+  NOISE
+  MISSING_CONTEXT
+  WRONG_PRIORITY
+  LOW_CONFIDENCE
+  OTHER
+}
+
+enum FeedbackTriageStatus {
+  NEW
+  REVIEWED
+  ACTIONED
+  WONT_FIX
+}
+
+enum UsageEventType {
+  SIGNED_IN
+  GOOGLE_CONNECTED
+  FIRST_PULSE_QUEUED
+  FIRST_PULSE_READY
+  PULSE_VIEWED_WEB
+  OVERVIEW_SYNCED_MACOS
+  INVITE_ACCEPTED
+}
+
+model UsageEvent {
+  id          String         @id @default(cuid())
+  workspaceId String?
+  userId      String?
+  eventType   UsageEventType
+  source      String
+  metadata    Json?
+  createdAt   DateTime       @default(now())
+
+  workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  user      User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([eventType, createdAt])
+  @@index([workspaceId, createdAt])
+  @@index([userId, createdAt])
+}
+
+enum WorkspaceProgramType {
+  NONE
+  DESIGN_PARTNER
+}
+
+enum WorkspaceProgramStatus {
+  NONE
+  PROSPECT
+  ACTIVE
+  CHURNED
 }
 
 enum WorkspaceType {
@@ -193,6 +258,11 @@ model Workspace {
   slug String        @unique
   name String
   type WorkspaceType @default(ORG)
+  programType WorkspaceProgramType @default(NONE)
+  programStatus WorkspaceProgramStatus @default(NONE)
+  programStartedAt DateTime?
+  programEndedAt DateTime?
+  programNotes String @default("")
 
   createdById String
   createdBy   User   @relation("WorkspaceCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
@@ -216,9 +286,12 @@ model Workspace {
   sourceItems     SourceItem[]
   tasks           Task[]
   blobs           Blob[]          @relation("WorkspaceBlobs")
+  usageEvents     UsageEvent[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([programType, programStatus])
 }
 
 model Membership {

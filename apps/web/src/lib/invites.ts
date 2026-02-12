@@ -2,6 +2,8 @@ import crypto from "node:crypto";
 
 import { prisma } from "@starbeam/db";
 
+import { recordUsageEventSafe } from "@/lib/usageEvents";
+
 function sha256Hex(input: string): string {
   return crypto.createHash("sha256").update(input).digest("hex");
 }
@@ -12,17 +14,19 @@ type AcceptInviteError =
   | "already_used"
   | "email_mismatch";
 
+type AcceptInviteResult =
+  | { ok: true; workspaceSlug: string; workspaceId: string }
+  | { ok: false; error: AcceptInviteError };
+
 export async function acceptInviteForUser(args: {
   token: string;
   userId: string;
   userEmail: string;
   now?: Date;
-}): Promise<
-  { ok: true; workspaceSlug: string } | { ok: false; error: AcceptInviteError }
-> {
+}): Promise<AcceptInviteResult> {
   const tokenHash = sha256Hex(args.token);
 
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction<AcceptInviteResult>(async (tx) => {
     const now = args.now ?? new Date();
 
     const invite = await tx.invite.findUnique({
@@ -123,6 +127,24 @@ export async function acceptInviteForUser(args: {
       });
     }
 
-    return { ok: true, workspaceSlug: invite.workspace.slug };
+    return {
+      ok: true,
+      workspaceSlug: invite.workspace.slug,
+      workspaceId: invite.workspaceId,
+    };
   });
+
+  if (result.ok) {
+    await recordUsageEventSafe({
+      eventType: "INVITE_ACCEPTED",
+      source: "web",
+      workspaceId: result.workspaceId,
+      userId: args.userId,
+      metadata: {
+        workspaceSlug: result.workspaceSlug,
+      },
+    });
+  }
+
+  return result;
 }

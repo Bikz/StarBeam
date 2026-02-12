@@ -11,6 +11,7 @@ import {
   inferPulseLane,
   pulseSourceLabel,
 } from "@/lib/macosOverviewPresentation";
+import { recordUsageEventSafe } from "@/lib/usageEvents";
 
 type Citation = { url: string; title?: string };
 
@@ -376,6 +377,36 @@ export async function GET(request: Request) {
     end: e.endsAt,
     title: e.title,
   }));
+
+  const overviewSyncThrottleMins = parseIntEnv(
+    "STARB_OVERVIEW_SYNC_EVENT_THROTTLE_MINS",
+    15,
+  );
+  const overviewSyncCutoff = new Date(
+    now.getTime() - overviewSyncThrottleMins * 60 * 1000,
+  );
+  const recentOverviewSync = await prisma.usageEvent.findFirst({
+    where: {
+      workspaceId,
+      userId,
+      eventType: "OVERVIEW_SYNCED_MACOS",
+      createdAt: { gte: overviewSyncCutoff },
+    },
+    select: { id: true },
+  });
+  if (!recentOverviewSync) {
+    await recordUsageEventSafe({
+      eventType: "OVERVIEW_SYNCED_MACOS",
+      source: "macos",
+      workspaceId,
+      userId,
+      metadata: {
+        pulseCardCount: pulse.length,
+        focusItemCount: focus.length,
+        onboardingMode: onboarding.mode,
+      },
+    });
+  }
 
   return NextResponse.json(
     {

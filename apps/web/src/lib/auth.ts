@@ -3,6 +3,7 @@ import { prisma } from "@starbeam/db";
 import type { NextAuthOptions } from "next-auth";
 
 import { buildProvidersFromEnv } from "./authProviders";
+import { recordUsageEventSafe } from "./usageEvents";
 import { provisionNewUser } from "./userProvisioning";
 
 export const authOptions: NextAuthOptions = {
@@ -37,6 +38,18 @@ export const authOptions: NextAuthOptions = {
   events: {
     createUser: async ({ user }) => {
       await provisionNewUser(user.id);
+    },
+    signIn: async ({ user, account }) => {
+      if (!user?.id) return;
+      await recordUsageEventSafe({
+        eventType: "SIGNED_IN",
+        source: "web",
+        userId: user.id,
+        metadata: {
+          provider: account?.provider ?? "unknown",
+          type: account?.type ?? "unknown",
+        },
+      });
     },
   },
 };

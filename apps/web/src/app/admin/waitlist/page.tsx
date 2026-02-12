@@ -114,6 +114,15 @@ export default async function WaitlistAdminPage({
 
             <div className="flex flex-wrap items-center gap-2">
               <Link
+                href="/admin/ops/funnel"
+                className={sbButtonClass({
+                  variant: "secondary",
+                  className: "h-10 px-4 text-xs font-semibold",
+                })}
+              >
+                Ops funnel
+              </Link>
+              <Link
                 href="/admin/beta-keys"
                 className={sbButtonClass({
                   variant: "secondary",

@@ -12,6 +12,7 @@ import {
 } from "@/lib/nightlyRunQueue";
 import { consumeRateLimit } from "@/lib/rateLimit";
 import { requestIdFromHeaders } from "@/lib/requestId";
+import { recordUsageEventSafe } from "@/lib/usageEvents";
 
 export async function generateFirstPulseNow(workspaceSlug: string) {
   const session = await getServerSession(authOptions);
@@ -71,6 +72,17 @@ export async function generateFirstPulseNow(workspaceSlug: string) {
     runAt,
     jobKeyMode: "replace",
     requestId,
+  });
+
+  await recordUsageEventSafe({
+    eventType: "FIRST_PULSE_QUEUED",
+    source: "web",
+    workspaceId: membership.workspace.id,
+    userId: session.user.id,
+    metadata: {
+      triggeredBy: "generate_first_pulse_now",
+      requestId: requestId ?? null,
+    },
   });
 
   redirect(`/w/${workspaceSlug}/pulse?queued=1`);
