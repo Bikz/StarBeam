@@ -5,6 +5,8 @@ import { useEffect } from "react";
 import { sbButtonClass } from "@starbeam/shared";
 import * as Sentry from "@sentry/nextjs";
 
+import { staleSessionSignOutUrl } from "@/lib/authRecovery";
+
 export default function ErrorPage({
   error,
   reset,
@@ -31,6 +33,11 @@ export default function ErrorPage({
           <p className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
             Please try again.
           </p>
+          {error.digest ? (
+            <p className="mt-2 text-xs text-[color:var(--sb-muted)]">
+              Reference: {error.digest}
+            </p>
+          ) : null}
 
           <div className="mt-6 flex flex-wrap gap-2">
             <button
@@ -43,6 +50,15 @@ export default function ErrorPage({
             >
               Try again
             </button>
+            <Link
+              href={staleSessionSignOutUrl()}
+              className={sbButtonClass({
+                variant: "secondary",
+                className: "px-5 py-2.5 text-xs font-semibold",
+              })}
+            >
+              Sign out and retry
+            </Link>
             <Link
               href="/dashboard"
               className={sbButtonClass({

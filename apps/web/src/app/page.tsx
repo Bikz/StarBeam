@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 
 import { authOptions } from "@/lib/auth";
+import { staleSessionSignOutUrl } from "@/lib/authRecovery";
 import { ensureBetaEligibilityProcessed } from "@/lib/betaAccess";
 
 export default async function AppHome() {
@@ -9,7 +10,7 @@ export default async function AppHome() {
   if (session?.user?.id) {
     const status = await ensureBetaEligibilityProcessed(session.user.id);
     if (!status) {
-      redirect("/api/auth/signout?callbackUrl=/login");
+      redirect(staleSessionSignOutUrl());
     }
     redirect(status.hasAccess ? `/w/personal-${session.user.id}` : "/beta");
   }

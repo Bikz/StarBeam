@@ -8,6 +8,7 @@ import { prisma } from "@starbeam/db";
 
 import { redeemBetaKey } from "@/app/beta/actions";
 import { authOptions } from "@/lib/auth";
+import { staleSessionSignOutUrl } from "@/lib/authRecovery";
 import { ensureBetaEligibilityProcessed } from "@/lib/betaAccess";
 import { webOrigin } from "@/lib/webOrigin";
 
@@ -25,7 +26,7 @@ export default async function BetaPage({
   if (ref) redirect("/beta/claim?next=/beta");
 
   const status = await ensureBetaEligibilityProcessed(session.user.id);
-  if (!status) redirect("/api/auth/signout?callbackUrl=/login");
+  if (!status) redirect(staleSessionSignOutUrl());
   if (status.hasAccess) redirect(`/w/personal-${session.user.id}`);
 
   const sp = await searchParams;

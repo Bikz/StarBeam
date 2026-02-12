@@ -4,6 +4,11 @@ import { redirect } from "next/navigation";
 
 import EmailCodeSignIn from "@/components/email-code-sign-in";
 import { authOptions } from "@/lib/auth";
+import {
+  isSessionRecoveredError,
+  loginErrorMessage,
+  staleSessionSignOutUrl,
+} from "@/lib/authRecovery";
 import { ensureBetaEligibilityProcessed } from "@/lib/betaAccess";
 import { siteOrigin } from "@/lib/siteOrigin";
 
@@ -22,7 +27,7 @@ export default async function LoginPage({
   if (session?.user?.id) {
     const status = await ensureBetaEligibilityProcessed(session.user.id);
     if (!status) {
-      redirect("/api/auth/signout?callbackUrl=/login");
+      redirect(staleSessionSignOutUrl());
     }
     redirect(status.hasAccess ? `/w/personal-${session.user.id}` : "/beta");
   }
@@ -179,9 +184,19 @@ export default async function LoginPage({
 
               {authError ? (
                 <div className="mt-5 sb-alert">
-                  {authError === "CredentialsSignin"
-                    ? "That code didn’t work. Please try again."
-                    : "Could not sign in. Please try again."}
+                  <div>{loginErrorMessage(authError)}</div>
+                  {isSessionRecoveredError(authError) ? (
+                    <div className="mt-2 text-xs text-[color:var(--sb-muted)]">
+                      If this keeps happening,{" "}
+                      <a
+                        href={staleSessionSignOutUrl()}
+                        className="underline hover:no-underline"
+                      >
+                        clear session and retry
+                      </a>
+                      .
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
 

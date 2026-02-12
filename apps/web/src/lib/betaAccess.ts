@@ -2,18 +2,12 @@ import { redirect } from "next/navigation";
 
 import { prisma } from "@starbeam/db";
 
-import { isAdminEmail } from "@/lib/admin";
+import { staleSessionSignOutUrl } from "@/lib/authRecovery";
+import {
+  ensureBetaEligibilityProcessedWithDeps,
+  type BetaEligibilityStatus,
+} from "@/lib/betaEligibility";
 import { ensureReferralCodeForUser } from "@/lib/userProvisioning";
-
-export type BetaEligibilityStatus = {
-  hasAccess: boolean;
-  referralCode: string;
-  referralCount: number;
-};
-
-function isMissingUserError(error: unknown): boolean {
-  return error instanceof Error && error.message === "User not found";
-}
 
 export async function referralCountForUser(userId: string): Promise<number> {
   return prisma.user.count({
@@ -27,57 +21,30 @@ export async function referralCountForUser(userId: string): Promise<number> {
 export async function ensureBetaEligibilityProcessed(
   userId: string,
 ): Promise<BetaEligibilityStatus | null> {
-  const [user, referralCount] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        betaAccessGrantedAt: true,
-        referralCode: true,
+  return ensureBetaEligibilityProcessedWithDeps(
+    {
+      findUser: (id) =>
+        prisma.user.findUnique({
+          where: { id },
+          select: {
+            id: true,
+            email: true,
+            betaAccessGrantedAt: true,
+            referralCode: true,
+          },
+        }),
+      countReferrals: referralCountForUser,
+      ensureReferralCode: (id) =>
+        prisma.$transaction((tx) => ensureReferralCodeForUser(tx, id)),
+      grantBetaAccess: async (id) => {
+        await prisma.user.update({
+          where: { id },
+          data: { betaAccessGrantedAt: new Date() },
+        });
       },
-    }),
-    referralCountForUser(userId),
-  ]);
-
-  if (!user) return null;
-
-  let referralCode = user.referralCode;
-  if (!referralCode) {
-    try {
-      referralCode = await prisma.$transaction((tx) =>
-        ensureReferralCodeForUser(tx, userId),
-      );
-    } catch (error) {
-      if (isMissingUserError(error)) return null;
-      throw error;
-    }
-  }
-
-  // Admin allowlist bypasses the beta gate (useful for internal testing / ops).
-  if (isAdminEmail(user.email)) {
-    if (!user.betaAccessGrantedAt) {
-      await prisma.user.update({
-        where: { id: userId },
-        data: { betaAccessGrantedAt: new Date() },
-      });
-    }
-    return { hasAccess: true, referralCode, referralCount };
-  }
-
-  if (user.betaAccessGrantedAt) {
-    return { hasAccess: true, referralCode, referralCount };
-  }
-
-  if (referralCount >= 5) {
-    await prisma.user.update({
-      where: { id: userId },
-      data: { betaAccessGrantedAt: new Date() },
-    });
-    return { hasAccess: true, referralCode, referralCount };
-  }
-
-  return { hasAccess: false, referralCode, referralCount };
+    },
+    userId,
+  );
 }
 
 export async function requireBetaAccessOrRedirect(
@@ -85,7 +52,7 @@ export async function requireBetaAccessOrRedirect(
 ): Promise<void> {
   const status = await ensureBetaEligibilityProcessed(userId);
   if (!status) {
-    redirect("/api/auth/signout?callbackUrl=/login");
+    redirect(staleSessionSignOutUrl());
   }
   if (!status.hasAccess) redirect("/beta");
 }
