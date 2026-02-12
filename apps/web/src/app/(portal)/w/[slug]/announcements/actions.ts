@@ -2,12 +2,14 @@
 
 import { prisma } from "@starbeam/db";
 import { makeWorkerUtils, runMigrations } from "graphile-worker";
+import { headers } from "next/headers";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { authOptions } from "@/lib/auth";
 import { consumeRateLimit } from "@/lib/rateLimit";
+import { requestIdFromHeaders } from "@/lib/requestId";
 
 function canManage(role: string): boolean {
   return role === "ADMIN" || role === "MANAGER";
@@ -81,6 +83,7 @@ async function consumeAnnouncementMutationRateLimit(args: {
 async function enqueueAnnouncementsRefresh(args: {
   workspaceId: string;
   triggeredByUserId: string;
+  requestId?: string;
 }) {
   if (shouldSkipAnnouncementRefresh()) return;
 
@@ -101,6 +104,7 @@ async function enqueueAnnouncementsRefresh(args: {
         source: "announcements",
         includeInactive: true,
         jobKey,
+        ...(args.requestId ? { requestId: args.requestId } : {}),
       },
     },
     create: {
@@ -113,6 +117,7 @@ async function enqueueAnnouncementsRefresh(args: {
         source: "announcements",
         includeInactive: true,
         jobKey,
+        ...(args.requestId ? { requestId: args.requestId } : {}),
       },
     },
   });
@@ -128,6 +133,7 @@ async function enqueueAnnouncementsRefresh(args: {
         workspaceId: args.workspaceId,
         jobRunId,
         includeInactive: true,
+        ...(args.requestId ? { requestId: args.requestId } : {}),
       },
       { jobKey, jobKeyMode: "replace", runAt: new Date() },
     );
@@ -140,6 +146,7 @@ async function enqueueDismissRefresh(args: {
   workspaceId: string;
   userId: string;
   triggeredByUserId: string;
+  requestId?: string;
 }) {
   if (shouldSkipAnnouncementRefresh()) return;
 
@@ -160,6 +167,7 @@ async function enqueueDismissRefresh(args: {
         userId: args.userId,
         source: "announcements-dismiss",
         jobKey,
+        ...(args.requestId ? { requestId: args.requestId } : {}),
       },
     },
     create: {
@@ -172,6 +180,7 @@ async function enqueueDismissRefresh(args: {
         userId: args.userId,
         source: "announcements-dismiss",
         jobKey,
+        ...(args.requestId ? { requestId: args.requestId } : {}),
       },
     },
   });
@@ -183,7 +192,12 @@ async function enqueueDismissRefresh(args: {
   try {
     await workerUtils.addJob(
       "nightly_workspace_run",
-      { workspaceId: args.workspaceId, jobRunId, userId: args.userId },
+      {
+        workspaceId: args.workspaceId,
+        jobRunId,
+        userId: args.userId,
+        ...(args.requestId ? { requestId: args.requestId } : {}),
+      },
       { jobKey, jobKeyMode: "replace", runAt: new Date() },
     );
   } finally {
@@ -232,9 +246,12 @@ export async function createAnnouncement(
     },
   });
 
+  const headerStore = await headers();
+  const requestId = requestIdFromHeaders(headerStore) ?? undefined;
   await enqueueAnnouncementsRefresh({
     workspaceId: membership.workspace.id,
     triggeredByUserId: session.user.id,
+    requestId,
   });
 
   redirect(`/w/${workspaceSlug}/announcements?notice=created`);
@@ -289,9 +306,12 @@ export async function updateAnnouncement(
     },
   });
 
+  const headerStore = await headers();
+  const requestId = requestIdFromHeaders(headerStore) ?? undefined;
   await enqueueAnnouncementsRefresh({
     workspaceId: membership.workspace.id,
     triggeredByUserId: session.user.id,
+    requestId,
   });
 
   redirect(`/w/${workspaceSlug}/announcements?notice=updated`);
@@ -337,9 +357,12 @@ export async function deleteAnnouncement(
 
   await prisma.announcement.delete({ where: { id: existing.id } });
 
+  const headerStore = await headers();
+  const requestId = requestIdFromHeaders(headerStore) ?? undefined;
   await enqueueAnnouncementsRefresh({
     workspaceId: membership.workspace.id,
     triggeredByUserId: session.user.id,
+    requestId,
   });
 
   redirect(`/w/${workspaceSlug}/announcements?notice=deleted`);
@@ -375,9 +398,12 @@ export async function toggleAnnouncementPinned(
     data: { pinned: !a.pinned },
   });
 
+  const headerStore = await headers();
+  const requestId = requestIdFromHeaders(headerStore) ?? undefined;
   await enqueueAnnouncementsRefresh({
     workspaceId: membership.workspace.id,
     triggeredByUserId: session.user.id,
+    requestId,
   });
 
   redirect(`/w/${workspaceSlug}/announcements?notice=updated`);
@@ -413,10 +439,13 @@ export async function dismissAnnouncement(
     create: { announcementId: announcement.id, userId: session.user.id },
   });
 
+  const headerStore = await headers();
+  const requestId = requestIdFromHeaders(headerStore) ?? undefined;
   await enqueueDismissRefresh({
     workspaceId: membership.workspace.id,
     userId: session.user.id,
     triggeredByUserId: session.user.id,
+    requestId,
   });
 
   redirect(`/w/${workspaceSlug}/announcements?notice=dismissed`);

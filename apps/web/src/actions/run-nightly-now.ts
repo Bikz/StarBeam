@@ -6,6 +6,7 @@ import {
   shouldUpdateLastActiveAt,
 } from "@starbeam/shared";
 import { makeWorkerUtils, runMigrations } from "graphile-worker";
+import { headers } from "next/headers";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 
@@ -15,6 +16,7 @@ import {
   enqueueWorkspaceBootstrap,
 } from "@/lib/nightlyRunQueue";
 import { consumeRateLimit } from "@/lib/rateLimit";
+import { requestIdFromHeaders } from "@/lib/requestId";
 
 function canManage(role: string): boolean {
   return role === "ADMIN" || role === "MANAGER";
@@ -37,6 +39,9 @@ export async function runNightlyNow(workspaceSlug: string) {
   });
   if (!membership) throw new Error("Not a member");
   if (!canManage(membership.role)) throw new Error("Managers/Admins only");
+
+  const headerStore = await headers();
+  const requestId = requestIdFromHeaders(headerStore) ?? undefined;
 
   // Basic abuse/cost controls (DB-backed, works across multiple instances).
   await consumeRateLimit({
@@ -94,6 +99,7 @@ export async function runNightlyNow(workspaceSlug: string) {
       source: "web",
       runAt: new Date(),
       jobKeyMode: "replace",
+      requestId,
     });
 
     await enqueueAutoFirstNightlyWorkspaceRun({
@@ -103,6 +109,7 @@ export async function runNightlyNow(workspaceSlug: string) {
       source: "web",
       runAt: new Date(),
       jobKeyMode: "replace",
+      requestId,
     });
 
     redirect(`/w/${workspaceSlug}/jobs?queued=1`);
@@ -117,6 +124,7 @@ export async function runNightlyNow(workspaceSlug: string) {
         triggeredByUserId: session.user.id,
         userId: session.user.id,
         source: "web",
+        ...(requestId ? { requestId } : {}),
       },
     },
   });
@@ -136,6 +144,7 @@ export async function runNightlyNow(workspaceSlug: string) {
           workspaceId: membership.workspace.id,
           jobRunId: jobRun.id,
           userId: session.user.id,
+          ...(requestId ? { requestId } : {}),
         },
         // Explicitly set runAt "now" so "Run now" never looks like a nightly schedule.
         { jobKey: `nightly_workspace_run:${jobRun.id}`, runAt: new Date() },

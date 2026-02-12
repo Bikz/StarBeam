@@ -33,6 +33,7 @@ export async function enqueueAutoFirstNightlyWorkspaceRun(args: {
   source: "auto-first" | "web";
   runAt: Date;
   jobKeyMode: "replace" | "preserve_run_at" | "unsafe_dedupe";
+  requestId?: string;
 }): Promise<void> {
   const jobKey = autoFirstNightlyJobKey(args.workspaceId, args.userId);
   const jobRunId = autoFirstNightlyJobRunId(args.workspaceId, args.userId);
@@ -51,6 +52,7 @@ export async function enqueueAutoFirstNightlyWorkspaceRun(args: {
         userId: args.userId,
         source: args.source,
         jobKey,
+        ...(args.requestId ? { requestId: args.requestId } : {}),
       },
     },
     create: {
@@ -63,6 +65,7 @@ export async function enqueueAutoFirstNightlyWorkspaceRun(args: {
         userId: args.userId,
         source: args.source,
         jobKey,
+        ...(args.requestId ? { requestId: args.requestId } : {}),
       },
     },
   });
@@ -76,7 +79,12 @@ export async function enqueueAutoFirstNightlyWorkspaceRun(args: {
   try {
     await workerUtils.addJob(
       "nightly_workspace_run",
-      { workspaceId: args.workspaceId, userId: args.userId, jobRunId },
+      {
+        workspaceId: args.workspaceId,
+        userId: args.userId,
+        jobRunId,
+        ...(args.requestId ? { requestId: args.requestId } : {}),
+      },
       { jobKey, jobKeyMode: args.jobKeyMode, runAt: args.runAt },
     );
   } finally {
@@ -91,6 +99,7 @@ export async function enqueueWorkspaceBootstrap(args: {
   source: "auto-first" | "web";
   runAt: Date;
   jobKeyMode: "replace" | "preserve_run_at" | "unsafe_dedupe";
+  requestId?: string;
 }): Promise<void> {
   const jobKey = workspaceBootstrapJobKey(args.workspaceId, args.userId);
   const jobRunId = workspaceBootstrapJobRunId(args.workspaceId, args.userId);
@@ -109,6 +118,7 @@ export async function enqueueWorkspaceBootstrap(args: {
         userId: args.userId,
         source: args.source,
         jobKey,
+        ...(args.requestId ? { requestId: args.requestId } : {}),
       },
     },
     create: {
@@ -121,6 +131,7 @@ export async function enqueueWorkspaceBootstrap(args: {
         userId: args.userId,
         source: args.source,
         jobKey,
+        ...(args.requestId ? { requestId: args.requestId } : {}),
       },
     },
   });
@@ -133,7 +144,11 @@ export async function enqueueWorkspaceBootstrap(args: {
   try {
     await workerUtils.addJob(
       "workspace_bootstrap",
-      { workspaceId: args.workspaceId, jobRunId },
+      {
+        workspaceId: args.workspaceId,
+        jobRunId,
+        ...(args.requestId ? { requestId: args.requestId } : {}),
+      },
       { jobKey, jobKeyMode: args.jobKeyMode, runAt: args.runAt },
     );
   } finally {

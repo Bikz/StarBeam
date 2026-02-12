@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@starbeam/db";
+import { headers } from "next/headers";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 
@@ -10,6 +11,7 @@ import {
   enqueueWorkspaceBootstrap,
 } from "@/lib/nightlyRunQueue";
 import { consumeRateLimit } from "@/lib/rateLimit";
+import { requestIdFromHeaders } from "@/lib/requestId";
 
 export async function generateFirstPulseNow(workspaceSlug: string) {
   const session = await getServerSession(authOptions);
@@ -48,6 +50,9 @@ export async function generateFirstPulseNow(workspaceSlug: string) {
 
   const runAt = new Date();
 
+  const headerStore = await headers();
+  const requestId = requestIdFromHeaders(headerStore) ?? undefined;
+
   await enqueueWorkspaceBootstrap({
     workspaceId: membership.workspace.id,
     userId: session.user.id,
@@ -55,6 +60,7 @@ export async function generateFirstPulseNow(workspaceSlug: string) {
     source: "web",
     runAt,
     jobKeyMode: "replace",
+    requestId,
   });
 
   await enqueueAutoFirstNightlyWorkspaceRun({
@@ -64,6 +70,7 @@ export async function generateFirstPulseNow(workspaceSlug: string) {
     source: "web",
     runAt,
     jobKeyMode: "replace",
+    requestId,
   });
 
   redirect(`/w/${workspaceSlug}/pulse?queued=1`);
