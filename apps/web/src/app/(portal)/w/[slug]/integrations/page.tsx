@@ -24,6 +24,77 @@ function statusPill(status: string) {
   return <div className="sb-pill">{status.toLowerCase()}</div>;
 }
 
+const STALE_SYNC_MS = 6 * 60 * 60 * 1000;
+
+function relativeTime(from: Date, to: Date): string {
+  const diffMs = Math.max(0, to.getTime() - from.getTime());
+  const minutes = Math.floor(diffMs / (60 * 1000));
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 48) return `${hours}h ago`;
+
+  const days = Math.floor(hours / 24);
+  if (days < 14) return `${days}d ago`;
+
+  const weeks = Math.floor(days / 7);
+  if (weeks < 10) return `${weeks}w ago`;
+
+  return `${Math.floor(days / 30)}mo ago`;
+}
+
+function latestDate(values: Array<Date | null | undefined>): Date | null {
+  let latest: Date | null = null;
+  for (const value of values) {
+    if (!value) continue;
+    if (!latest || value.getTime() > latest.getTime()) latest = value;
+  }
+  return latest;
+}
+
+type SyncTone = "fresh" | "stale" | "never";
+
+function describeSyncFreshness(args: {
+  lastSyncedAt?: Date | null;
+  lastAttemptedAt?: Date | null;
+  now: Date;
+}): { label: string; tone: SyncTone } {
+  if (args.lastSyncedAt) {
+    const ageMs = args.now.getTime() - args.lastSyncedAt.getTime();
+    return {
+      label: `Last synced ${relativeTime(args.lastSyncedAt, args.now)}`,
+      tone: ageMs > STALE_SYNC_MS ? "stale" : "fresh",
+    };
+  }
+
+  if (args.lastAttemptedAt) {
+    const ageMs = args.now.getTime() - args.lastAttemptedAt.getTime();
+    return {
+      label: `Last attempt ${relativeTime(args.lastAttemptedAt, args.now)}`,
+      tone: ageMs > STALE_SYNC_MS ? "stale" : "never",
+    };
+  }
+
+  return { label: "No sync attempts yet", tone: "never" };
+}
+
+function statusGuidance(status: string, tone: SyncTone): string | null {
+  if (status === "REVOKED") {
+    return "Access was revoked. Reconnect to resume syncing.";
+  }
+  if (status === "ERROR") {
+    return "Last sync failed. Starbeam retries automatically; reconnect if this keeps failing.";
+  }
+  if (status === "CONNECTED" && tone === "stale") {
+    return "Connected but stale. Go to Runs and click Run now to refresh sooner.";
+  }
+  if (status === "CONNECTED" && tone === "never") {
+    return "Connected. The first sync usually starts within a few minutes.";
+  }
+  return null;
+}
+
 export default async function IntegrationsPage({
   params,
   searchParams,
@@ -57,6 +128,15 @@ export default async function IntegrationsPage({
         workspaceId: membership.workspace.id,
         ownerUserId: session.user.id,
       },
+      include: {
+        syncState: {
+          select: {
+            lastGmailSyncAt: true,
+            lastCalendarSyncAt: true,
+            lastDriveSyncAt: true,
+          },
+        },
+      },
       orderBy: { createdAt: "desc" },
     }),
     prisma.gitHubConnection.findMany({
@@ -81,6 +161,7 @@ export default async function IntegrationsPage({
       orderBy: { createdAt: "desc" },
     }),
   ]);
+  const now = new Date();
 
   return (
     <div className="grid items-start gap-6 lg:grid-cols-[1.1fr_0.9fr]">
@@ -139,39 +220,60 @@ export default async function IntegrationsPage({
               </div>
             ) : (
               <div className="mt-3 grid gap-2">
-                {googleConnections.map((c) => (
-                  <div key={c.id} className="sb-card-inset px-4 py-3 text-sm">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="font-semibold text-[color:var(--sb-fg)]">
-                        {c.googleAccountEmail}
+                {googleConnections.map((c) => {
+                  const freshness = describeSyncFreshness({
+                    lastSyncedAt: latestDate([
+                      c.syncState?.lastGmailSyncAt,
+                      c.syncState?.lastCalendarSyncAt,
+                      c.syncState?.lastDriveSyncAt,
+                    ]),
+                    lastAttemptedAt: c.lastAttemptedAt,
+                    now,
+                  });
+                  const guidance = statusGuidance(c.status, freshness.tone);
+
+                  return (
+                    <div key={c.id} className="sb-card-inset px-4 py-3 text-sm">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="font-semibold text-[color:var(--sb-fg)]">
+                          {c.googleAccountEmail}
+                        </div>
+                        {statusPill(c.status)}
                       </div>
-                      {statusPill(c.status)}
-                    </div>
-                    <div className="mt-1 text-xs text-[color:var(--sb-muted)]">
-                      Scopes:{" "}
-                      {c.scopes.length ? c.scopes.join(", ") : "unknown"}
-                    </div>
-                    <div className="mt-3 flex gap-2">
-                      <form
-                        action={disconnectGoogleConnection.bind(
-                          null,
-                          membership.workspace.slug,
-                          c.id,
-                        )}
-                      >
-                        <button
-                          type="submit"
-                          className={sbButtonClass({
-                            variant: "secondary",
-                            className: "px-4 py-2 text-xs font-semibold",
-                          })}
+                      <div className="mt-1 text-xs text-[color:var(--sb-muted)]">
+                        {freshness.label}
+                      </div>
+                      {guidance ? (
+                        <div className="mt-1 text-xs text-[color:var(--sb-muted)]">
+                          {guidance}
+                        </div>
+                      ) : null}
+                      <div className="mt-1 text-xs text-[color:var(--sb-muted)]">
+                        Scopes:{" "}
+                        {c.scopes.length ? c.scopes.join(", ") : "unknown"}
+                      </div>
+                      <div className="mt-3 flex gap-2">
+                        <form
+                          action={disconnectGoogleConnection.bind(
+                            null,
+                            membership.workspace.slug,
+                            c.id,
+                          )}
                         >
-                          Disconnect
-                        </button>
-                      </form>
+                          <button
+                            type="submit"
+                            className={sbButtonClass({
+                              variant: "secondary",
+                              className: "px-4 py-2 text-xs font-semibold",
+                            })}
+                          >
+                            Disconnect
+                          </button>
+                        </form>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -202,65 +304,99 @@ export default async function IntegrationsPage({
               </div>
             ) : (
               <div className="mt-3 grid gap-2">
-                {githubConnections.map((c) => (
-                  <div key={c.id} className="sb-card-inset px-4 py-3 text-sm">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="font-semibold text-[color:var(--sb-fg)]">
-                        {c.githubLogin}
+                {githubConnections.map((c) => {
+                  const freshness = describeSyncFreshness({
+                    lastSyncedAt: c.lastSyncedAt,
+                    lastAttemptedAt: c.lastAttemptedAt,
+                    now,
+                  });
+                  const guidance = statusGuidance(c.status, freshness.tone);
+
+                  return (
+                    <div key={c.id} className="sb-card-inset px-4 py-3 text-sm">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="font-semibold text-[color:var(--sb-fg)]">
+                          {c.githubLogin}
+                        </div>
+                        {statusPill(c.status)}
                       </div>
-                      {statusPill(c.status)}
-                    </div>
-                    <div className="mt-3 flex gap-2">
-                      <form
-                        action={updateGitHubRepoSelection.bind(
-                          null,
-                          membership.workspace.slug,
-                          c.id,
-                        )}
-                        className="grid w-full gap-2"
-                      >
-                        <div className="grid gap-1">
-                          <div className="text-[11px] font-extrabold sb-title">
-                            Repo scope
-                          </div>
-                          <select
-                            name="mode"
-                            defaultValue={c.repoSelectionMode}
-                            className="sb-select sb-select-compact"
-                          >
-                            <option value="ALL">All accessible repos</option>
-                            <option value="SELECTED">
-                              Selected repos only
-                            </option>
-                          </select>
+                      <div className="mt-1 text-xs text-[color:var(--sb-muted)]">
+                        {freshness.label}
+                      </div>
+                      {guidance ? (
+                        <div className="mt-1 text-xs text-[color:var(--sb-muted)]">
+                          {guidance}
                         </div>
-
-                        <div className="grid gap-1">
-                          <div className="text-[11px] font-extrabold sb-title">
-                            Selected repos
-                          </div>
-                          <textarea
-                            name="repos"
-                            defaultValue={(c.selectedRepoFullNames ?? []).join(
-                              "\n",
-                            )}
-                            rows={3}
-                            className="sb-textarea sb-textarea-compact"
-                            placeholder={"owner/repo\nowner/another-repo"}
-                          />
-                          <div className="text-[11px] text-[color:var(--sb-muted)]">
-                            Used only when repo scope is set to Selected.
-                          </div>
-                          {c.repoSelectionMode === "SELECTED" &&
-                          (c.selectedRepoFullNames ?? []).length === 0 ? (
-                            <div className="text-[11px] text-[color:var(--sb-muted)]">
-                              No repos selected yet, so GitHub sync will be
-                              skipped.
+                      ) : null}
+                      <div className="mt-3 flex gap-2">
+                        <form
+                          action={updateGitHubRepoSelection.bind(
+                            null,
+                            membership.workspace.slug,
+                            c.id,
+                          )}
+                          className="grid w-full gap-2"
+                        >
+                          <div className="grid gap-1">
+                            <div className="text-[11px] font-extrabold sb-title">
+                              Repo scope
                             </div>
-                          ) : null}
-                        </div>
+                            <select
+                              name="mode"
+                              defaultValue={c.repoSelectionMode}
+                              className="sb-select sb-select-compact"
+                            >
+                              <option value="ALL">All accessible repos</option>
+                              <option value="SELECTED">
+                                Selected repos only
+                              </option>
+                            </select>
+                          </div>
 
-                        <div className="flex gap-2">
+                          <div className="grid gap-1">
+                            <div className="text-[11px] font-extrabold sb-title">
+                              Selected repos
+                            </div>
+                            <textarea
+                              name="repos"
+                              defaultValue={(
+                                c.selectedRepoFullNames ?? []
+                              ).join("\n")}
+                              rows={3}
+                              className="sb-textarea sb-textarea-compact"
+                              placeholder={"owner/repo\nowner/another-repo"}
+                            />
+                            <div className="text-[11px] text-[color:var(--sb-muted)]">
+                              Used only when repo scope is set to Selected.
+                            </div>
+                            {c.repoSelectionMode === "SELECTED" &&
+                            (c.selectedRepoFullNames ?? []).length === 0 ? (
+                              <div className="text-[11px] text-[color:var(--sb-muted)]">
+                                No repos selected yet, so GitHub sync will be
+                                skipped.
+                              </div>
+                            ) : null}
+                          </div>
+
+                          <div className="flex gap-2">
+                            <button
+                              type="submit"
+                              className={sbButtonClass({
+                                variant: "secondary",
+                                className: "px-4 py-2 text-xs font-semibold",
+                              })}
+                            >
+                              Save scope
+                            </button>
+                          </div>
+                        </form>
+                        <form
+                          action={disconnectGitHubConnection.bind(
+                            null,
+                            membership.workspace.slug,
+                            c.id,
+                          )}
+                        >
                           <button
                             type="submit"
                             className={sbButtonClass({
@@ -268,30 +404,13 @@ export default async function IntegrationsPage({
                               className: "px-4 py-2 text-xs font-semibold",
                             })}
                           >
-                            Save scope
+                            Disconnect
                           </button>
-                        </div>
-                      </form>
-                      <form
-                        action={disconnectGitHubConnection.bind(
-                          null,
-                          membership.workspace.slug,
-                          c.id,
-                        )}
-                      >
-                        <button
-                          type="submit"
-                          className={sbButtonClass({
-                            variant: "secondary",
-                            className: "px-4 py-2 text-xs font-semibold",
-                          })}
-                        >
-                          Disconnect
-                        </button>
-                      </form>
+                        </form>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -322,35 +441,52 @@ export default async function IntegrationsPage({
               </div>
             ) : (
               <div className="mt-3 grid gap-2">
-                {linearConnections.map((c) => (
-                  <div key={c.id} className="sb-card-inset px-4 py-3 text-sm">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="font-semibold text-[color:var(--sb-fg)]">
-                        {c.linearUserEmail ?? c.linearUserId}
+                {linearConnections.map((c) => {
+                  const freshness = describeSyncFreshness({
+                    lastSyncedAt: c.lastSyncedAt,
+                    lastAttemptedAt: c.lastAttemptedAt,
+                    now,
+                  });
+                  const guidance = statusGuidance(c.status, freshness.tone);
+
+                  return (
+                    <div key={c.id} className="sb-card-inset px-4 py-3 text-sm">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="font-semibold text-[color:var(--sb-fg)]">
+                          {c.linearUserEmail ?? c.linearUserId}
+                        </div>
+                        {statusPill(c.status)}
                       </div>
-                      {statusPill(c.status)}
-                    </div>
-                    <div className="mt-3 flex gap-2">
-                      <form
-                        action={disconnectLinearConnection.bind(
-                          null,
-                          membership.workspace.slug,
-                          c.id,
-                        )}
-                      >
-                        <button
-                          type="submit"
-                          className={sbButtonClass({
-                            variant: "secondary",
-                            className: "px-4 py-2 text-xs font-semibold",
-                          })}
+                      <div className="mt-1 text-xs text-[color:var(--sb-muted)]">
+                        {freshness.label}
+                      </div>
+                      {guidance ? (
+                        <div className="mt-1 text-xs text-[color:var(--sb-muted)]">
+                          {guidance}
+                        </div>
+                      ) : null}
+                      <div className="mt-3 flex gap-2">
+                        <form
+                          action={disconnectLinearConnection.bind(
+                            null,
+                            membership.workspace.slug,
+                            c.id,
+                          )}
                         >
-                          Disconnect
-                        </button>
-                      </form>
+                          <button
+                            type="submit"
+                            className={sbButtonClass({
+                              variant: "secondary",
+                              className: "px-4 py-2 text-xs font-semibold",
+                            })}
+                          >
+                            Disconnect
+                          </button>
+                        </form>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -381,35 +517,52 @@ export default async function IntegrationsPage({
               </div>
             ) : (
               <div className="mt-3 grid gap-2">
-                {notionConnections.map((c) => (
-                  <div key={c.id} className="sb-card-inset px-4 py-3 text-sm">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="font-semibold text-[color:var(--sb-fg)]">
-                        {c.notionWorkspaceName ?? c.notionBotId}
+                {notionConnections.map((c) => {
+                  const freshness = describeSyncFreshness({
+                    lastSyncedAt: c.lastSyncedAt,
+                    lastAttemptedAt: c.lastAttemptedAt,
+                    now,
+                  });
+                  const guidance = statusGuidance(c.status, freshness.tone);
+
+                  return (
+                    <div key={c.id} className="sb-card-inset px-4 py-3 text-sm">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="font-semibold text-[color:var(--sb-fg)]">
+                          {c.notionWorkspaceName ?? c.notionBotId}
+                        </div>
+                        {statusPill(c.status)}
                       </div>
-                      {statusPill(c.status)}
-                    </div>
-                    <div className="mt-3 flex gap-2">
-                      <form
-                        action={disconnectNotionConnection.bind(
-                          null,
-                          membership.workspace.slug,
-                          c.id,
-                        )}
-                      >
-                        <button
-                          type="submit"
-                          className={sbButtonClass({
-                            variant: "secondary",
-                            className: "px-4 py-2 text-xs font-semibold",
-                          })}
+                      <div className="mt-1 text-xs text-[color:var(--sb-muted)]">
+                        {freshness.label}
+                      </div>
+                      {guidance ? (
+                        <div className="mt-1 text-xs text-[color:var(--sb-muted)]">
+                          {guidance}
+                        </div>
+                      ) : null}
+                      <div className="mt-3 flex gap-2">
+                        <form
+                          action={disconnectNotionConnection.bind(
+                            null,
+                            membership.workspace.slug,
+                            c.id,
+                          )}
                         >
-                          Disconnect
-                        </button>
-                      </form>
+                          <button
+                            type="submit"
+                            className={sbButtonClass({
+                              variant: "secondary",
+                              className: "px-4 py-2 text-xs font-semibold",
+                            })}
+                          >
+                            Disconnect
+                          </button>
+                        </form>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
