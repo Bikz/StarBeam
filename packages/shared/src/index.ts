@@ -6,6 +6,12 @@ export {
   encryptString,
   parseAes256GcmKeyFromEnv,
 } from "./tokenCrypto";
+export {
+  assertSafeDatabaseUrl,
+  databaseHostFromUrl,
+  isLocalDatabaseHost,
+  isLocalDatabaseUrl,
+} from "./dbSafety";
 
 export {
   sbButtonClass,

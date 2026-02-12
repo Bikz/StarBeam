@@ -3,6 +3,7 @@ import path from "node:path";
 
 import dotenv from "dotenv";
 import { run, runMigrations, type Task, type TaskList } from "graphile-worker";
+import { assertSafeDatabaseUrl } from "@starbeam/shared";
 import { z } from "zod";
 
 import {
@@ -92,6 +93,13 @@ const EnvSchema = z.object({
 });
 
 const env = EnvSchema.parse(process.env);
+
+assertSafeDatabaseUrl({
+  databaseUrl: env.DATABASE_URL,
+  nodeEnv: env.NODE_ENV,
+  allowRemote: process.env.STARB_ALLOW_REMOTE_DB,
+  source: "worker",
+});
 
 async function main() {
   initSentry();

@@ -25,3 +25,24 @@ When debugging an incident:
 ## Local Testing
 
 You can set `SENTRY_DSN` in `.env` and force an error in a dev environment to confirm events are delivered.
+
+## Admin Ops Metrics API
+
+For launch ops, use `GET /api/admin/ops/metrics` for a DB-backed snapshot of:
+
+- recent `JobRun` outcomes (last 24h)
+- connector health by provider (`CONNECTED`/`ERROR`/`REVOKED`)
+- stale connector poll backlog (`lastAttemptedAt` older than poll cutoff)
+
+Access control:
+
+- allowed for signed-in admin users (`STARB_ADMIN_EMAILS`)
+- or a static bearer token via `STARB_OPS_METRICS_TOKEN`
+
+Example:
+
+```bash
+curl -sS \
+  -H "Authorization: Bearer $STARB_OPS_METRICS_TOKEN" \
+  https://starbeamhq.com/api/admin/ops/metrics | jq
+```
