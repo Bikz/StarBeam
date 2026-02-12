@@ -80,6 +80,9 @@ jobs:
       - name: Migrate
         run: pnpm --filter @starbeam/db prisma:migrate
 
+      - name: Web integration tests
+        run: pnpm --filter @starbeam/web test:integration
+
       - name: Worker integration tests
         run: pnpm --filter @starbeam/worker test:integration
 
