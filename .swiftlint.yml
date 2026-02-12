@@ -1,0 +1,17 @@
+included:
+  - apps/macos/Starbeam/Starbeam
+
+# Pragmatic baseline: avoid style-only churn while still catching real issues
+# as we iterate. Tighten over time.
+disabled_rules:
+  - cyclomatic_complexity
+  - file_length
+  - function_body_length
+  - identifier_name
+  - large_tuple
+  - line_length
+  - nesting
+  - opening_brace
+  - trailing_comma
+  - trailing_newline
+  - type_body_length
