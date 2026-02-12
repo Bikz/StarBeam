@@ -22,6 +22,7 @@ import {
   selectPairsRoundRobin,
   type WorkspaceUserPair,
 } from "../lib/roundRobin";
+import { captureTaskError } from "../lib/sentry";
 
 function isTruthyEnv(value: string | undefined): boolean {
   return ["1", "true", "yes"].includes((value ?? "").trim().toLowerCase());
@@ -46,12 +47,70 @@ function needsPoll(lastAt: Date | null | undefined, cutoff: Date): boolean {
   return lastAt.getTime() <= cutoff.getTime();
 }
 
+type ConnectorProvider = "google" | "github" | "linear" | "notion";
+
+type ProviderPollSummary = {
+  discovered: number;
+  due: number;
+  claimed: number;
+  synced: number;
+  errors: number;
+  revoked: number;
+  skipped: number;
+};
+
+type ConnectorPollSummary = Record<ConnectorProvider, ProviderPollSummary>;
+
+const CONNECTOR_PROVIDERS: ConnectorProvider[] = [
+  "google",
+  "github",
+  "linear",
+  "notion",
+];
+
+function emptyProviderPollSummary(): ProviderPollSummary {
+  return {
+    discovered: 0,
+    due: 0,
+    claimed: 0,
+    synced: 0,
+    errors: 0,
+    revoked: 0,
+    skipped: 0,
+  };
+}
+
+function createConnectorPollSummary(): ConnectorPollSummary {
+  return {
+    google: emptyProviderPollSummary(),
+    github: emptyProviderPollSummary(),
+    linear: emptyProviderPollSummary(),
+    notion: emptyProviderPollSummary(),
+  };
+}
+
+function mergeConnectorPollSummary(
+  into: ConnectorPollSummary,
+  part: ConnectorPollSummary,
+): void {
+  for (const provider of CONNECTOR_PROVIDERS) {
+    into[provider].discovered += part[provider].discovered;
+    into[provider].due += part[provider].due;
+    into[provider].claimed += part[provider].claimed;
+    into[provider].synced += part[provider].synced;
+    into[provider].errors += part[provider].errors;
+    into[provider].revoked += part[provider].revoked;
+    into[provider].skipped += part[provider].skipped;
+  }
+}
+
 async function pollForUserInWorkspace(args: {
   workspaceId: string;
   userId: string;
   cutoff: Date;
   now: Date;
-}) {
+}): Promise<ConnectorPollSummary> {
+  const summary = createConnectorPollSummary();
   const [
     googleConnections,
     githubConnections,
@@ -112,9 +171,17 @@ async function pollForUserInWorkspace(args: {
       orderBy: { updatedAt: "asc" },
     }),
   ]);
+  summary.google.discovered = googleConnections.length;
+  summary.github.discovered = githubConnections.length;
+  summary.linear.discovered = linearConnections.length;
+  summary.notion.discovered = notionConnections.length;
 
   for (const c of googleConnections) {
-    if (!needsPoll(c.lastAttemptedAt, args.cutoff)) continue;
+    if (!needsPoll(c.lastAttemptedAt, args.cutoff)) {
+      summary.google.skipped += 1;
+      continue;
+    }
+    summary.google.due += 1;
 
     const claimed = await prisma.googleConnection.updateMany({
       where: {
@@ -126,7 +193,11 @@ async function pollForUserInWorkspace(args: {
       },
       data: { lastAttemptedAt: args.now },
     });
-    if (claimed.count !== 1) continue;
+    if (claimed.count !== 1) {
+      summary.google.skipped += 1;
+      continue;
+    }
+    summary.google.claimed += 1;
 
     try {
       await syncGoogleConnection({
@@ -141,16 +212,38 @@ async function pollForUserInWorkspace(args: {
         workspaceId: args.workspaceId,
         userId: args.userId,
       }).catch(() => undefined);
+      summary.google.synced += 1;
     } catch (err) {
       const status = isGoogleAuthRevoked(err) ? "REVOKED" : "ERROR";
+      summary.google.errors += 1;
+      if (status === "REVOKED") summary.google.revoked += 1;
       await prisma.googleConnection
         .update({ where: { id: c.id }, data: { status } })
         .catch(() => undefined);
+      captureTaskError({
+        task: "connector_poll",
+        error: err,
+        payload: {
+          provider: "google",
+          workspaceId: args.workspaceId,
+          userId: args.userId,
+          connectionId: c.id,
+        },
+        tags: {
+          provider: "google",
+          workspaceId: args.workspaceId,
+          status,
+        },
+      });
     }
   }
 
   for (const c of githubConnections) {
-    if (!needsPoll(c.lastAttemptedAt, args.cutoff)) continue;
+    if (!needsPoll(c.lastAttemptedAt, args.cutoff)) {
+      summary.github.skipped += 1;
+      continue;
+    }
+    summary.github.due += 1;
 
     const claimed = await prisma.gitHubConnection.updateMany({
       where: {
@@ -162,12 +255,18 @@ async function pollForUserInWorkspace(args: {
       },
       data: { lastAttemptedAt: args.now },
     });
-    if (claimed.count !== 1) continue;
+    if (claimed.count !== 1) {
+      summary.github.skipped += 1;
+      continue;
+    }
+    summary.github.claimed += 1;
     if (
       c.repoSelectionMode === "SELECTED" &&
       (c.selectedRepoFullNames ?? []).filter(Boolean).length === 0
-    )
+    ) {
+      summary.github.skipped += 1;
       continue;
+    }
 
     try {
       await syncGitHubConnection({
@@ -175,16 +274,39 @@ async function pollForUserInWorkspace(args: {
         userId: args.userId,
         connectionId: c.id,
       });
+      summary.github.synced += 1;
     } catch (err) {
       const status = isGitHubAuthRevoked(err) ? "REVOKED" : "ERROR";
+      summary.github.errors += 1;
+      if (status === "REVOKED") summary.github.revoked += 1;
       await prisma.gitHubConnection
         .update({ where: { id: c.id }, data: { status } })
         .catch(() => undefined);
+      captureTaskError({
+        task: "connector_poll",
+        error: err,
+        payload: {
+          provider: "github",
+          workspaceId: args.workspaceId,
+          userId: args.userId,
+          connectionId: c.id,
+          githubLogin: c.githubLogin,
+        },
+        tags: {
+          provider: "github",
+          workspaceId: args.workspaceId,
+          status,
+        },
+      });
     }
   }
 
   for (const c of linearConnections) {
-    if (!needsPoll(c.lastAttemptedAt, args.cutoff)) continue;
+    if (!needsPoll(c.lastAttemptedAt, args.cutoff)) {
+      summary.linear.skipped += 1;
+      continue;
+    }
+    summary.linear.due += 1;
 
     const claimed = await prisma.linearConnection.updateMany({
       where: {
@@ -196,23 +318,50 @@ async function pollForUserInWorkspace(args: {
       },
       data: { lastAttemptedAt: args.now },
     });
-    if (claimed.count !== 1) continue;
+    if (claimed.count !== 1) {
+      summary.linear.skipped += 1;
+      continue;
+    }
+    summary.linear.claimed += 1;
     try {
       await syncLinearConnection({
         workspaceId: args.workspaceId,
         userId: args.userId,
         connectionId: c.id,
       });
+      summary.linear.synced += 1;
     } catch (err) {
       const status = isLinearAuthRevoked(err) ? "REVOKED" : "ERROR";
+      summary.linear.errors += 1;
+      if (status === "REVOKED") summary.linear.revoked += 1;
       await prisma.linearConnection
         .update({ where: { id: c.id }, data: { status } })
         .catch(() => undefined);
+      captureTaskError({
+        task: "connector_poll",
+        error: err,
+        payload: {
+          provider: "linear",
+          workspaceId: args.workspaceId,
+          userId: args.userId,
+          connectionId: c.id,
+          linearUserEmail: c.linearUserEmail,
+        },
+        tags: {
+          provider: "linear",
+          workspaceId: args.workspaceId,
+          status,
+        },
+      });
     }
   }
 
   for (const c of notionConnections) {
-    if (!needsPoll(c.lastAttemptedAt, args.cutoff)) continue;
+    if (!needsPoll(c.lastAttemptedAt, args.cutoff)) {
+      summary.notion.skipped += 1;
+      continue;
+    }
+    summary.notion.due += 1;
 
     const claimed = await prisma.notionConnection.updateMany({
       where: {
@@ -224,20 +373,45 @@ async function pollForUserInWorkspace(args: {
       },
       data: { lastAttemptedAt: args.now },
     });
-    if (claimed.count !== 1) continue;
+    if (claimed.count !== 1) {
+      summary.notion.skipped += 1;
+      continue;
+    }
+    summary.notion.claimed += 1;
     try {
       await syncNotionConnection({
         workspaceId: args.workspaceId,
         userId: args.userId,
         connectionId: c.id,
       });
+      summary.notion.synced += 1;
     } catch (err) {
       const status = isNotionAuthRevoked(err) ? "REVOKED" : "ERROR";
+      summary.notion.errors += 1;
+      if (status === "REVOKED") summary.notion.revoked += 1;
       await prisma.notionConnection
         .update({ where: { id: c.id }, data: { status } })
         .catch(() => undefined);
+      captureTaskError({
+        task: "connector_poll",
+        error: err,
+        payload: {
+          provider: "notion",
+          workspaceId: args.workspaceId,
+          userId: args.userId,
+          connectionId: c.id,
+          notionWorkspaceName: c.notionWorkspaceName,
+        },
+        tags: {
+          provider: "notion",
+          workspaceId: args.workspaceId,
+          status,
+        },
+      });
     }
   }
+
+  return summary;
 }
 
 // Global recurring poll task: keep connector-derived signals reasonably fresh
@@ -245,6 +419,7 @@ async function pollForUserInWorkspace(args: {
 export async function connector_poll() {
   if (!isTruthyEnv(process.env.STARB_CONNECTOR_POLL_ENABLED ?? "1")) return;
 
+  const startedAt = Date.now();
   const intervalMins = pollIntervalMins();
   const batch = pollBatchSize();
   const now = new Date();
@@ -310,15 +485,32 @@ export async function connector_poll() {
     lists: [googlePairs, githubPairs, linearPairs, notionPairs],
     limit: batch,
   });
+  const runSummary = createConnectorPollSummary();
 
   for (const p of list) {
-    await pollForUserInWorkspace({
+    const pairSummary = await pollForUserInWorkspace({
       workspaceId: p.workspaceId,
       userId: p.userId,
       cutoff,
       now,
     });
+    mergeConnectorPollSummary(runSummary, pairSummary);
   }
+
+  // eslint-disable-next-line no-console
+  console.log("[connector_poll] summary", {
+    intervalMins,
+    batch,
+    durationMs: Date.now() - startedAt,
+    candidates: {
+      google: google.length,
+      github: github.length,
+      linear: linear.length,
+      notion: notion.length,
+    },
+    selectedPairs: list.length,
+    summary: runSummary,
+  });
 }
 
 const ConnectorPollOnePayloadSchema = z.object({
