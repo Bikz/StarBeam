@@ -123,13 +123,37 @@ export async function updateGitHubRepoSelection(
   connectionId: string,
   formData: FormData,
 ) {
+  const res = await updateGitHubRepoSelectionAction(
+    workspaceSlug,
+    connectionId,
+    { ok: true },
+    formData,
+  );
+  if (!res.ok) {
+    throw new Error(
+      res.fieldErrors?.repos ?? res.message ?? "Could not update repo scope.",
+    );
+  }
+}
+
+export async function updateGitHubRepoSelectionAction(
+  workspaceSlug: string,
+  connectionId: string,
+  _prev: ConnectState,
+  formData: FormData,
+): Promise<ConnectState> {
   const { userId, role, workspace } = await requireMembership(workspaceSlug);
 
   const existing = await prisma.gitHubConnection.findFirst({
     where: { id: connectionId, workspaceId: workspace.id, ownerUserId: userId },
     select: { id: true },
   });
-  if (!existing) throw new Error("Connection not found");
+  if (!existing) {
+    return {
+      ok: false,
+      message: "This GitHub connection no longer exists. Refresh and try again.",
+    };
+  }
 
   const modeRaw =
     typeof formData.get("mode") === "string"
@@ -138,6 +162,15 @@ export async function updateGitHubRepoSelection(
   const mode = modeRaw === "SELECTED" ? "SELECTED" : "ALL";
   const selectedRepoFullNames =
     mode === "SELECTED" ? normalizeRepoFullNames(formData.get("repos")) : [];
+  if (mode === "SELECTED" && selectedRepoFullNames.length === 0) {
+    return {
+      ok: false,
+      fieldErrors: {
+        repos:
+          "Add at least one repo (owner/repo), or switch repo scope to All accessible repos.",
+      },
+    };
+  }
 
   await prisma.gitHubConnection.update({
     where: { id: existing.id },

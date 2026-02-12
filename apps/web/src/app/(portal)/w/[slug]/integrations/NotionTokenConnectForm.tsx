@@ -72,8 +72,8 @@ export default function NotionTokenConnectForm({
           id={helpId}
           className="text-[11px] text-[color:var(--sb-muted)] leading-relaxed"
         >
-          Important: share the pages/databases with your integration, or Notion
-          search returns nothing.
+          Important: share the pages and databases with your integration, or
+          Notion search returns nothing.
         </div>
       </label>
 
