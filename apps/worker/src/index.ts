@@ -48,11 +48,19 @@ function blobGcCrontab(env: NodeJS.ProcessEnv = process.env): string {
   return "20 6 * * * blob_gc\n";
 }
 
+function dbHygieneGcCrontab(env: NodeJS.ProcessEnv = process.env): string {
+  const enabled = isTruthyEnv(env.STARB_DB_GC_ENABLED ?? "1");
+  if (!enabled) return "\n";
+  // Daily at 06:35 UTC (chosen to avoid running at the top of the hour).
+  return "35 6 * * * db_hygiene_gc\n";
+}
+
 function makeCrontab(env: NodeJS.ProcessEnv = process.env): string {
   return [
     connectorPollCrontab(env),
     dailyPulseCrontab(env),
     blobGcCrontab(env),
+    dbHygieneGcCrontab(env),
   ].join("");
 }
 
