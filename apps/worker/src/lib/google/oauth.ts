@@ -1,6 +1,7 @@
 import {
-  decryptString,
+  decryptStringWithAnyKey,
   encryptString,
+  parseAes256GcmDecryptKeysFromEnv,
   parseAes256GcmKeyFromEnv,
 } from "@starbeam/shared";
 
@@ -25,8 +26,15 @@ function encKey(): Buffer {
   return parseAes256GcmKeyFromEnv("STARB_TOKEN_ENC_KEY_B64");
 }
 
+function decryptKeys(): Buffer[] {
+  return parseAes256GcmDecryptKeysFromEnv(
+    "STARB_TOKEN_ENC_KEY_B64",
+    "STARB_TOKEN_ENC_KEY_B64_FALLBACK",
+  );
+}
+
 export function decryptToken(enc: string): string {
-  return decryptString(enc, encKey());
+  return decryptStringWithAnyKey(enc, decryptKeys());
 }
 
 export function encryptToken(plaintext: string): string {

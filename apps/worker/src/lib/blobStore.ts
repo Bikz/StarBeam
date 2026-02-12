@@ -9,8 +9,9 @@ import {
   DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
 import {
-  decryptBytes,
+  decryptBytesWithAnyKey,
   encryptBytes,
+  parseAes256GcmDecryptKeysFromEnv,
   parseAes256GcmKeyFromEnv,
 } from "@starbeam/shared";
 
@@ -236,8 +237,11 @@ export async function getDecryptedObject(args: {
   );
 
   const ciphertext = await s3BodyToBuffer(resp.Body);
-  const keyBytes = parseAes256GcmKeyFromEnv();
-  const plaintext = decryptBytes(ciphertext, keyBytes);
+  const keys = parseAes256GcmDecryptKeysFromEnv(
+    "STARB_TOKEN_ENC_KEY_B64",
+    "STARB_TOKEN_ENC_KEY_B64_FALLBACK",
+  );
+  const plaintext = decryptBytesWithAnyKey(ciphertext, keys);
 
   return { plaintext };
 }

@@ -1,5 +1,8 @@
 import { prisma } from "@starbeam/db";
-import { decryptString, parseAes256GcmKeyFromEnv } from "@starbeam/shared";
+import {
+  decryptStringWithAnyKey,
+  parseAes256GcmDecryptKeysFromEnv,
+} from "@starbeam/shared";
 
 import { fetchJsonWithRetry, HttpError } from "./http";
 
@@ -37,12 +40,15 @@ type GitHubCommit = {
   committer?: { login?: string };
 };
 
-function encKey(): Buffer {
-  return parseAes256GcmKeyFromEnv("STARB_TOKEN_ENC_KEY_B64");
+function decryptKeys(): Buffer[] {
+  return parseAes256GcmDecryptKeysFromEnv(
+    "STARB_TOKEN_ENC_KEY_B64",
+    "STARB_TOKEN_ENC_KEY_B64_FALLBACK",
+  );
 }
 
 function decryptToken(enc: string): string {
-  return decryptString(enc, encKey());
+  return decryptStringWithAnyKey(enc, decryptKeys());
 }
 
 function toSnippet(
