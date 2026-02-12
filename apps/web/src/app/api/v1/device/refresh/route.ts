@@ -66,11 +66,13 @@ export async function POST(request: Request) {
   const rotated = mintRefreshToken();
   const refreshExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
-  await prisma.$transaction(async (tx) => {
-    await tx.apiRefreshToken.update({
-      where: { id: existing.id },
+  const rotatedOk = await prisma.$transaction(async (tx) => {
+    const revoked = await tx.apiRefreshToken.updateMany({
+      where: { id: existing.id, revokedAt: null, expiresAt: { gt: now } },
       data: { revokedAt: now },
     });
+    if (revoked.count !== 1) return false;
+
     await tx.apiRefreshToken.create({
       data: {
         userId: existing.userId,
@@ -78,7 +80,15 @@ export async function POST(request: Request) {
         expiresAt: refreshExpiresAt,
       },
     });
+    return true;
   });
+
+  if (!rotatedOk) {
+    return jsonError(
+      { error: "invalid_token", errorDescription: "Refresh token invalid" },
+      401,
+    );
+  }
 
   const { token: accessToken, expiresIn } = mintAccessToken({
     userId: existing.userId,

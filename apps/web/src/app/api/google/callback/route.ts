@@ -95,6 +95,18 @@ export async function GET(request: Request) {
   const redirectUri = `${origin}/api/google/callback`;
 
   try {
+    // Validate membership before exchanging tokens or persisting connection data.
+    const membership = await prisma.membership.findFirst({
+      where: {
+        userId: parsedState.userId,
+        workspaceId: parsedState.workspaceId,
+      },
+      select: { id: true },
+    });
+    if (!membership) {
+      return NextResponse.redirect(`${webOrigin()}/dashboard?error=not_member`);
+    }
+
     const tokens = await exchangeCodeForTokens({ code, redirectUri });
     const email = await fetchUserEmail(tokens.access_token);
 
@@ -152,42 +164,32 @@ export async function GET(request: Request) {
     });
 
     try {
-      const membership = await prisma.membership.findFirst({
+      const existingPulse = await prisma.pulseEdition.findFirst({
         where: {
-          userId: parsedState.userId,
           workspaceId: parsedState.workspaceId,
+          userId: parsedState.userId,
         },
-        select: { role: true },
+        select: { id: true },
       });
 
-      if (membership) {
-        const existingPulse = await prisma.pulseEdition.findFirst({
-          where: {
-            workspaceId: parsedState.workspaceId,
-            userId: parsedState.userId,
-          },
-          select: { id: true },
+      if (!existingPulse) {
+        await enqueueWorkspaceBootstrap({
+          workspaceId: parsedState.workspaceId,
+          userId: parsedState.userId,
+          triggeredByUserId: parsedState.userId,
+          source: "auto-first",
+          runAt: new Date(),
+          jobKeyMode: "replace",
         });
 
-        if (!existingPulse) {
-          await enqueueWorkspaceBootstrap({
-            workspaceId: parsedState.workspaceId,
-            userId: parsedState.userId,
-            triggeredByUserId: parsedState.userId,
-            source: "auto-first",
-            runAt: new Date(),
-            jobKeyMode: "replace",
-          });
-
-          await enqueueAutoFirstNightlyWorkspaceRun({
-            workspaceId: parsedState.workspaceId,
-            userId: parsedState.userId,
-            triggeredByUserId: parsedState.userId,
-            source: "auto-first",
-            runAt: new Date(Date.now() + 10 * 60 * 1000),
-            jobKeyMode: "preserve_run_at",
-          });
-        }
+        await enqueueAutoFirstNightlyWorkspaceRun({
+          workspaceId: parsedState.workspaceId,
+          userId: parsedState.userId,
+          triggeredByUserId: parsedState.userId,
+          source: "auto-first",
+          runAt: new Date(Date.now() + 10 * 60 * 1000),
+          jobKeyMode: "preserve_run_at",
+        });
       }
     } catch {
       // Don't block Google connect on queue availability.

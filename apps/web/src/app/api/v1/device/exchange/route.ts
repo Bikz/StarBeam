@@ -108,15 +108,56 @@ export async function POST(request: Request) {
   const { refreshToken, tokenHash } = mintRefreshToken();
   const refreshExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
-  await prisma.$transaction(async (tx) => {
-    await tx.deviceAuthRequest.update({
-      where: { id: authReq.id },
+  const consumed = await prisma.$transaction(async (tx) => {
+    const updated = await tx.deviceAuthRequest.updateMany({
+      where: {
+        id: authReq.id,
+        status: "APPROVED",
+        approvedUserId: userId,
+        consumedAt: null,
+        expiresAt: { gt: now },
+      },
       data: { status: "CONSUMED", consumedAt: now },
     });
+
+    if (updated.count !== 1) return false;
+
     await tx.apiRefreshToken.create({
       data: { userId, tokenHash, expiresAt: refreshExpiresAt },
     });
+
+    return true;
   });
+
+  if (!consumed) {
+    const current = await prisma.deviceAuthRequest.findUnique({
+      where: { id: authReq.id },
+      select: { status: true, expiresAt: true },
+    });
+
+    if (!current) {
+      return jsonError({
+        error: "invalid_grant",
+        errorDescription: "Invalid code",
+      });
+    }
+    if (current.expiresAt <= now) {
+      return jsonError({
+        error: "expired_token",
+        errorDescription: "Device code expired",
+      });
+    }
+    if (current.status === "PENDING") {
+      return jsonError({
+        error: "authorization_pending",
+        errorDescription: "Waiting for user approval",
+      });
+    }
+    return jsonError({
+      error: "invalid_grant",
+      errorDescription: "Device code already used",
+    });
+  }
 
   const { token: accessToken, expiresIn } = mintAccessToken({
     userId,

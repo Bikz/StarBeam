@@ -74,10 +74,11 @@ export function buildProvidersFromEnv(
         if (!found) return null;
 
         const user = await prisma.$transaction(async (tx) => {
-          await tx.emailLoginCode.update({
-            where: { id: found.id },
+          const consumed = await tx.emailLoginCode.updateMany({
+            where: { id: found.id, consumedAt: null, expiresAt: { gt: now } },
             data: { consumedAt: now },
           });
+          if (consumed.count !== 1) return null;
 
           const existing = await tx.user.findUnique({
             where: { email },
@@ -107,6 +108,8 @@ export function buildProvidersFromEnv(
 
           return created;
         });
+
+        if (!user) return null;
 
         // Provision outside the code consumption transaction to keep locks small.
         await provisionNewUser(user.id);

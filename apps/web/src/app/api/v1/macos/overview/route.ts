@@ -44,7 +44,7 @@ function iconForFocusSource(
 
 function getBearerToken(request: Request): string | null {
   const header = request.headers.get("authorization") ?? "";
-  const match = header.match(/^Bearer\\s+(.+)$/i);
+  const match = header.match(/^Bearer\s+(.+)$/i);
   return match?.[1] ?? null;
 }
 
