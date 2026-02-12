@@ -11,6 +11,7 @@ import {
   refreshGoogleAccessToken,
 } from "./oauth";
 import { putEncryptedObject } from "../blobStore";
+import { HttpError } from "../integrations/http";
 
 function isNoiseSender(fromHeader: string): boolean {
   const s = fromHeader.toLowerCase();
@@ -41,6 +42,29 @@ function extractFromDomain(fromHeader: string): string | null {
     .trim();
   if (!domain) return null;
   return domain.toLowerCase();
+}
+
+function hasAuthRevokedSignal(value: string): boolean {
+  const msg = value.toLowerCase();
+  return (
+    msg.includes("invalid_grant") ||
+    msg.includes("invalid_token") ||
+    msg.includes("refresh token missing") ||
+    msg.includes("reconnect required") ||
+    msg.includes("token has been expired or revoked")
+  );
+}
+
+export function isGoogleAuthRevoked(err: unknown): boolean {
+  if (err instanceof HttpError) {
+    if (err.status === 401) return true;
+    if (err.status === 400 && hasAuthRevokedSignal(err.responseText ?? "")) {
+      return true;
+    }
+  }
+
+  const msg = err instanceof Error ? err.message : String(err);
+  return hasAuthRevokedSignal(msg);
 }
 
 export async function syncGoogleConnection(args: {

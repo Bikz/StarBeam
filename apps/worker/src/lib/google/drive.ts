@@ -1,3 +1,5 @@
+import { fetchBytesWithRetry, fetchJsonWithRetry } from "../integrations/http";
+
 type DriveListResponse = {
   files?: Array<{
     id?: string;
@@ -20,34 +22,34 @@ type DriveFileRef = {
 };
 
 async function googleGetJson<T>(url: string, accessToken: string): Promise<T> {
-  const resp = await fetch(url, {
-    method: "GET",
-    headers: { Authorization: `Bearer ${accessToken}` },
-    cache: "no-store",
+  return fetchJsonWithRetry<T>({
+    url,
+    init: {
+      method: "GET",
+      headers: { Authorization: `Bearer ${accessToken}` },
+      cache: "no-store",
+    },
+    label: "Google Drive API",
+    timeoutMs: 12_000,
+    maxAttempts: 4,
   });
-
-  const text = await resp.text();
-  if (!resp.ok) throw new Error(`Drive API failed (${resp.status}): ${text}`);
-  return JSON.parse(text) as T;
 }
 
 async function googleGetBytes(
   url: string,
   accessToken: string,
 ): Promise<{ bytes: Buffer; contentType?: string }> {
-  const resp = await fetch(url, {
-    method: "GET",
-    headers: { Authorization: `Bearer ${accessToken}` },
-    cache: "no-store",
+  return fetchBytesWithRetry({
+    url,
+    init: {
+      method: "GET",
+      headers: { Authorization: `Bearer ${accessToken}` },
+      cache: "no-store",
+    },
+    label: "Google Drive download",
+    timeoutMs: 15_000,
+    maxAttempts: 4,
   });
-
-  const contentType = resp.headers.get("content-type") ?? undefined;
-  const buf = Buffer.from(await resp.arrayBuffer());
-  if (!resp.ok) {
-    const text = buf.toString("utf8").slice(0, 800);
-    throw new Error(`Drive download failed (${resp.status}): ${text}`);
-  }
-  return { bytes: buf, contentType };
 }
 
 function toRfc3339(d: Date): string {

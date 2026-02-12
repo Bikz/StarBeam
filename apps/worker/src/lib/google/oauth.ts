@@ -4,6 +4,8 @@ import {
   parseAes256GcmKeyFromEnv,
 } from "@starbeam/shared";
 
+import { fetchJsonWithRetry } from "../integrations/http";
+
 type TokenRefreshResponse = {
   access_token: string;
   expires_in?: number;
@@ -50,18 +52,17 @@ export async function refreshGoogleAccessToken(refreshToken: string): Promise<{
     refresh_token: refreshToken,
   });
 
-  const resp = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body,
+  const parsed = await fetchJsonWithRetry<TokenRefreshResponse>({
+    url: "https://oauth2.googleapis.com/token",
+    init: {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body,
+    },
+    label: "Google OAuth refresh",
+    timeoutMs: 12_000,
+    maxAttempts: 4,
   });
-
-  const text = await resp.text();
-  if (!resp.ok) {
-    throw new Error(`Google refresh failed (${resp.status}): ${text}`);
-  }
-
-  const parsed = JSON.parse(text) as TokenRefreshResponse;
   if (!parsed?.access_token)
     throw new Error("Google refresh missing access_token");
 

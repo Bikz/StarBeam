@@ -1,3 +1,5 @@
+import { fetchJsonWithRetry } from "../integrations/http";
+
 type GmailListResponse = {
   messages?: Array<{ id?: string; threadId?: string }>;
   nextPageToken?: string;
@@ -18,17 +20,17 @@ type GmailMessage = {
 };
 
 async function googleGetJson<T>(url: string, accessToken: string): Promise<T> {
-  const resp = await fetch(url, {
-    method: "GET",
-    headers: { Authorization: `Bearer ${accessToken}` },
+  return fetchJsonWithRetry<T>({
+    url,
+    init: {
+      method: "GET",
+      headers: { Authorization: `Bearer ${accessToken}` },
+      cache: "no-store",
+    },
+    label: "Google Gmail API",
+    timeoutMs: 12_000,
+    maxAttempts: 4,
   });
-
-  const text = await resp.text();
-  if (!resp.ok) {
-    throw new Error(`Gmail API failed (${resp.status}): ${text}`);
-  }
-
-  return JSON.parse(text) as T;
 }
 
 export function headerValue(message: GmailMessage, name: string): string {

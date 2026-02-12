@@ -3,7 +3,11 @@ import { prisma } from "@starbeam/db";
 
 import { persistCodexMemory } from "../lib/codex/memory";
 import { generatePulseCardsWithCodexExec } from "../lib/codex/pulse";
-import { generateFocusTasks, syncGoogleConnection } from "../lib/google/sync";
+import {
+  generateFocusTasks,
+  isGoogleAuthRevoked,
+  syncGoogleConnection,
+} from "../lib/google/sync";
 import {
   isAuthRevoked as isGitHubAuthRevoked,
   syncGitHubConnection,
@@ -241,8 +245,9 @@ export async function syncUserConnectorsAndMaybeCodex(args: {
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       args.onPartialError(`Google sync failed for ${c.email}: ${msg}`);
+      const status = isGoogleAuthRevoked(err) ? "REVOKED" : "ERROR";
       await prisma.googleConnection
-        .update({ where: { id: c.id }, data: { status: "ERROR" } })
+        .update({ where: { id: c.id }, data: { status } })
         .catch(() => undefined);
     }
   }

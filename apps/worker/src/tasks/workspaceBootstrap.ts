@@ -2,7 +2,7 @@ import { prisma } from "@starbeam/db";
 import { z } from "zod";
 
 import { isCodexInstalled } from "../lib/codex/exec";
-import { syncGoogleConnection } from "../lib/google/sync";
+import { isGoogleAuthRevoked, syncGoogleConnection } from "../lib/google/sync";
 import {
   isAuthRevoked as isGitHubAuthRevoked,
   syncGitHubConnection,
@@ -144,8 +144,9 @@ export async function workspace_bootstrap(payload: unknown) {
           onPartialError(
             `Google sync failed for ${c.googleAccountEmail}: ${msg}`,
           );
+          const status = isGoogleAuthRevoked(err) ? "REVOKED" : "ERROR";
           await prisma.googleConnection
-            .update({ where: { id: c.id }, data: { status: "ERROR" } })
+            .update({ where: { id: c.id }, data: { status } })
             .catch(() => undefined);
           sync.google.failed += 1;
         }

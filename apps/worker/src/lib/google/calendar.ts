@@ -1,3 +1,5 @@
+import { fetchJsonWithRetry } from "../integrations/http";
+
 type CalendarEvent = {
   id?: string;
   htmlLink?: string;
@@ -14,17 +16,17 @@ type CalendarListResponse = {
 };
 
 async function googleGetJson<T>(url: string, accessToken: string): Promise<T> {
-  const resp = await fetch(url, {
-    method: "GET",
-    headers: { Authorization: `Bearer ${accessToken}` },
+  return fetchJsonWithRetry<T>({
+    url,
+    init: {
+      method: "GET",
+      headers: { Authorization: `Bearer ${accessToken}` },
+      cache: "no-store",
+    },
+    label: "Google Calendar API",
+    timeoutMs: 12_000,
+    maxAttempts: 4,
   });
-
-  const text = await resp.text();
-  if (!resp.ok) {
-    throw new Error(`Calendar API failed (${resp.status}): ${text}`);
-  }
-
-  return JSON.parse(text) as T;
 }
 
 function parseGoogleDate(value?: string): Date | null {

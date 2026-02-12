@@ -64,13 +64,13 @@ function computeBackoffMs(args: {
   return clamped + jitter;
 }
 
-export async function fetchJsonWithRetry<T>(args: {
+async function fetchResponseWithRetry(args: {
   url: string;
   init: RequestInit;
   label: string;
   timeoutMs?: number;
   maxAttempts?: number;
-}): Promise<T> {
+}): Promise<Response> {
   const timeoutMs = args.timeoutMs ?? 10_000;
   const maxAttempts = args.maxAttempts ?? 3;
 
@@ -85,34 +85,26 @@ export async function fetchJsonWithRetry<T>(args: {
         ...args.init,
         signal: controller.signal,
       });
+      if (resp.ok) return resp;
+
       const text = await resp.text();
+      const err = new HttpError(
+        `${args.label} failed (${resp.status}).`,
+        resp.status,
+        text,
+      );
+      lastErr = err;
 
-      if (!resp.ok) {
-        const err = new HttpError(
-          `${args.label} failed (${resp.status}).`,
-          resp.status,
-          text,
-        );
-        lastErr = err;
-
-        if (attempt < maxAttempts && isRetryableStatus(resp.status)) {
-          const retryAfter = retryAfterMs(resp.headers.get("retry-after"));
-          const delay =
-            retryAfter ??
-            computeBackoffMs({ attempt, baseMs: 250, maxMs: 5_000 });
-          await sleep(delay);
-          continue;
-        }
-
-        throw err;
+      if (attempt < maxAttempts && isRetryableStatus(resp.status)) {
+        const retryAfter = retryAfterMs(resp.headers.get("retry-after"));
+        const delay =
+          retryAfter ??
+          computeBackoffMs({ attempt, baseMs: 250, maxMs: 5_000 });
+        await sleep(delay);
+        continue;
       }
 
-      try {
-        return JSON.parse(text) as T;
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        throw new Error(`${args.label} returned invalid JSON: ${msg}`);
-      }
+      throw err;
     } catch (err) {
       lastErr = err;
       if (attempt < maxAttempts && isRetryableError(err)) {
@@ -127,4 +119,35 @@ export async function fetchJsonWithRetry<T>(args: {
   }
 
   throw lastErr instanceof Error ? lastErr : new Error(`${args.label} failed.`);
+}
+
+export async function fetchJsonWithRetry<T>(args: {
+  url: string;
+  init: RequestInit;
+  label: string;
+  timeoutMs?: number;
+  maxAttempts?: number;
+}): Promise<T> {
+  const resp = await fetchResponseWithRetry(args);
+  const text = await resp.text();
+
+  try {
+    return JSON.parse(text) as T;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new Error(`${args.label} returned invalid JSON: ${msg}`);
+  }
+}
+
+export async function fetchBytesWithRetry(args: {
+  url: string;
+  init: RequestInit;
+  label: string;
+  timeoutMs?: number;
+  maxAttempts?: number;
+}): Promise<{ bytes: Buffer; contentType?: string }> {
+  const resp = await fetchResponseWithRetry(args);
+  const contentType = resp.headers.get("content-type") ?? undefined;
+  const bytes = Buffer.from(await resp.arrayBuffer());
+  return { bytes, contentType };
 }

@@ -1,7 +1,11 @@
 import { prisma } from "@starbeam/db";
 import { z } from "zod";
 
-import { syncGoogleConnection, generateFocusTasks } from "../lib/google/sync";
+import {
+  syncGoogleConnection,
+  generateFocusTasks,
+  isGoogleAuthRevoked,
+} from "../lib/google/sync";
 import {
   isAuthRevoked as isGitHubAuthRevoked,
   syncGitHubConnection,
@@ -40,15 +44,6 @@ function pollBatchSize(): number {
 function needsPoll(lastAt: Date | null | undefined, cutoff: Date): boolean {
   if (!lastAt) return true;
   return lastAt.getTime() <= cutoff.getTime();
-}
-
-function isGoogleAuthRevoked(err: unknown): boolean {
-  const msg = err instanceof Error ? err.message : String(err);
-  return (
-    msg.includes("invalid_grant") ||
-    msg.includes("reconnect required") ||
-    msg.includes("refresh token missing")
-  );
 }
 
 async function pollForUserInWorkspace(args: {
