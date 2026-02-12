@@ -1,101 +1,27 @@
 "use server";
 
-import crypto from "node:crypto";
-
-import { prisma } from "@starbeam/db";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 
 import { authOptions } from "@/lib/auth";
-
-function sha256Hex(input: string): string {
-  return crypto.createHash("sha256").update(input).digest("hex");
-}
+import { acceptInviteForUser } from "@/lib/invites";
 
 export async function acceptInvite(token: string) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id || !session.user.email)
     throw new Error("Unauthorized");
 
-  const tokenHash = sha256Hex(token);
-  const invite = await prisma.invite.findUnique({
-    where: { tokenHash },
-    include: { workspace: true },
+  const result = await acceptInviteForUser({
+    token,
+    userId: session.user.id,
+    userEmail: session.user.email,
   });
 
-  if (!invite) throw new Error("Invite not found");
-  if (invite.usedAt) throw new Error("Invite already used");
-  if (invite.expiresAt.getTime() < Date.now())
-    throw new Error("Invite expired");
-
-  if (invite.email.toLowerCase() !== session.user.email.toLowerCase()) {
-    throw new Error("Invite email mismatch");
+  if (result.ok) {
+    redirect(`/w/${result.workspaceSlug}`);
   }
 
-  await prisma.$transaction(async (tx) => {
-    const generalDept = await tx.department.findFirst({
-      where: { workspaceId: invite.workspaceId, name: "General" },
-      select: { id: true },
-    });
-    const defaultDept =
-      generalDept ??
-      (await tx.department.findFirst({
-        where: { workspaceId: invite.workspaceId, enabled: true },
-        orderBy: { createdAt: "asc" },
-        select: { id: true },
-      }));
-
-    await tx.membership.upsert({
-      where: {
-        workspaceId_userId: {
-          workspaceId: invite.workspaceId,
-          userId: session.user.id,
-        },
-      },
-      update: {},
-      create: {
-        workspaceId: invite.workspaceId,
-        userId: session.user.id,
-        role: invite.role,
-        primaryDepartmentId: defaultDept?.id ?? null,
-      },
-    });
-
-    if (defaultDept) {
-      await tx.membership.updateMany({
-        where: {
-          workspaceId: invite.workspaceId,
-          userId: session.user.id,
-          primaryDepartmentId: null,
-        },
-        data: { primaryDepartmentId: defaultDept.id },
-      });
-    }
-
-    // Treat a workspace invite as product access (private beta).
-    await tx.user.update({
-      where: { id: session.user.id },
-      data: { betaAccessGrantedAt: new Date() },
-    });
-
-    if (defaultDept) {
-      await tx.departmentMembership.upsert({
-        where: {
-          departmentId_userId: {
-            departmentId: defaultDept.id,
-            userId: session.user.id,
-          },
-        },
-        update: {},
-        create: { departmentId: defaultDept.id, userId: session.user.id },
-      });
-    }
-
-    await tx.invite.update({
-      where: { id: invite.id },
-      data: { usedAt: new Date(), usedByUserId: session.user.id },
-    });
-  });
-
-  redirect(`/w/${invite.workspace.slug}`);
+  // Fail closed: redirect back to the invite page. The page will reflect
+  // used/expired state deterministically after concurrent attempts.
+  redirect(`/invite/${token}`);
 }
