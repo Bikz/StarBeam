@@ -9,6 +9,9 @@ on:
 jobs:
   quality:
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://starbeam:starbeam@localhost:5432/starbeam
+      DIRECT_DATABASE_URL: postgresql://starbeam:starbeam@localhost:5432/starbeam
     steps:
       - uses: actions/checkout@v4
 
