@@ -17,6 +17,19 @@ export function parseAes256GcmKeyFromEnv(
   return key;
 }
 
+export function parseAes256GcmDecryptKeysFromEnv(
+  primaryEnvName = "STARB_TOKEN_ENC_KEY_B64",
+  fallbackEnvName = "STARB_TOKEN_ENC_KEY_B64_FALLBACK",
+): Buffer[] {
+  const primary = parseAes256GcmKeyFromEnv(primaryEnvName);
+  const fallbackRaw = process.env[fallbackEnvName];
+  if (!fallbackRaw) return [primary];
+
+  const fallback = parseAes256GcmKeyFromEnv(fallbackEnvName);
+  if (primary.equals(fallback)) return [primary];
+  return [primary, fallback];
+}
+
 // Stored format: v1:<iv_b64>:<tag_b64>:<ciphertext_b64>
 export function encryptString(plaintext: string, key: Buffer): string {
   const iv = crypto.randomBytes(12);
@@ -49,6 +62,27 @@ export function decryptString(ciphertextEnc: string, key: Buffer): string {
   decipher.setAuthTag(tag);
   const plaintext = Buffer.concat([decipher.update(data), decipher.final()]);
   return plaintext.toString("utf8");
+}
+
+export function decryptStringWithAnyKey(
+  ciphertextEnc: string,
+  keys: readonly Buffer[],
+): string {
+  if (keys.length === 0) {
+    throw new Error("At least one decryption key is required");
+  }
+
+  let lastError: unknown;
+  for (const key of keys) {
+    try {
+      return decryptString(ciphertextEnc, key);
+    } catch (err) {
+      lastError = err;
+    }
+  }
+
+  const cause = lastError instanceof Error ? lastError.message : "unknown";
+  throw new Error(`Failed to decrypt ciphertext with provided keys: ${cause}`);
 }
 
 // Stored format (bytes): "SB1" || iv(12) || tag(16) || ciphertext(n)
@@ -89,4 +123,27 @@ export function decryptBytes(ciphertextEnc: Buffer, key: Buffer): Buffer {
   const decipher = crypto.createDecipheriv("aes-256-gcm", key, iv);
   decipher.setAuthTag(tag);
   return Buffer.concat([decipher.update(data), decipher.final()]);
+}
+
+export function decryptBytesWithAnyKey(
+  ciphertextEnc: Buffer,
+  keys: readonly Buffer[],
+): Buffer {
+  if (keys.length === 0) {
+    throw new Error("At least one decryption key is required");
+  }
+
+  let lastError: unknown;
+  for (const key of keys) {
+    try {
+      return decryptBytes(ciphertextEnc, key);
+    } catch (err) {
+      lastError = err;
+    }
+  }
+
+  const cause = lastError instanceof Error ? lastError.message : "unknown";
+  throw new Error(
+    `Failed to decrypt byte ciphertext with provided keys: ${cause}`,
+  );
 }

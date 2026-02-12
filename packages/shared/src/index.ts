@@ -1,9 +1,12 @@
 import { z } from "zod";
 export {
   decryptBytes,
+  decryptBytesWithAnyKey,
   decryptString,
+  decryptStringWithAnyKey,
   encryptBytes,
   encryptString,
+  parseAes256GcmDecryptKeysFromEnv,
   parseAes256GcmKeyFromEnv,
 } from "./tokenCrypto";
 export {
