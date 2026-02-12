@@ -23,16 +23,16 @@
     "prepare": "node -e \"const {existsSync}=require('fs'); const {spawnSync}=require('child_process'); if(!existsSync('.git')) process.exit(0); const r=spawnSync('lefthook',['install'],{stdio:'inherit'}); process.exit(r.status??0);\""
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.3.14",
-    "@eslint/js": "^9.39.2",
+    "@biomejs/biome": "^2.3.15",
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.55.0",
-    "eslint": "^9.39.2",
+    "eslint": "^10.0.0",
     "knip": "^5.83.1",
-    "lefthook": "^2.1.0",
+    "lefthook": "^2.1.1",
     "prettier": "^3.6.0",
     "tsx": "^4.21.0",
-    "turbo": "^2.5.6",
-    "typescript-eslint": "^8.54.0"
+    "turbo": "^2.8.7",
+    "typescript-eslint": "^8.55.0"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
