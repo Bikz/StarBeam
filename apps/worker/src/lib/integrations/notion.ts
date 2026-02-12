@@ -1,7 +1,7 @@
 import { prisma } from "@starbeam/db";
 import { decryptString, parseAes256GcmKeyFromEnv } from "@starbeam/shared";
 
-import { fetchJson, HttpError } from "./http";
+import { fetchJsonWithRetry, HttpError } from "./http";
 
 type NotionSearchResponse = {
   results?: unknown[];
@@ -113,7 +113,7 @@ async function notionRequest<T>(args: {
     cache: "no-store" as const,
   } satisfies RequestInit;
 
-  return fetchJson<T>({ url: args.url, init, label: args.label });
+  return fetchJsonWithRetry<T>({ url: args.url, init, label: args.label });
 }
 
 async function searchPages(args: {

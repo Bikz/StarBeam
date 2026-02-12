@@ -1,7 +1,7 @@
 import { prisma } from "@starbeam/db";
 import { decryptString, parseAes256GcmKeyFromEnv } from "@starbeam/shared";
 
-import { fetchJson, HttpError } from "./http";
+import { fetchJsonWithRetry, HttpError } from "./http";
 
 type LinearGraphqlResponse<T> = {
   data?: T;
@@ -60,7 +60,7 @@ async function linearGraphql<T>(args: {
   variables?: Record<string, unknown>;
   label: string;
 }): Promise<T> {
-  const parsed = await fetchJson<LinearGraphqlResponse<T>>({
+  const parsed = await fetchJsonWithRetry<LinearGraphqlResponse<T>>({
     url: "https://api.linear.app/graphql",
     init: {
       method: "POST",
@@ -234,5 +234,8 @@ export async function syncLinearConnection(args: {
 }
 
 export function isAuthRevoked(err: unknown): boolean {
-  return err instanceof HttpError && (err.status === 401 || err.status === 403);
+  if (err instanceof HttpError) return err.status === 401 || err.status === 403;
+  if (!(err instanceof Error)) return false;
+  const msg = err.message.trim().toLowerCase();
+  return msg.includes("authentication") || msg.includes("unauthorized");
 }

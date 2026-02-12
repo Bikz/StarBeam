@@ -1,7 +1,7 @@
 import { prisma } from "@starbeam/db";
 import { decryptString, parseAes256GcmKeyFromEnv } from "@starbeam/shared";
 
-import { fetchJson, HttpError } from "./http";
+import { fetchJsonWithRetry, HttpError } from "./http";
 
 type GitHubIssue = {
   id: number;
@@ -84,7 +84,7 @@ async function listIssues(args: {
 
   const url = `https://api.github.com/issues?${params.toString()}`;
 
-  return fetchJson<GitHubIssue[]>({
+  return fetchJsonWithRetry<GitHubIssue[]>({
     url,
     init: {
       method: "GET",
@@ -113,7 +113,7 @@ async function listRepos(args: {
 
   const url = `https://api.github.com/user/repos?${params.toString()}`;
 
-  return fetchJson<GitHubRepo[]>({
+  return fetchJsonWithRetry<GitHubRepo[]>({
     url,
     init: {
       method: "GET",
@@ -144,7 +144,7 @@ async function listCommitsForRepo(args: {
 
   const url = `https://api.github.com/repos/${args.repoFullName}/commits?${params.toString()}`;
 
-  return fetchJson<GitHubCommit[]>({
+  return fetchJsonWithRetry<GitHubCommit[]>({
     url,
     init: {
       method: "GET",
@@ -420,5 +420,7 @@ export async function syncGitHubConnection(args: {
 }
 
 export function isAuthRevoked(err: unknown): boolean {
-  return err instanceof HttpError && (err.status === 401 || err.status === 403);
+  // GitHub uses 403 for rate limiting and other transient conditions. 401 is the
+  // clearest signal that the token is no longer valid.
+  return err instanceof HttpError && err.status === 401;
 }
