@@ -6,7 +6,7 @@ function sha256Hex(input: string): string {
   return crypto.createHash("sha256").update(input).digest("hex");
 }
 
-export type AcceptInviteError =
+type AcceptInviteError =
   | "not_found"
   | "expired"
   | "already_used"

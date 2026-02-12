@@ -2,7 +2,7 @@ import { Prisma, prisma } from "@starbeam/db";
 
 import { hashBetaKey, normalizeBetaKey } from "@/lib/betaKeys";
 
-export type RedeemBetaKeyError =
+type RedeemBetaKeyError =
   | "invalid_key"
   | "not_found"
   | "disabled"

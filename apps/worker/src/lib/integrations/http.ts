@@ -64,30 +64,6 @@ function computeBackoffMs(args: {
   return clamped + jitter;
 }
 
-export async function fetchJson<T>(args: {
-  url: string;
-  init: RequestInit;
-  label: string;
-}): Promise<T> {
-  const resp = await fetch(args.url, args.init);
-  const text = await resp.text();
-
-  if (!resp.ok) {
-    throw new HttpError(
-      `${args.label} failed (${resp.status}).`,
-      resp.status,
-      text,
-    );
-  }
-
-  try {
-    return JSON.parse(text) as T;
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    throw new Error(`${args.label} returned invalid JSON: ${msg}`);
-  }
-}
-
 export async function fetchJsonWithRetry<T>(args: {
   url: string;
   init: RequestInit;
