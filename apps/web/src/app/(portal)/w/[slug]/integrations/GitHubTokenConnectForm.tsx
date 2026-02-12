@@ -77,8 +77,8 @@ export default function GitHubTokenConnectForm({
           id={helpId}
           className="text-[11px] text-[color:var(--sb-muted)] leading-relaxed"
         >
-          We’ll verify the token, then save it. You can revoke it anytime in
-          GitHub.
+          We verify the token before saving it. You can revoke it anytime in
+          GitHub settings.
         </div>
       </label>
 
@@ -114,8 +114,8 @@ export default function GitHubTokenConnectForm({
       </div>
 
       <div className="text-[11px] text-[color:var(--sb-muted)] leading-relaxed">
-        Tip: keep workspace context scoped. If you choose Selected, Starbeam
-        won’t ingest GitHub until you list one or more repos.
+        Tip: keep workspace context scoped. If you choose Selected, add at least
+        one repo or GitHub sync won’t run.
       </div>
 
       <div>

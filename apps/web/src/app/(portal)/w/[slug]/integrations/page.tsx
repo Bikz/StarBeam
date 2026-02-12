@@ -6,7 +6,6 @@ import { prisma } from "@starbeam/db";
 
 import {
   disconnectGitHubConnection,
-  updateGitHubRepoSelection,
 } from "@/app/(portal)/w/[slug]/integrations/githubActions";
 import {
   startGoogleConnect,
@@ -17,6 +16,7 @@ import { disconnectNotionConnection } from "@/app/(portal)/w/[slug]/integrations
 import { authOptions } from "@/lib/auth";
 import PageHeader from "@/components/page-header";
 import GitHubTokenConnectForm from "@/app/(portal)/w/[slug]/integrations/GitHubTokenConnectForm";
+import GitHubRepoSelectionForm from "@/app/(portal)/w/[slug]/integrations/GitHubRepoSelectionForm";
 import LinearTokenConnectForm from "@/app/(portal)/w/[slug]/integrations/LinearTokenConnectForm";
 import NotionTokenConnectForm from "@/app/(portal)/w/[slug]/integrations/NotionTokenConnectForm";
 
@@ -169,7 +169,7 @@ export default async function IntegrationsPage({
         <div className="sb-card p-7">
           <PageHeader
             title="Personal integrations"
-            description="Connect tools to pull in updates for your pulse. Connections here are personal to you and aren’t shared as raw data with teammates."
+            description="Connect your tools so Starbeam can pull updates into your pulse. These connections are personal to you, and raw connected data isn’t shared with teammates."
           />
         </div>
 
@@ -329,67 +329,12 @@ export default async function IntegrationsPage({
                         </div>
                       ) : null}
                       <div className="mt-3 flex gap-2">
-                        <form
-                          action={updateGitHubRepoSelection.bind(
-                            null,
-                            membership.workspace.slug,
-                            c.id,
-                          )}
-                          className="grid w-full gap-2"
-                        >
-                          <div className="grid gap-1">
-                            <div className="text-[11px] font-extrabold sb-title">
-                              Repo scope
-                            </div>
-                            <select
-                              name="mode"
-                              defaultValue={c.repoSelectionMode}
-                              className="sb-select sb-select-compact"
-                            >
-                              <option value="ALL">All accessible repos</option>
-                              <option value="SELECTED">
-                                Selected repos only
-                              </option>
-                            </select>
-                          </div>
-
-                          <div className="grid gap-1">
-                            <div className="text-[11px] font-extrabold sb-title">
-                              Selected repos
-                            </div>
-                            <textarea
-                              name="repos"
-                              defaultValue={(
-                                c.selectedRepoFullNames ?? []
-                              ).join("\n")}
-                              rows={3}
-                              className="sb-textarea sb-textarea-compact"
-                              placeholder={"owner/repo\nowner/another-repo"}
-                            />
-                            <div className="text-[11px] text-[color:var(--sb-muted)]">
-                              Used only when repo scope is set to Selected.
-                            </div>
-                            {c.repoSelectionMode === "SELECTED" &&
-                            (c.selectedRepoFullNames ?? []).length === 0 ? (
-                              <div className="text-[11px] text-[color:var(--sb-muted)]">
-                                No repos selected yet, so GitHub sync will be
-                                skipped.
-                              </div>
-                            ) : null}
-                          </div>
-
-                          <div className="flex gap-2">
-                            <button
-                              type="submit"
-                              className={sbButtonClass({
-                                variant: "secondary",
-                                className: "px-4 py-2 text-xs font-semibold",
-                              })}
-                            >
-                              Save scope
-                            </button>
-                          </div>
-                        </form>
+                        <GitHubRepoSelectionForm
+                          workspaceSlug={membership.workspace.slug}
+                          connectionId={c.id}
+                          initialMode={c.repoSelectionMode}
+                          initialRepos={c.selectedRepoFullNames ?? []}
+                        />
                         <form
                           action={disconnectGitHubConnection.bind(
                             null,
@@ -588,9 +533,9 @@ export default async function IntegrationsPage({
             <section className="sb-card-inset p-4">
               <div className="text-xs font-extrabold sb-title">Next</div>
               <div className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
-                Next: go to <span className="sb-title">Runs</span> and click{" "}
-                <span className="sb-title">Run now</span> to generate an updated
-                pulse.
+                Next: open <span className="sb-title">Runs</span> and click{" "}
+                <span className="sb-title">Run now</span> if you want an update
+                right away.
               </div>
             </section>
           </div>

@@ -71,7 +71,7 @@ export default function LinearTokenConnectForm({
           className="text-[11px] text-[color:var(--sb-muted)] leading-relaxed"
         >
           Starbeam reads your assigned issues and recent updates to build your
-          pulse.
+          pulse context.
         </div>
       </label>
 

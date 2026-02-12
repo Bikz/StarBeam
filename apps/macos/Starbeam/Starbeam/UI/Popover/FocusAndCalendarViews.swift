@@ -15,7 +15,7 @@ struct FocusListView: View {
   @FocusState private var titleFocused: Bool
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 10) {
+    VStack(alignment: .leading, spacing: 8) {
       if items.isEmpty {
         VStack(alignment: .leading, spacing: 6) {
           Text("Nothing yet")
@@ -24,7 +24,7 @@ struct FocusListView: View {
             .font(.system(size: 12, weight: .medium, design: .rounded))
             .foregroundStyle(.secondary)
         }
-        .padding(12)
+        .padding(10)
         .starbeamCard()
       } else {
         ForEach(items) { item in
@@ -57,7 +57,7 @@ struct FocusListView: View {
             .buttonStyle(.plain)
             .accessibilityLabel("Mark todo as done")
           }
-          .padding(12)
+          .padding(10)
           .starbeamCard()
         }
       }
@@ -93,7 +93,7 @@ struct FocusListView: View {
             .disabled(todoTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
           }
         }
-        .padding(12)
+        .padding(10)
         .starbeamCard()
         .onAppear {
           DispatchQueue.main.async { titleFocused = true }
@@ -110,7 +110,7 @@ struct FocusListView: View {
               .font(.system(size: 13, weight: .semibold, design: .rounded))
             Spacer(minLength: 0)
           }
-          .padding(12)
+          .padding(10)
           .starbeamCard()
         }
         .buttonStyle(.plain)
@@ -175,7 +175,7 @@ struct CalendarListView: View {
   let signedIn: Bool
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 10) {
+    VStack(alignment: .leading, spacing: 8) {
       if items.isEmpty {
         VStack(alignment: .leading, spacing: 6) {
           Text("No events")
@@ -184,7 +184,7 @@ struct CalendarListView: View {
             .font(.system(size: 12, weight: .medium, design: .rounded))
             .foregroundStyle(.secondary)
         }
-        .padding(12)
+        .padding(10)
         .starbeamCard()
       } else {
         VStack(alignment: .leading, spacing: 8) {
@@ -196,7 +196,7 @@ struct CalendarListView: View {
               .lineLimit(1)
           }
         }
-        .padding(12)
+        .padding(10)
         .starbeamCard()
       }
     }
