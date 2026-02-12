@@ -10,6 +10,9 @@ export function safeRedirectPath(
   // Avoid surprising backslash handling in user agents and proxies.
   if (value.includes("\\")) return fallback;
   // Drop control characters.
-  if (/[\u0000-\u001F\u007F]/.test(value)) return fallback;
+  for (let i = 0; i < value.length; i += 1) {
+    const code = value.charCodeAt(i);
+    if (code <= 0x1f || code === 0x7f) return fallback;
+  }
   return value;
 }
