@@ -4,8 +4,41 @@ type EmailPayload = {
   text: string;
 };
 
+type EmailSendTelemetry = {
+  provider: "smtp" | "resend";
+  toDomain: string | null;
+  subjectLength: number;
+  textLength: number;
+  containsOtpLikeCode: boolean;
+};
+
+function recipientDomain(email: string): string | null {
+  const raw = email.trim().toLowerCase();
+  const at = raw.lastIndexOf("@");
+  if (at <= 0 || at >= raw.length - 1) return null;
+  return raw.slice(at + 1);
+}
+
+function containsOtpLikeCode(text: string): boolean {
+  return /\b\d{6,8}\b/.test(text);
+}
+
+function buildSafeTelemetry(
+  provider: EmailSendTelemetry["provider"],
+  payload: EmailPayload,
+): EmailSendTelemetry {
+  return {
+    provider,
+    toDomain: recipientDomain(payload.to),
+    subjectLength: payload.subject.length,
+    textLength: payload.text.length,
+    containsOtpLikeCode: containsOtpLikeCode(payload.text),
+  };
+}
+
 export async function sendEmail(payload: EmailPayload): Promise<void> {
   const from = process.env.EMAIL_FROM ?? "Starbeam <onboarding@resend.dev>";
+  const body = payload.text;
 
   // Preferred path (most flexible): SMTP. Works with AWS SES SMTP, Postmark SMTP, Mailjet, etc.
   const smtpHost = process.env.SMTP_HOST;
@@ -33,7 +66,7 @@ export async function sendEmail(payload: EmailPayload): Promise<void> {
       from,
       to: payload.to,
       subject: payload.subject,
-      text: payload.text,
+      text: body,
     });
 
     return;
@@ -45,11 +78,10 @@ export async function sendEmail(payload: EmailPayload): Promise<void> {
   if (!apiKey) {
     // Dev fallback: avoid silently "succeeding" without a provider.
     // In production we expect RESEND_API_KEY to be set.
-    console.warn("[email] RESEND_API_KEY missing; not sending email:", {
-      to: payload.to,
-      subject: payload.subject,
-      text: payload.text,
-    });
+    console.warn(
+      "[email] RESEND_API_KEY missing; not sending email",
+      buildSafeTelemetry("resend", payload),
+    );
     return;
   }
 
@@ -60,7 +92,7 @@ export async function sendEmail(payload: EmailPayload): Promise<void> {
     from,
     to: payload.to,
     subject: payload.subject,
-    text: payload.text,
+    text: body,
   });
 
   if ((resp as { error?: unknown }).error) {
