@@ -10,6 +10,7 @@
     "lint": "eslint --max-warnings 0",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --import tsx --test test/*.test.ts",
+    "test:integration": "node --import tsx --test test/integration/*.test.ts",
     "email:test": "node --import tsx scripts/send_test_email.ts"
   },
   "dependencies": {
