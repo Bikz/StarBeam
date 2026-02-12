@@ -5,18 +5,33 @@ import { redirect } from "next/navigation";
 
 import {
   encryptSecret,
-  fetchNotionBot,
   normalizeSecret,
   requireMembership,
   scheduleAutoFirstPulseIfNeeded,
 } from "@/app/(portal)/w/[slug]/integrations/_shared";
+import type { ConnectState } from "@/app/(portal)/w/[slug]/integrations/connectState";
+import { fetchNotionBot } from "@/app/(portal)/w/[slug]/integrations/providerCheck";
+import { friendlyProviderError } from "@/app/(portal)/w/[slug]/integrations/providerErrors";
 
-export async function connectNotion(workspaceSlug: string, formData: FormData) {
+export async function connectNotionAction(
+  workspaceSlug: string,
+  _prev: ConnectState,
+  formData: FormData,
+): Promise<ConnectState> {
   const { userId, role, workspace } = await requireMembership(workspaceSlug);
   const token = normalizeSecret(formData.get("token"));
-  if (!token) throw new Error("Missing token");
+  if (!token) {
+    return {
+      ok: false,
+      fieldErrors: { token: "Paste an integration token to continue." },
+    };
+  }
 
   const bot = await fetchNotionBot(token);
+  if (!bot.ok) {
+    return { ok: false, message: friendlyProviderError("notion", bot) };
+  }
+
   const tokenEnc = encryptSecret(token);
 
   await prisma.notionConnection.upsert({
@@ -24,19 +39,19 @@ export async function connectNotion(workspaceSlug: string, formData: FormData) {
       workspaceId_ownerUserId_notionBotId: {
         workspaceId: workspace.id,
         ownerUserId: userId,
-        notionBotId: bot.botId,
+        notionBotId: bot.value.botId,
       },
     },
     update: {
       tokenEnc,
-      notionWorkspaceName: bot.workspaceName ?? null,
+      notionWorkspaceName: bot.value.workspaceName ?? null,
       status: "CONNECTED",
     },
     create: {
       workspaceId: workspace.id,
       ownerUserId: userId,
-      notionBotId: bot.botId,
-      notionWorkspaceName: bot.workspaceName ?? null,
+      notionBotId: bot.value.botId,
+      notionWorkspaceName: bot.value.workspaceName ?? null,
       tokenEnc,
       status: "CONNECTED",
     },
@@ -50,6 +65,16 @@ export async function connectNotion(workspaceSlug: string, formData: FormData) {
   });
 
   redirect(`/w/${workspaceSlug}/integrations?connected=notion`);
+}
+
+export async function connectNotion(workspaceSlug: string, formData: FormData) {
+  // Backwards-compatible wrapper; prefer connectNotionAction for inline errors.
+  const res = await connectNotionAction(workspaceSlug, { ok: true }, formData);
+  if (!res.ok) {
+    throw new Error(
+      res.fieldErrors?.token ?? res.message ?? "Could not connect Notion.",
+    );
+  }
 }
 
 export async function disconnectNotionConnection(

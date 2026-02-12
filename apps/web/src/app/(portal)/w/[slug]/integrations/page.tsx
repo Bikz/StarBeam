@@ -5,7 +5,6 @@ import { sbButtonClass } from "@starbeam/shared";
 import { prisma } from "@starbeam/db";
 
 import {
-  connectGitHub,
   disconnectGitHubConnection,
   updateGitHubRepoSelection,
 } from "@/app/(portal)/w/[slug]/integrations/githubActions";
@@ -13,16 +12,13 @@ import {
   startGoogleConnect,
   disconnectGoogleConnection,
 } from "@/app/(portal)/w/[slug]/integrations/googleActions";
-import {
-  connectLinear,
-  disconnectLinearConnection,
-} from "@/app/(portal)/w/[slug]/integrations/linearActions";
-import {
-  connectNotion,
-  disconnectNotionConnection,
-} from "@/app/(portal)/w/[slug]/integrations/notionActions";
+import { disconnectLinearConnection } from "@/app/(portal)/w/[slug]/integrations/linearActions";
+import { disconnectNotionConnection } from "@/app/(portal)/w/[slug]/integrations/notionActions";
 import { authOptions } from "@/lib/auth";
 import PageHeader from "@/components/page-header";
+import GitHubTokenConnectForm from "@/app/(portal)/w/[slug]/integrations/GitHubTokenConnectForm";
+import LinearTokenConnectForm from "@/app/(portal)/w/[slug]/integrations/LinearTokenConnectForm";
+import NotionTokenConnectForm from "@/app/(portal)/w/[slug]/integrations/NotionTokenConnectForm";
 
 function statusPill(status: string) {
   return <div className="sb-pill">{status.toLowerCase()}</div>;
@@ -92,14 +88,14 @@ export default async function IntegrationsPage({
         <div className="sb-card p-7">
           <PageHeader
             title="Personal integrations"
-            description="Connections on this page are personal. They only affect your own pulse context, and raw connected-tool data is not shared with managers or teammates."
+            description="Connect tools to pull in updates for your pulse. Connections here are personal to you and aren’t shared as raw data with teammates."
           />
         </div>
 
         <div className="sb-card p-7" id="google">
           <PageHeader
             title="Google (OAuth, read-only)"
-            description="Connect Gmail, Calendar, and Drive. Tokens are stored encrypted. Drive file snapshots are stored encrypted for processing, and raw contents are not logged."
+            description="Connect Gmail, Calendar, and Drive so Starbeam can pull in what matters. Tokens are stored encrypted, and raw contents are not logged."
           />
 
           {sp.connected === "google" ? (
@@ -110,7 +106,10 @@ export default async function IntegrationsPage({
           ) : null}
           {sp.error ? (
             <div className="mt-5 sb-alert">
-              <strong>Error:</strong> {sp.error}
+              <strong>Couldn’t connect Google.</strong>{" "}
+              <span className="text-[color:var(--sb-muted)]">
+                Please try again.
+              </span>
             </div>
           ) : null}
 
@@ -181,7 +180,7 @@ export default async function IntegrationsPage({
         <div className="sb-card p-7" id="github">
           <PageHeader
             title="GitHub (token)"
-            description="Paste a GitHub personal access token. This is the quickest way to connect without configuring an OAuth app."
+            description="Paste a GitHub token so Starbeam can read issues, PRs, and commits for the repos you choose."
           />
 
           {sp.connected === "github" ? (
@@ -191,67 +190,7 @@ export default async function IntegrationsPage({
             <div className="mt-5 sb-alert">Disconnected.</div>
           ) : null}
 
-          <form
-            action={connectGitHub.bind(null, membership.workspace.slug)}
-            className="mt-5 grid gap-3"
-          >
-            <label className="grid gap-2">
-              <div className="text-xs font-extrabold sb-title">
-                Personal access token
-              </div>
-              <input
-                name="token"
-                type="password"
-                autoComplete="off"
-                spellCheck={false}
-                className="sb-input"
-                placeholder="ghp_…"
-              />
-            </label>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <label className="grid gap-2">
-                <div className="text-xs font-extrabold sb-title">
-                  Repo scope
-                </div>
-                <select
-                  name="mode"
-                  defaultValue="SELECTED"
-                  className="sb-select"
-                >
-                  <option value="SELECTED">
-                    Selected repos only (recommended)
-                  </option>
-                  <option value="ALL">All accessible repos</option>
-                </select>
-              </label>
-              <label className="grid gap-2">
-                <div className="text-xs font-extrabold sb-title">
-                  Selected repos
-                </div>
-                <textarea
-                  name="repos"
-                  rows={3}
-                  className="sb-textarea sb-textarea-compact"
-                  placeholder={"owner/repo\nowner/another-repo"}
-                />
-              </label>
-            </div>
-            <div className="text-[11px] text-[color:var(--sb-muted)] leading-relaxed">
-              Tip: keep workspace context scoped. If you choose Selected,
-              Starbeam won’t ingest GitHub until you list one or more repos.
-            </div>
-            <div>
-              <button
-                type="submit"
-                className={sbButtonClass({
-                  variant: "primary",
-                  className: "h-11 px-5 text-sm font-extrabold",
-                })}
-              >
-                Connect GitHub
-              </button>
-            </div>
-          </form>
+          <GitHubTokenConnectForm workspaceSlug={membership.workspace.slug} />
 
           <div className="mt-7">
             <div className="text-xs font-extrabold sb-title">
@@ -361,7 +300,7 @@ export default async function IntegrationsPage({
         <div className="sb-card p-7" id="linear">
           <PageHeader
             title="Linear (token)"
-            description="Paste a Linear API key. Starbeam will ingest assigned issues and recent updates for your workspace pulse."
+            description="Paste a Linear API key so Starbeam can read your assigned issues and recent updates."
           />
 
           {sp.connected === "linear" ? (
@@ -371,33 +310,7 @@ export default async function IntegrationsPage({
             <div className="mt-5 sb-alert">Disconnected.</div>
           ) : null}
 
-          <form
-            action={connectLinear.bind(null, membership.workspace.slug)}
-            className="mt-5 grid gap-3"
-          >
-            <label className="grid gap-2">
-              <div className="text-xs font-extrabold sb-title">API key</div>
-              <input
-                name="token"
-                type="password"
-                autoComplete="off"
-                spellCheck={false}
-                className="sb-input"
-                placeholder="lin_api_…"
-              />
-            </label>
-            <div>
-              <button
-                type="submit"
-                className={sbButtonClass({
-                  variant: "primary",
-                  className: "h-11 px-5 text-sm font-extrabold",
-                })}
-              >
-                Connect Linear
-              </button>
-            </div>
-          </form>
+          <LinearTokenConnectForm workspaceSlug={membership.workspace.slug} />
 
           <div className="mt-7">
             <div className="text-xs font-extrabold sb-title">
@@ -446,7 +359,7 @@ export default async function IntegrationsPage({
         <div className="sb-card p-7" id="notion">
           <PageHeader
             title="Notion (token)"
-            description="Paste a Notion integration token. Make sure to share the relevant pages/databases with the integration, otherwise Notion search will return nothing."
+            description="Paste a Notion integration token so Starbeam can search the pages and databases you share with that integration."
           />
 
           {sp.connected === "notion" ? (
@@ -456,35 +369,7 @@ export default async function IntegrationsPage({
             <div className="mt-5 sb-alert">Disconnected.</div>
           ) : null}
 
-          <form
-            action={connectNotion.bind(null, membership.workspace.slug)}
-            className="mt-5 grid gap-3"
-          >
-            <label className="grid gap-2">
-              <div className="text-xs font-extrabold sb-title">
-                Integration token
-              </div>
-              <input
-                name="token"
-                type="password"
-                autoComplete="off"
-                spellCheck={false}
-                className="sb-input"
-                placeholder="secret_…"
-              />
-            </label>
-            <div>
-              <button
-                type="submit"
-                className={sbButtonClass({
-                  variant: "primary",
-                  className: "h-11 px-5 text-sm font-extrabold",
-                })}
-              >
-                Connect Notion
-              </button>
-            </div>
-          </form>
+          <NotionTokenConnectForm workspaceSlug={membership.workspace.slug} />
 
           <div className="mt-7">
             <div className="text-xs font-extrabold sb-title">
@@ -550,10 +435,9 @@ export default async function IntegrationsPage({
             <section className="sb-card-inset p-4">
               <div className="text-xs font-extrabold sb-title">Next</div>
               <div className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
-                After you connect an integration, go to{" "}
-                <span className="sb-title">Runs</span> and click{" "}
-                <span className="sb-title">Run now</span> to ingest and generate
-                an updated pulse.
+                Next: go to <span className="sb-title">Runs</span> and click{" "}
+                <span className="sb-title">Run now</span> to generate an updated
+                pulse.
               </div>
             </section>
           </div>

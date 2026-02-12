@@ -5,11 +5,13 @@ import { redirect } from "next/navigation";
 
 import {
   encryptSecret,
-  fetchGitHubViewer,
   normalizeSecret,
   requireMembership,
   scheduleAutoFirstPulseIfNeeded,
 } from "@/app/(portal)/w/[slug]/integrations/_shared";
+import type { ConnectState } from "@/app/(portal)/w/[slug]/integrations/connectState";
+import { fetchGitHubViewer } from "@/app/(portal)/w/[slug]/integrations/providerCheck";
+import { friendlyProviderError } from "@/app/(portal)/w/[slug]/integrations/providerErrors";
 
 function normalizeRepoFullNames(value: unknown): string[] {
   const raw = typeof value === "string" ? value : "";
@@ -31,12 +33,22 @@ function normalizeRepoFullNames(value: unknown): string[] {
   return out;
 }
 
-export async function connectGitHub(workspaceSlug: string, formData: FormData) {
+export async function connectGitHubAction(
+  workspaceSlug: string,
+  _prev: ConnectState,
+  formData: FormData,
+): Promise<ConnectState> {
   const { userId, role, workspace } = await requireMembership(workspaceSlug);
   const token = normalizeSecret(formData.get("token"));
-  if (!token) throw new Error("Missing token");
+  if (!token) {
+    return { ok: false, fieldErrors: { token: "Paste a token to continue." } };
+  }
 
   const viewer = await fetchGitHubViewer(token);
+  if (!viewer.ok) {
+    return { ok: false, message: friendlyProviderError("github", viewer) };
+  }
+
   const tokenEnc = encryptSecret(token);
 
   const modeRaw =
@@ -46,13 +58,22 @@ export async function connectGitHub(workspaceSlug: string, formData: FormData) {
   const mode = modeRaw === "ALL" ? "ALL" : "SELECTED";
   const selectedRepoFullNames =
     mode === "SELECTED" ? normalizeRepoFullNames(formData.get("repos")) : [];
+  if (mode === "SELECTED" && selectedRepoFullNames.length === 0) {
+    return {
+      ok: false,
+      fieldErrors: {
+        repos:
+          "Add at least one repo (owner/repo), or switch repo scope to All accessible repos.",
+      },
+    };
+  }
 
   await prisma.gitHubConnection.upsert({
     where: {
       workspaceId_ownerUserId_githubLogin: {
         workspaceId: workspace.id,
         ownerUserId: userId,
-        githubLogin: viewer.login,
+        githubLogin: viewer.value.login,
       },
     },
     update: {
@@ -64,7 +85,7 @@ export async function connectGitHub(workspaceSlug: string, formData: FormData) {
     create: {
       workspaceId: workspace.id,
       ownerUserId: userId,
-      githubLogin: viewer.login,
+      githubLogin: viewer.value.login,
       tokenEnc,
       status: "CONNECTED",
       repoSelectionMode: mode,
@@ -82,6 +103,19 @@ export async function connectGitHub(workspaceSlug: string, formData: FormData) {
   }
 
   redirect(`/w/${workspaceSlug}/integrations?connected=github`);
+}
+
+export async function connectGitHub(workspaceSlug: string, formData: FormData) {
+  // Backwards-compatible wrapper; prefer connectGitHubAction for inline errors.
+  const res = await connectGitHubAction(workspaceSlug, { ok: true }, formData);
+  if (!res.ok) {
+    throw new Error(
+      res.fieldErrors?.token ??
+        res.fieldErrors?.repos ??
+        res.message ??
+        "Could not connect GitHub.",
+    );
+  }
 }
 
 export async function updateGitHubRepoSelection(
