@@ -18,8 +18,14 @@ final class OverviewCacheStore {
   init(fileManager: FileManager = .default) {
     self.fileManager = fileManager
 
-    let appSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-    baseDirectory = appSupport.appendingPathComponent("Starbeam", isDirectory: true)
+    if let appSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
+      baseDirectory = appSupport.appendingPathComponent("Starbeam", isDirectory: true)
+    } else {
+      baseDirectory = fileManager.homeDirectoryForCurrentUser
+        .appendingPathComponent("Library", isDirectory: true)
+        .appendingPathComponent("Application Support", isDirectory: true)
+        .appendingPathComponent("Starbeam", isDirectory: true)
+    }
   }
 
   func load() -> CachedOverview? {
@@ -45,6 +51,7 @@ final class OverviewCacheStore {
 
       return CachedOverview(meta: meta, overview: overview, rawJSON: rawJSON)
     } catch {
+      purgeCorruptedCacheFiles()
       return nil
     }
   }
@@ -81,6 +88,18 @@ final class OverviewCacheStore {
   private func ensureDirectory() throws {
     if !fileManager.fileExists(atPath: baseDirectory.path) {
       try fileManager.createDirectory(at: baseDirectory, withIntermediateDirectories: true)
+    }
+  }
+
+  private func purgeCorruptedCacheFiles() {
+    let metaURL = baseDirectory.appendingPathComponent("overview.meta.json")
+    let jsonURL = baseDirectory.appendingPathComponent("overview.json")
+
+    if fileManager.fileExists(atPath: metaURL.path) {
+      try? fileManager.removeItem(at: metaURL)
+    }
+    if fileManager.fileExists(atPath: jsonURL.path) {
+      try? fileManager.removeItem(at: jsonURL)
     }
   }
 }
