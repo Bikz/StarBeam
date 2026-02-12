@@ -10,6 +10,7 @@ import {
   staleSessionSignOutUrl,
 } from "@/lib/authRecovery";
 import { ensureBetaEligibilityProcessed } from "@/lib/betaAccess";
+import { safeRedirectPath } from "@/lib/safeRedirect";
 import { siteOrigin } from "@/lib/siteOrigin";
 
 export default async function LoginPage({
@@ -45,16 +46,16 @@ export default async function LoginPage({
   const initialEmail = typeof sp.email === "string" ? sp.email.trim() : "";
 
   const callbackUrlRaw = (sp.callbackUrl ?? "/beta").trim() || "/beta";
-  const safeNext = callbackUrlRaw.startsWith("/") ? callbackUrlRaw : "/beta";
+  const callbackUrlSafe = safeRedirectPath(callbackUrlRaw, "/beta");
   const referralCode = typeof sp.ref === "string" ? sp.ref.trim() : "";
   const callbackUrl =
-    referralCode && !callbackUrlRaw.startsWith("/beta/claim")
-      ? `/beta/claim?ref=${encodeURIComponent(referralCode)}&next=${encodeURIComponent(safeNext)}`
-      : callbackUrlRaw;
+    referralCode && !callbackUrlSafe.startsWith("/beta/claim")
+      ? `/beta/claim?ref=${encodeURIComponent(referralCode)}&next=${encodeURIComponent(callbackUrlSafe)}`
+      : callbackUrlSafe;
 
   const baseParams = new URLSearchParams();
   if (typeof sp.callbackUrl === "string" && sp.callbackUrl.trim()) {
-    baseParams.set("callbackUrl", sp.callbackUrl.trim());
+    baseParams.set("callbackUrl", callbackUrlSafe);
   }
   if (referralCode) baseParams.set("ref", referralCode);
   if (initialEmail) baseParams.set("email", initialEmail);

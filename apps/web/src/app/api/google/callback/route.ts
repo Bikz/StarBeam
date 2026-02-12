@@ -9,6 +9,17 @@ import {
 import { parseSignedState } from "@/lib/signedState";
 import { webOrigin } from "@/lib/webOrigin";
 
+function googleConnectErrorCode(err: unknown): string {
+  const message = err instanceof Error ? err.message : "";
+  if (!message) return "connect_failed";
+  if (message.includes("Missing GOOGLE_CLIENT_ID")) return "misconfigured";
+  if (message.includes("Missing GOOGLE_CLIENT_SECRET")) return "misconfigured";
+  if (message.startsWith("Google token exchange failed")) return "oauth_failed";
+  if (message.startsWith("Google userinfo failed")) return "userinfo_failed";
+  if (message === "Google userinfo missing email") return "userinfo_failed";
+  return "connect_failed";
+}
+
 function requireGoogleEnv(): { clientId: string; clientSecret: string } {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
@@ -84,10 +95,9 @@ export async function GET(request: Request) {
   let parsedState: ReturnType<typeof parseSignedState>;
   try {
     parsedState = parseSignedState(state);
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "invalid_state";
+  } catch {
     return NextResponse.redirect(
-      `${webOrigin()}/dashboard?error=${encodeURIComponent(message)}`,
+      `${webOrigin()}/dashboard?error=invalid_state`,
     );
   }
 
@@ -199,9 +209,9 @@ export async function GET(request: Request) {
       `${webOrigin()}/w/${parsedState.workspaceSlug}/integrations?connected=google`,
     );
   } catch (err) {
-    const message = err instanceof Error ? err.message : "connect_failed";
+    const code = googleConnectErrorCode(err);
     return NextResponse.redirect(
-      `${webOrigin()}/w/${parsedState.workspaceSlug}/integrations?error=${encodeURIComponent(message)}`,
+      `${webOrigin()}/w/${parsedState.workspaceSlug}/integrations?error=${encodeURIComponent(code)}`,
     );
   }
 }

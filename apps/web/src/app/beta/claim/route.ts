@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 
 import { authOptions } from "@/lib/auth";
 import { claimReferralForUser } from "@/lib/referrals";
+import { safeRedirectPath } from "@/lib/safeRedirect";
 import { webOrigin } from "@/lib/webOrigin";
 
 export async function GET(request: Request) {
@@ -20,8 +21,7 @@ export async function GET(request: Request) {
     return NextResponse.redirect(loginUrl);
   }
 
-  const next = url.searchParams.get("next") ?? "/beta";
-  const safeNext = next.startsWith("/") ? next : "/beta";
+  const safeNext = safeRedirectPath(url.searchParams.get("next"), "/beta");
 
   const cookieStore = await cookies();
   const cookieRef = cookieStore.get("sb_ref")?.value ?? "";

@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { safeRedirectPath } from "@/lib/safeRedirect";
+
 import SignOutCard from "./signout-card";
 
 export default async function SignOutPage({
@@ -9,9 +11,7 @@ export default async function SignOutPage({
 }) {
   const sp = await searchParams;
   const callbackUrlRaw = (sp.callbackUrl ?? "/login").trim() || "/login";
-  const callbackUrl = callbackUrlRaw.startsWith("/")
-    ? callbackUrlRaw
-    : "/login";
+  const callbackUrl = safeRedirectPath(callbackUrlRaw, "/login");
 
   return (
     <div className="sb-bg">
