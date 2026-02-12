@@ -423,6 +423,19 @@ final class AppModel {
     }
   }
 
+  func dashboardURL(path: String) -> URL? {
+    let raw = settings.dashboardBaseURL.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard let base = URL(string: raw) else { return nil }
+
+    let trimmed = path.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmed.isEmpty else { return base }
+    guard trimmed.hasPrefix("/") else {
+      return URL(string: trimmed, relativeTo: base)?.absoluteURL
+    }
+
+    return URL(string: trimmed, relativeTo: base)?.absoluteURL
+  }
+
   func refresh() async {
     guard auth.isSignedIn else {
       lastError = nil

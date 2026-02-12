@@ -12,7 +12,6 @@ struct PopoverRootView: View {
   }
 
   @State private var route: Route = .home
-  @State private var expandedPulseCardID: String?
 
   var body: some View {
     @Bindable var model = model
@@ -55,10 +54,15 @@ struct PopoverRootView: View {
               errorBanner(error)
             }
 
-            Text("Your Pulse")
-              .font(.system(size: 18, weight: .bold, design: .rounded))
-              .padding(.top, 2)
-              .accessibilityAddTraits(.isHeader)
+            if let overview = model.overview {
+              onboardingSection(overview)
+            }
+
+            pulseHeader
+
+            if model.overview != nil {
+              todaySnapshotStrip
+            }
 
             pulseSection
 
@@ -68,14 +72,14 @@ struct PopoverRootView: View {
                 openViewMore()
               } label: {
                 HStack(spacing: 6) {
-                  Text("View more…")
+                  Text("Open dashboard")
                   Image(systemName: "chevron.right")
                     .font(.system(size: 11, weight: .semibold))
                 }
               }
               .buttonStyle(.plain)
               .foregroundStyle(.secondary)
-              .accessibilityLabel("View more on dashboard")
+              .accessibilityLabel("Open dashboard")
             }
             .padding(.top, 2)
 
@@ -447,24 +451,162 @@ struct PopoverRootView: View {
     .starbeamSurface(cornerRadius: 14, material: .thinMaterial, shadow: .card)
   }
 
+  @ViewBuilder
+  private func onboardingSection(_ overview: Overview) -> some View {
+    if overview.onboardingMode == .setup {
+      VStack(alignment: .leading, spacing: 8) {
+        Text("Setup checklist")
+          .font(.system(size: 17, weight: .bold, design: .rounded))
+          .accessibilityAddTraits(.isHeader)
+        setupChecklistCard(overview.onboardingChecklist)
+      }
+    } else if !overview.onboardingChecklist.isEmpty {
+      HStack(spacing: 8) {
+        Image(systemName: "checkmark.seal.fill")
+          .foregroundStyle(.secondary)
+          .font(.system(size: 13, weight: .semibold))
+        Text("Setup complete")
+          .font(.system(size: 12, weight: .semibold, design: .rounded))
+          .foregroundStyle(.secondary)
+        Spacer(minLength: 0)
+      }
+      .padding(.horizontal, 12)
+      .padding(.vertical, 10)
+      .starbeamCard()
+      .accessibilityLabel("Setup complete")
+    }
+  }
+
+  private func setupChecklistCard(_ checklist: [Overview.Onboarding.ChecklistItem]) -> some View {
+    VStack(alignment: .leading, spacing: 10) {
+      VStack(alignment: .leading, spacing: 8) {
+        ForEach(Array(checklist.prefix(4))) { item in
+          HStack(spacing: 8) {
+            Image(systemName: item.isComplete ? "checkmark.circle.fill" : "circle")
+              .font(.system(size: 12, weight: .semibold))
+              .foregroundStyle(item.isComplete ? .secondary : .primary)
+              .accessibilityHidden(true)
+            Text(item.title)
+              .font(.system(size: 12, weight: .semibold, design: .rounded))
+              .foregroundStyle(item.isComplete ? .secondary : .primary)
+              .strikethrough(item.isComplete)
+            Spacer(minLength: 0)
+          }
+        }
+      }
+
+      if let next = checklist.first(where: { !$0.isComplete }) {
+        Button(next.ctaLabel) {
+          openOnboardingCTA(next)
+        }
+        .buttonStyle(.borderedProminent)
+        .controlSize(.small)
+        .accessibilityLabel(next.ctaLabel)
+      }
+    }
+    .padding(12)
+    .starbeamCard()
+  }
+
+  private var pulseHeader: some View {
+    HStack(alignment: .firstTextBaseline, spacing: 8) {
+      Text(model.overview?.onboardingMode == .setup ? "Daily ideas" : "Your Pulse")
+        .font(.system(size: 18, weight: .bold, design: .rounded))
+        .accessibilityAddTraits(.isHeader)
+
+      Spacer(minLength: 0)
+
+      if let label = pulseUpdatedLabel {
+        Text(label)
+          .font(.system(size: 11, weight: .semibold, design: .rounded))
+          .foregroundStyle(.secondary)
+      }
+    }
+    .padding(.top, 2)
+  }
+
+  private var todaySnapshotStrip: some View {
+    HStack(spacing: 10) {
+      snapshotPill("Focus", value: "\(focusCount)")
+      snapshotPill("Emails", value: "\(importantEmailCount)")
+      snapshotPill("Next", value: nextCalendarSummary)
+    }
+    .padding(.horizontal, 10)
+    .padding(.vertical, 8)
+    .starbeamCard()
+    .accessibilityLabel("Today snapshot. Focus \(focusCount). Emails \(importantEmailCount). Next \(nextCalendarSummary)")
+  }
+
+  private func snapshotPill(_ label: String, value: String) -> some View {
+    HStack(spacing: 4) {
+      Text(label)
+        .foregroundStyle(.secondary)
+      Text(value)
+    }
+    .font(.system(size: 11, weight: .semibold, design: .rounded))
+    .lineLimit(1)
+    .frame(maxWidth: .infinity, alignment: .leading)
+  }
+
+  private var pulseUpdatedLabel: String? {
+    if let generatedAt = model.overview?.generatedAt {
+      return "Updated \(relativePast(generatedAt))"
+    }
+    if let cachedAt = model.cachedAt {
+      return "Updated \(relativePast(cachedAt))"
+    }
+    return nil
+  }
+
+  private var focusCount: Int {
+    model.overview?.focus.count ?? 0
+  }
+
+  private var importantEmailCount: Int {
+    guard let focus = model.overview?.focus else { return 0 }
+    return focus.filter {
+      ($0.icon ?? "") == "sf:envelope" ||
+        ($0.subtitle ?? "").localizedCaseInsensitiveContains("gmail")
+    }.count
+  }
+
+  private var nextCalendarSummary: String {
+    guard let items = model.overview?.calendar, !items.isEmpty else { return "None" }
+
+    let now = Date()
+    let upcoming = items
+      .filter { $0.start >= now }
+      .sorted { $0.start < $1.start }
+      .first ?? items.sorted { $0.start < $1.start }.first
+
+    guard let upcoming else { return "None" }
+    let df = DateFormatter()
+    df.locale = .current
+    df.timeStyle = .short
+    df.dateStyle = .none
+    return "\(df.string(from: upcoming.start)) \(upcoming.title)"
+  }
+
+  private func relativePast(_ date: Date, now: Date = Date()) -> String {
+    let seconds = max(0, Int(now.timeIntervalSince(date)))
+    let minutes = seconds / 60
+    if minutes < 60 { return "\(minutes)m ago" }
+    let hours = minutes / 60
+    if hours < 24 { return "\(hours)h ago" }
+    let days = hours / 24
+    return "\(days)d ago"
+  }
+
   private var pulseSection: some View {
     VStack(alignment: .leading, spacing: 12) {
       if model.isRefreshing && model.overview == nil {
         PulseSkeletonList()
       } else if let overview = model.overview {
         if overview.pulse.isEmpty { emptyPulse } else {
-          ForEach(overview.pulse) { card in
+          ForEach(Array(overview.pulse.enumerated()), id: \.element.id) { index, card in
             PulseCardView(
               card: card,
-              isExpanded: expandedPulseCardID == card.id,
-              onToggleExpanded: {
-                if expandedPulseCardID == card.id {
-                  expandedPulseCardID = nil
-                } else {
-                  expandedPulseCardID = card.id
-                }
-              },
-              onRegenerate: { Task { await model.refresh() } }
+              highlightPriority: index < 2
             )
           }
         }
@@ -513,10 +655,10 @@ struct PopoverRootView: View {
   }
 
   private var splitPanels: some View {
-    HStack(alignment: .top, spacing: 14) {
-      VStack(alignment: .leading, spacing: 10) {
+    HStack(alignment: .top, spacing: 12) {
+      VStack(alignment: .leading, spacing: 8) {
         Text("Today’s Focus")
-          .font(.system(size: 18, weight: .bold, design: .rounded))
+          .font(.system(size: 17, weight: .bold, design: .rounded))
           .accessibilityAddTraits(.isHeader)
 
         FocusListView(items: model.overview?.focus ?? [], signedIn: model.auth.isSignedIn)
@@ -527,9 +669,9 @@ struct PopoverRootView: View {
         .frame(width: 1)
         .padding(.top, 32)
 
-      VStack(alignment: .leading, spacing: 10) {
+      VStack(alignment: .leading, spacing: 8) {
         Text("Today’s Calendar")
-          .font(.system(size: 18, weight: .bold, design: .rounded))
+          .font(.system(size: 17, weight: .bold, design: .rounded))
           .accessibilityAddTraits(.isHeader)
 
         CalendarListView(items: model.overview?.calendar ?? [], signedIn: model.auth.isSignedIn)
@@ -545,6 +687,17 @@ struct PopoverRootView: View {
   private func openViewMore() {
     guard let url = model.dashboardURL(kind: .pulse) else { return }
     NSWorkspace.shared.open(url)
+  }
+
+  private func openOnboardingCTA(_ item: Overview.Onboarding.ChecklistItem) {
+    if let path = item.ctaUrl?.trimmingCharacters(in: .whitespacesAndNewlines), !path.isEmpty,
+      let url = model.dashboardURL(path: path)
+    {
+      NSWorkspace.shared.open(url)
+      return
+    }
+
+    openDashboard()
   }
 
   private func openSubmitIdea() {

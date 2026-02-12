@@ -6,6 +6,11 @@ import {
 import { NextResponse } from "next/server";
 
 import { parseAccessToken, sha256Hex } from "@/lib/apiTokens";
+import {
+  buildOnboardingPayload,
+  inferPulseLane,
+  pulseSourceLabel,
+} from "@/lib/macosOverviewPresentation";
 
 type Citation = { url: string; title?: string };
 
@@ -205,18 +210,36 @@ export async function GET(request: Request) {
     },
   });
 
-  const pulse = (edition?.cards ?? []).slice(0, 7).map((c) => ({
-    id: c.id,
-    kind: c.kind,
-    icon: iconForCardKind(c.kind),
-    title: c.title,
-    body: c.body || c.action || c.why || "",
-    why: c.why || null,
-    action: c.action || null,
-    sources: extractCitations(c.sources),
-  }));
-
-  const [tasks, completedTasks, events] = await Promise.all([
+  const [
+    personalProfile,
+    activePersonalGoalCount,
+    googleConnectedCount,
+    githubConnectedCount,
+    linearConnectedCount,
+    notionConnectedCount,
+    tasks,
+    completedTasks,
+    events,
+  ] = await Promise.all([
+    prisma.workspaceMemberProfile.findUnique({
+      where: { workspaceId_userId: { workspaceId, userId } },
+      select: { jobTitle: true, about: true },
+    }),
+    prisma.personalGoal.count({
+      where: { workspaceId, userId, active: true },
+    }),
+    prisma.googleConnection.count({
+      where: { workspaceId, ownerUserId: userId, status: "CONNECTED" },
+    }),
+    prisma.gitHubConnection.count({
+      where: { workspaceId, ownerUserId: userId, status: "CONNECTED" },
+    }),
+    prisma.linearConnection.count({
+      where: { workspaceId, ownerUserId: userId, status: "CONNECTED" },
+    }),
+    prisma.notionConnection.count({
+      where: { workspaceId, ownerUserId: userId, status: "CONNECTED" },
+    }),
     prisma.task.findMany({
       where: {
         workspaceId,
@@ -254,6 +277,56 @@ export async function GET(request: Request) {
     }),
   ]);
   await touchMembership;
+
+  const hasPersonalProfile = Boolean(
+    personalProfile &&
+      ((personalProfile.jobTitle ?? "").trim().length > 0 ||
+        (personalProfile.about ?? "").trim().length > 0),
+  );
+
+  const onboarding = buildOnboardingPayload({
+    workspaceSlug: membership.workspace.slug,
+    hasPersonalProfile,
+    hasPersonalGoal: activePersonalGoalCount > 0,
+    hasIntegration:
+      googleConnectedCount +
+        githubConnectedCount +
+        linearConnectedCount +
+        notionConnectedCount >
+      0,
+  });
+
+  const pulse = (edition?.cards ?? []).slice(0, 7).map((c) => {
+    const sources = extractCitations(c.sources);
+    const lane = inferPulseLane({
+      onboardingMode: onboarding.mode,
+      onboardingChecklist: onboarding.checklist,
+      kind: c.kind,
+      title: c.title,
+      body: c.body,
+      action: c.action,
+    });
+
+    return {
+      id: c.id,
+      kind: c.kind,
+      lane,
+      priority: c.priority,
+      icon: iconForCardKind(c.kind),
+      title: c.title,
+      body: c.body || c.action || c.why || "",
+      why: c.why || null,
+      action: c.action || null,
+      sources,
+      sourceLabel: pulseSourceLabel({
+        lane,
+        kind: c.kind,
+        title: c.title,
+        citations: sources,
+      }),
+      occurredAt: c.createdAt.toISOString(),
+    };
+  });
 
   const focusItem = (t: (typeof tasks)[number]) => {
     const srcType =
@@ -312,6 +385,7 @@ export async function GET(request: Request) {
         slug: membership.workspace.slug,
       },
       bumpMessage: null,
+      onboarding,
       pulse,
       focus,
       completedFocus,
