@@ -14,14 +14,14 @@
     "rotate:enc-key": "tsx src/scripts/rotateEncKey.ts"
   },
   "dependencies": {
-    "@openai/codex": "0.98.0",
+    "@openai/codex": "0.100.0",
     "@sentry/node": "^10.11.0",
     "@starbeam/db": "workspace:*",
     "@starbeam/shared": "workspace:*",
-    "@aws-sdk/client-s3": "^3.888.0",
+    "@aws-sdk/client-s3": "^3.988.0",
     "dotenv": "^17.2.2",
     "graphile-worker": "^0.16.6",
-    "openai": "^5.23.2",
+    "openai": "^6.21.0",
     "zod": "^4.1.11"
   },
   "devDependencies": {
