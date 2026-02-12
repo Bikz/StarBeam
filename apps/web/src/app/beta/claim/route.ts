@@ -2,9 +2,8 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { cookies } from "next/headers";
 
-import { prisma } from "@starbeam/db";
-
 import { authOptions } from "@/lib/auth";
+import { claimReferralForUser } from "@/lib/referrals";
 import { webOrigin } from "@/lib/webOrigin";
 
 export async function GET(request: Request) {
@@ -36,26 +35,11 @@ export async function GET(request: Request) {
 
   if (!referralCode) return resp;
 
-  const [me, referrer] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { id: true, referredByUserId: true, referralCode: true },
-    }),
-    prisma.user.findFirst({
-      where: { referralCode },
-      select: { id: true },
-    }),
-  ]);
-
-  if (!me) return resp;
-  if (me.referredByUserId) return resp;
-  if (!referrer) return resp;
-  if (referrer.id === me.id) return resp;
-
-  await prisma.user.update({
-    where: { id: me.id },
-    data: { referredByUserId: referrer.id },
-  });
+  // Best-effort: referral attribution should never block navigation.
+  await claimReferralForUser({
+    userId: session.user.id,
+    referralCode,
+  }).catch(() => undefined);
 
   return resp;
 }
