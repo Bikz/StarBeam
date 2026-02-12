@@ -9,6 +9,12 @@ import {
 } from "../lib/dates";
 
 type SchedulerCursor = { createdAt: string; id: string };
+type PgClient = {
+  query: (
+    queryText: string,
+    values?: unknown[],
+  ) => Promise<{ rows: Array<{ ok?: unknown }> }>;
+};
 
 function requireDatabaseUrl(): string {
   const connectionString = process.env.DATABASE_URL;
@@ -130,24 +136,24 @@ function membershipCursorWhere(
   };
 }
 
-async function tryAcquireSchedulerLock(): Promise<boolean> {
+async function tryAcquireSchedulerLockWithPgClient(
+  pgClient: PgClient,
+): Promise<boolean> {
   // Two-int advisory lock key. Keep stable forever to avoid changing behavior
   // across deployments.
-  const rows = await prisma.$queryRawUnsafe<{ ok: boolean }[]>(
-    // Postgres supports the 2-key variant only for int4,int4. Prisma sends JS
-    // numbers as int8, so we cast explicitly to avoid runtime failures.
+  const res = await pgClient.query(
     "select pg_try_advisory_lock($1::int, $2::int) as ok",
-    8011,
-    41027,
+    [8011, 41027],
   );
-  return Boolean(rows?.[0]?.ok);
+  return Boolean(res.rows?.[0]?.ok);
 }
 
-async function releaseSchedulerLock(): Promise<void> {
-  await prisma.$executeRawUnsafe(
+async function releaseSchedulerLockWithPgClient(
+  pgClient: PgClient,
+): Promise<void> {
+  await pgClient.query(
     "select pg_advisory_unlock($1::int, $2::int)",
-    8011,
-    41027,
+    [8011, 41027],
   );
 }
 
@@ -184,150 +190,156 @@ export async function enqueue_due_daily_pulses(): Promise<void> {
     now.getTime() - activeWindowDays * 24 * 60 * 60 * 1000,
   );
 
-  const haveLock = await tryAcquireSchedulerLock();
-  if (!haveLock) return;
-
   const connectionString = requireDatabaseUrl();
   const workerUtils = await makeWorkerUtils({ connectionString });
 
   try {
-    const deadline = Date.now() + maxRuntimeMs;
-    let cursor = await getCursor();
-    let looped = false;
+    await workerUtils.withPgClient(async (pgClientRaw) => {
+      const pgClient = pgClientRaw as unknown as PgClient;
+      const haveLock = await tryAcquireSchedulerLockWithPgClient(pgClient);
+      if (!haveLock) return;
 
-    for (let page = 0; page < maxPages && Date.now() < deadline; page += 1) {
-      const cursorWhere = membershipCursorWhere(cursor);
-      const where: Prisma.MembershipWhereInput = {
-        AND: [
-          ...(cursorWhere ? [cursorWhere] : []),
-          { lastActiveAt: { gte: activeCutoff } },
-        ],
-      };
+      try {
+        const deadline = Date.now() + maxRuntimeMs;
+        let cursor = await getCursor();
+        let looped = false;
 
-      const memberships = await prisma.membership.findMany({
-        select: {
-          id: true,
-          createdAt: true,
-          workspaceId: true,
-          userId: true,
-          lastActiveAt: true,
-          user: { select: { timezone: true } },
-        },
-        where,
-        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-        take: batch,
-      });
+        for (
+          let page = 0;
+          page < maxPages && Date.now() < deadline;
+          page += 1
+        ) {
+          const cursorWhere = membershipCursorWhere(cursor);
+          const where: Prisma.MembershipWhereInput = {
+            AND: [
+              ...(cursorWhere ? [cursorWhere] : []),
+              { lastActiveAt: { gte: activeCutoff } },
+            ],
+          };
 
-      if (memberships.length === 0) {
-        if (looped) break;
-        cursor = null;
-        await setCursor(cursor);
-        looped = true;
-        continue;
-      }
+          const memberships = await prisma.membership.findMany({
+            select: {
+              id: true,
+              createdAt: true,
+              workspaceId: true,
+              userId: true,
+              lastActiveAt: true,
+              user: { select: { timezone: true } },
+            },
+            where,
+            orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+            take: batch,
+          });
 
-      for (const m of memberships) {
-        const tzRaw = (m.user.timezone ?? "UTC").trim() || "UTC";
-        const tz = isValidIanaTimeZone(tzRaw) ? tzRaw : "UTC";
+          if (memberships.length === 0) {
+            if (looped) break;
+            cursor = null;
+            await setCursor(cursor);
+            looped = true;
+            continue;
+          }
 
-        const hour = hourInTimeZone(now, tz);
-        if (!eligibleNow({ hour, startHour, endHour, strictWindow })) continue;
+          for (const m of memberships) {
+            const tzRaw = (m.user.timezone ?? "UTC").trim() || "UTC";
+            const tz = isValidIanaTimeZone(tzRaw) ? tzRaw : "UTC";
 
-        const editionDate = startOfDayKeyUtcForTimeZone(now, tz);
-        const dateKey = editionDate.toISOString().slice(0, 10);
+            const hour = hourInTimeZone(now, tz);
+            if (!eligibleNow({ hour, startHour, endHour, strictWindow }))
+              continue;
 
-        const existing = await prisma.pulseEdition.findUnique({
-          where: {
-            workspaceId_userId_editionDate: {
+            const editionDate = startOfDayKeyUtcForTimeZone(now, tz);
+            const dateKey = editionDate.toISOString().slice(0, 10);
+
+            const existing = await prisma.pulseEdition.findUnique({
+              where: {
+                workspaceId_userId_editionDate: {
+                  workspaceId: m.workspaceId,
+                  userId: m.userId,
+                  editionDate,
+                },
+              },
+              select: { id: true, status: true },
+            });
+
+            // If a pulse already exists (or is currently generating) for this user/day,
+            // don't enqueue another.
+            if (
+              existing &&
+              (existing.status === "READY" || existing.status === "GENERATING")
+            ) {
+              continue;
+            }
+
+            const jobRunId = dailyJobRunId({
               workspaceId: m.workspaceId,
               userId: m.userId,
-              editionDate,
-            },
-          },
-          select: { id: true, status: true },
-        });
+              dateKey,
+            });
+            const jobKey = dailyJobKey({
+              workspaceId: m.workspaceId,
+              userId: m.userId,
+              dateKey,
+            });
 
-        // If a pulse already exists (or is currently generating) for this user/day,
-        // don't enqueue another.
-        if (
-          existing &&
-          (existing.status === "READY" || existing.status === "GENERATING")
-        ) {
-          continue;
+            await prisma.jobRun.upsert({
+              where: { id: jobRunId },
+              update: {
+                workspaceId: m.workspaceId,
+                kind: "NIGHTLY_WORKSPACE_RUN",
+                status: "QUEUED",
+                startedAt: null,
+                finishedAt: null,
+                errorSummary: null,
+                meta: {
+                  source: "daily",
+                  userId: m.userId,
+                  timezone: tz,
+                  editionDate: dateKey,
+                  jobKey,
+                },
+              },
+              create: {
+                id: jobRunId,
+                workspaceId: m.workspaceId,
+                kind: "NIGHTLY_WORKSPACE_RUN",
+                status: "QUEUED",
+                meta: {
+                  source: "daily",
+                  userId: m.userId,
+                  timezone: tz,
+                  editionDate: dateKey,
+                  jobKey,
+                },
+              },
+            });
+
+            await workerUtils.addJob(
+              "nightly_workspace_run",
+              { workspaceId: m.workspaceId, userId: m.userId, jobRunId },
+              { jobKey, jobKeyMode: "unsafe_dedupe", runAt: now },
+            );
+          }
+
+          const last = memberships[memberships.length - 1];
+          if (!last) break;
+          cursor = { createdAt: last.createdAt.toISOString(), id: last.id };
+          await setCursor(cursor);
+
+          // If we didn't fill the page, we reached the end; wrap around to ensure
+          // subsequent ticks keep scanning from the beginning.
+          if (memberships.length < batch) {
+            cursor = null;
+            await setCursor(cursor);
+            looped = true;
+          }
         }
-
-        const jobRunId = dailyJobRunId({
-          workspaceId: m.workspaceId,
-          userId: m.userId,
-          dateKey,
-        });
-        const jobKey = dailyJobKey({
-          workspaceId: m.workspaceId,
-          userId: m.userId,
-          dateKey,
-        });
-
-        await prisma.jobRun.upsert({
-          where: { id: jobRunId },
-          update: {
-            workspaceId: m.workspaceId,
-            kind: "NIGHTLY_WORKSPACE_RUN",
-            status: "QUEUED",
-            startedAt: null,
-            finishedAt: null,
-            errorSummary: null,
-            meta: {
-              source: "daily",
-              userId: m.userId,
-              timezone: tz,
-              editionDate: dateKey,
-              jobKey,
-            },
-          },
-          create: {
-            id: jobRunId,
-            workspaceId: m.workspaceId,
-            kind: "NIGHTLY_WORKSPACE_RUN",
-            status: "QUEUED",
-            meta: {
-              source: "daily",
-              userId: m.userId,
-              timezone: tz,
-              editionDate: dateKey,
-              jobKey,
-            },
-          },
-        });
-
-        await workerUtils.addJob(
-          "nightly_workspace_run",
-          { workspaceId: m.workspaceId, userId: m.userId, jobRunId },
-          { jobKey, jobKeyMode: "unsafe_dedupe", runAt: now },
-        );
+      } finally {
+        await releaseSchedulerLockWithPgClient(pgClient).catch(() => undefined);
       }
-
-      const last = memberships[memberships.length - 1];
-      if (!last) break;
-      cursor = { createdAt: last.createdAt.toISOString(), id: last.id };
-      await setCursor(cursor);
-
-      // If we didn't fill the page, we reached the end; wrap around to ensure
-      // subsequent ticks keep scanning from the beginning.
-      if (memberships.length < batch) {
-        cursor = null;
-        await setCursor(cursor);
-        looped = true;
-      }
-    }
+    });
   } finally {
     await workerUtils.release();
-    await releaseSchedulerLock().catch(() => undefined);
   }
 }
 
-export const __test__ = {
-  decodeCursor,
-  encodeCursor,
-  membershipCursorWhere,
-  eligibleNow,
-};
+// (No exports) Internal helpers are tested via higher-level integration tests.

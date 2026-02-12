@@ -1,5 +1,6 @@
 import { prisma } from "@starbeam/db";
 
+import { markOrphanedContentBlobsDeletedAt } from "./blobRetention";
 import { fetchMessageMetadata, headerValue, listMessageRefs } from "./gmail";
 import { eventEnd, eventStart, listPrimaryEvents } from "./calendar";
 import { downloadDriveFile, listRecentlyModifiedFiles } from "./drive";
@@ -406,6 +407,19 @@ export async function syncGoogleConnection(args: {
   // Retention: keep only 30 days of source items. File bytes live in the blob store;
   // we'll add blob retention/GC once Drive ingestion is stable.
   const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+  const blobCandidates = await prisma.sourceItem.findMany({
+    where: {
+      workspaceId: args.workspaceId,
+      ownerUserId: args.userId,
+      connectionId: connection.id,
+      occurredAt: { lt: cutoff },
+      contentBlobId: { not: null },
+    },
+    select: { contentBlobId: true },
+    distinct: ["contentBlobId"],
+  });
+
   await prisma.sourceItem.deleteMany({
     where: {
       workspaceId: args.workspaceId,
@@ -413,6 +427,14 @@ export async function syncGoogleConnection(args: {
       connectionId: connection.id,
       occurredAt: { lt: cutoff },
     },
+  });
+
+  await markOrphanedContentBlobsDeletedAt({
+    workspaceId: args.workspaceId,
+    userId: args.userId,
+    candidateBlobIds: blobCandidates
+      .map((b) => b.contentBlobId)
+      .filter((id): id is string => typeof id === "string" && id.length > 0),
   });
 
   return {

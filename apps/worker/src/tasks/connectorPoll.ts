@@ -14,6 +14,10 @@ import {
   isAuthRevoked as isNotionAuthRevoked,
   syncNotionConnection,
 } from "../lib/integrations/notion";
+import {
+  selectPairsRoundRobin,
+  type WorkspaceUserPair,
+} from "../lib/roundRobin";
 
 function isTruthyEnv(value: string | undefined): boolean {
   return ["1", "true", "yes"].includes((value ?? "").trim().toLowerCase());
@@ -217,17 +221,16 @@ export async function connector_poll() {
   const now = new Date();
   const cutoff = new Date(now.getTime() - intervalMins * 60 * 1000);
 
-  // Build a small batch of (workspaceId,userId) pairs from any connector type.
-  // This avoids syncing every user every tick while still converging quickly.
-  const pairs = new Map<string, { workspaceId: string; userId: string }>();
-
-  const addPair = (workspaceId: string, userId: string) => {
-    pairs.set(`${workspaceId}:${userId}`, { workspaceId, userId });
-  };
-
   const [google, github, linear, notion] = await Promise.all([
     prisma.googleConnection.findMany({
-      where: { status: { in: ["CONNECTED", "ERROR"] } },
+      where: {
+        status: { in: ["CONNECTED", "ERROR"] },
+        OR: [
+          { syncState: { is: null } },
+          { syncState: { is: { lastGmailSyncAt: null } } },
+          { syncState: { is: { lastGmailSyncAt: { lte: cutoff } } } },
+        ],
+      },
       select: { workspaceId: true, ownerUserId: true },
       orderBy: { updatedAt: "asc" },
       take: batch,
@@ -261,12 +264,28 @@ export async function connector_poll() {
     }),
   ]);
 
-  for (const c of google) addPair(c.workspaceId, c.ownerUserId);
-  for (const c of github) addPair(c.workspaceId, c.ownerUserId);
-  for (const c of linear) addPair(c.workspaceId, c.ownerUserId);
-  for (const c of notion) addPair(c.workspaceId, c.ownerUserId);
+  const googlePairs: WorkspaceUserPair[] = google.map((c) => ({
+    workspaceId: c.workspaceId,
+    userId: c.ownerUserId,
+  }));
+  const githubPairs: WorkspaceUserPair[] = github.map((c) => ({
+    workspaceId: c.workspaceId,
+    userId: c.ownerUserId,
+  }));
+  const linearPairs: WorkspaceUserPair[] = linear.map((c) => ({
+    workspaceId: c.workspaceId,
+    userId: c.ownerUserId,
+  }));
+  const notionPairs: WorkspaceUserPair[] = notion.map((c) => ({
+    workspaceId: c.workspaceId,
+    userId: c.ownerUserId,
+  }));
 
-  const list = Array.from(pairs.values()).slice(0, batch);
+  const list = selectPairsRoundRobin({
+    lists: [googlePairs, githubPairs, linearPairs, notionPairs],
+    limit: batch,
+  });
+
   for (const p of list) {
     await pollForUserInWorkspace({
       workspaceId: p.workspaceId,
