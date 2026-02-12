@@ -191,7 +191,64 @@ async function main() {
           await (fn as (p: unknown, h: unknown) => unknown)(payload, helpers);
           return;
         } catch (err) {
-          captureTaskError({ task: name, error: err, payload });
+          const payloadObj =
+            payload && typeof payload === "object"
+              ? (payload as Record<string, unknown>)
+              : null;
+          const workspaceId =
+            payloadObj && typeof payloadObj.workspaceId === "string"
+              ? payloadObj.workspaceId
+              : undefined;
+          const jobRunId =
+            payloadObj && typeof payloadObj.jobRunId === "string"
+              ? payloadObj.jobRunId
+              : undefined;
+          const requestId =
+            payloadObj && typeof payloadObj.requestId === "string"
+              ? payloadObj.requestId
+              : undefined;
+
+          const job =
+            helpers && typeof helpers === "object" && "job" in helpers
+              ? (helpers as { job?: unknown }).job
+              : null;
+          const jobObj =
+            job && typeof job === "object"
+              ? (job as Record<string, unknown>)
+              : null;
+          const jobId = jobObj?.id;
+          const attempt =
+            typeof jobObj?.attempts === "number"
+              ? jobObj.attempts
+              : typeof jobObj?.attempt === "number"
+                ? jobObj.attempt
+                : undefined;
+          const maxAttempts =
+            typeof jobObj?.max_attempts === "number"
+              ? jobObj.max_attempts
+              : typeof jobObj?.maxAttempts === "number"
+                ? jobObj.maxAttempts
+                : undefined;
+
+          const tags: Record<string, string> = {};
+          if (workspaceId) tags.workspaceId = workspaceId;
+          if (jobRunId) tags.jobRunId = jobRunId;
+          if (requestId) tags.requestId = requestId;
+
+          captureTaskError({
+            task: name,
+            error: err,
+            payload,
+            job: {
+              id:
+                typeof jobId === "string" || typeof jobId === "number"
+                  ? jobId
+                  : undefined,
+              attempt,
+              maxAttempts,
+            },
+            tags,
+          });
           throw err;
         }
       };
