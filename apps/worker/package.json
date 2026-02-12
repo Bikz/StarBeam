@@ -10,7 +10,8 @@
     "lint": "pnpm exec eslint src test --max-warnings 0",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --import tsx --test test/*.test.ts",
-    "test:integration": "node --import tsx --test test/integration/*.test.ts"
+    "test:integration": "node --import tsx --test test/integration/*.test.ts",
+    "rotate:enc-key": "tsx src/scripts/rotateEncKey.ts"
   },
   "dependencies": {
     "@openai/codex": "0.98.0",

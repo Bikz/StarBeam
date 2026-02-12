@@ -163,6 +163,7 @@ Minimum required env vars:
 - `GOOGLE_CLIENT_ID`
 - `GOOGLE_CLIENT_SECRET`
 - `STARB_TOKEN_ENC_KEY_B64` (32-byte base64 AES key)
+- `STARB_TOKEN_ENC_KEY_B64_FALLBACK` (optional decrypt-only key for rotations)
 - `OPENAI_API_KEY` (used by the worker for web research)
 - `SENTRY_DSN` (optional; enables error reporting for web + worker)
 - `STARB_CODEX_EXEC_ENABLED` (optional: set `1` to run `codex exec` for INTERNAL pulse synthesis)
@@ -300,3 +301,9 @@ This will:
 - ensure `STARB_TOKEN_ENC_KEY_B64` exists (generates one if missing)
 - update env vars on `starbeam-web` and `starbeam-worker`
 - trigger deploys without clearing build cache
+
+### Encryption Key Rotation
+
+- Rotation script (dry-run default): `pnpm --filter @starbeam/worker rotate:enc-key`
+- Apply mode: `pnpm --filter @starbeam/worker exec tsx src/scripts/rotateEncKey.ts --apply`
+- Full runbook: `runbooks/SECRET_ROTATION.md`

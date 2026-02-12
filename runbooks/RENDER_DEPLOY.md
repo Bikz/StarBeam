@@ -70,9 +70,12 @@ Worker (`starbeam-worker`):
 
 - `DATABASE_URL`
 - `STARB_TOKEN_ENC_KEY_B64`
+- `STARB_TOKEN_ENC_KEY_B64_FALLBACK` (optional decrypt-only fallback during key rotation)
 - `OPENAI_API_KEY` (if using AI/research features)
 - Optional: `STARB_CODEX_EXEC_ENABLED` and related Codex env vars
 - Blob store: `S3_*` (required when using blob-backed features and/or Codex exec in production)
+
+For key rotation procedure and verification gates, see `runbooks/SECRET_ROTATION.md`.
 
 ## Health Checks
 
