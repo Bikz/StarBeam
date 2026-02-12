@@ -18,11 +18,13 @@ function sha256Hex(input: string): string {
 
 export default async function InvitePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ token: string }>;
+  searchParams: Promise<{ error?: string }>;
 }) {
   const session = await getServerSession(authOptions);
-  const { token } = await params;
+  const [{ token }, sp] = await Promise.all([params, searchParams]);
 
   const invite = await prisma.invite.findUnique({
     where: { tokenHash: sha256Hex(token) },
@@ -37,6 +39,12 @@ export default async function InvitePage({
   const sessionEmail = session?.user?.email?.toLowerCase();
   const emailMismatch =
     sessionEmail && invite.email.toLowerCase() !== sessionEmail;
+
+  const errorCode = sp.error ? String(sp.error) : "";
+  const errorMessage =
+    errorCode === "rate_limited"
+      ? "Too many attempts. Please wait a moment and try again."
+      : "";
 
   return (
     <div className="sb-bg">
@@ -53,6 +61,10 @@ export default async function InvitePage({
               {invite.role.toLowerCase()}
             </span>
           </p>
+
+          {errorMessage ? (
+            <div className="mt-6 sb-alert">{errorMessage}</div>
+          ) : null}
 
           {used ? (
             <div className="mt-6 sb-alert">

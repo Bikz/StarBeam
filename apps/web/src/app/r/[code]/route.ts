@@ -7,7 +7,8 @@ export async function GET(
   { params }: { params: Promise<{ code: string }> },
 ) {
   const { code } = await params;
-  const referralCode = String(code ?? "").trim();
+  const referralCodeRaw = String(code ?? "").trim();
+  const referralCode = referralCodeRaw.length <= 128 ? referralCodeRaw : "";
 
   const loginUrl = new URL("/login", webOrigin());
   if (referralCode) {
@@ -17,10 +18,13 @@ export async function GET(
   // origin (e.g. localhost:PORT). Always redirect to the configured public origin.
   const resp = NextResponse.redirect(loginUrl);
   if (referralCode) {
+    const secure = process.env.NODE_ENV === "production";
     resp.cookies.set("sb_ref", referralCode, {
       path: "/",
       maxAge: 7 * 24 * 60 * 60,
       sameSite: "lax",
+      httpOnly: true,
+      secure,
     });
   }
   return resp;

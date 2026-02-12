@@ -2,7 +2,7 @@ import { prisma } from "@starbeam/db";
 import { NextResponse } from "next/server";
 
 import { mintAccessToken, mintRefreshToken, sha256Hex } from "@/lib/apiTokens";
-import { consumeRateLimit } from "@/lib/rateLimit";
+import { consumeRateLimit, RateLimitError } from "@/lib/rateLimit";
 
 type ErrorPayload = { error: string; errorDescription?: string };
 
@@ -23,11 +23,21 @@ function clientIp(req: Request): string {
 
 export async function POST(request: Request) {
   const ipHash = sha256Hex(clientIp(request));
-  await consumeRateLimit({
-    key: `device_exchange:${ipHash}`,
-    windowSec: 5 * 60,
-    limit: Number(process.env.STARB_DEVICE_EXCHANGE_LIMIT_5M ?? "120") || 120,
-  });
+  try {
+    await consumeRateLimit({
+      key: `device_exchange:${ipHash}`,
+      windowSec: 5 * 60,
+      limit: Number(process.env.STARB_DEVICE_EXCHANGE_LIMIT_5M ?? "120") || 120,
+    });
+  } catch (err) {
+    if (err instanceof RateLimitError) {
+      return jsonError(
+        { error: "rate_limited", errorDescription: "Too many requests" },
+        429,
+      );
+    }
+    throw err;
+  }
 
   let body: unknown;
   try {

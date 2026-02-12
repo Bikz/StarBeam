@@ -2,6 +2,8 @@ import { prisma } from "@starbeam/db";
 import { NextResponse } from "next/server";
 
 import { mintAccessToken, mintRefreshToken, sha256Hex } from "@/lib/apiTokens";
+import { clientIpFromHeaders } from "@/lib/clientIp";
+import { consumeRateLimit, RateLimitError } from "@/lib/rateLimit";
 
 type ErrorPayload = { error: string; errorDescription?: string };
 
@@ -36,6 +38,31 @@ export async function POST(request: Request) {
 
   const tokenHash = sha256Hex(refreshToken);
   const now = new Date();
+
+  const ip = clientIpFromHeaders(request.headers) || "unknown";
+  const ipHash = sha256Hex(ip);
+  try {
+    await Promise.all([
+      consumeRateLimit({
+        key: `device_refresh:ip:${ipHash}`,
+        windowSec: 5 * 60,
+        limit: Number(process.env.STARB_DEVICE_REFRESH_IP_LIMIT_5M ?? "300"),
+      }),
+      consumeRateLimit({
+        key: `device_refresh:token:${tokenHash}`,
+        windowSec: 5 * 60,
+        limit: Number(process.env.STARB_DEVICE_REFRESH_TOKEN_LIMIT_5M ?? "30"),
+      }),
+    ]);
+  } catch (err) {
+    if (err instanceof RateLimitError) {
+      return jsonError(
+        { error: "rate_limited", errorDescription: "Too many requests" },
+        429,
+      );
+    }
+    throw err;
+  }
 
   const existing = await prisma.apiRefreshToken.findFirst({
     where: { tokenHash, revokedAt: null, expiresAt: { gt: now } },

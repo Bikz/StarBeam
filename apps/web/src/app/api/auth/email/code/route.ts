@@ -30,7 +30,8 @@ export async function POST(request: Request) {
   }
 
   const email = parsed.email.trim().toLowerCase();
-  const ref = (parsed.ref ?? "").trim();
+  const refRaw = (parsed.ref ?? "").trim();
+  const ref = refRaw.length <= 128 ? refRaw : "";
   const ip = clientIp(request.headers) || "unknown";
 
   // Always return {ok:true} to avoid turning this into an email enumeration endpoint.
@@ -41,10 +42,13 @@ export async function POST(request: Request) {
 
   if (ref) {
     // Store referral attribution across the OTP flow (best-effort).
+    const secure = process.env.NODE_ENV === "production";
     response.cookies.set("sb_ref", ref, {
       path: "/",
       maxAge: 7 * 24 * 60 * 60,
       sameSite: "lax",
+      httpOnly: true,
+      secure,
     });
   }
 

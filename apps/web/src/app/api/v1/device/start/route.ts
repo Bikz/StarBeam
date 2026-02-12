@@ -4,7 +4,7 @@ import { prisma } from "@starbeam/db";
 import { NextResponse } from "next/server";
 
 import { sha256Hex } from "@/lib/apiTokens";
-import { consumeRateLimit } from "@/lib/rateLimit";
+import { consumeRateLimit, RateLimitError } from "@/lib/rateLimit";
 import { webOrigin } from "@/lib/webOrigin";
 
 function clientIp(req: Request): string {
@@ -17,11 +17,21 @@ function clientIp(req: Request): string {
 
 export async function POST(request: Request) {
   const ipHash = sha256Hex(clientIp(request));
-  await consumeRateLimit({
-    key: `device_start:${ipHash}`,
-    windowSec: 5 * 60,
-    limit: Number(process.env.STARB_DEVICE_START_LIMIT_5M ?? "20") || 20,
-  });
+  try {
+    await consumeRateLimit({
+      key: `device_start:${ipHash}`,
+      windowSec: 5 * 60,
+      limit: Number(process.env.STARB_DEVICE_START_LIMIT_5M ?? "20") || 20,
+    });
+  } catch (err) {
+    if (err instanceof RateLimitError) {
+      return NextResponse.json(
+        { error: "rate_limited" },
+        { status: 429, headers: { "Cache-Control": "no-store" } },
+      );
+    }
+    throw err;
+  }
 
   const deviceCode = crypto.randomBytes(16).toString("hex");
   const deviceCodeHash = sha256Hex(deviceCode);
