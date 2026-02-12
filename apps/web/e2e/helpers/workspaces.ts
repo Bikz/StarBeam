@@ -48,12 +48,16 @@ export async function createWorkspaceAndOpenPulse(args: {
     const href = await openLink.getAttribute("href");
     expect(href).toBeTruthy();
     const slug = slugFromUrl(href ?? "");
-    expect(slug).toBeTruthy();
+    if (!slug) {
+      throw new Error(
+        `Failed to parse workspace slug from href: ${String(href)}`,
+      );
+    }
 
     await openLink.click();
     await expect(page).toHaveURL(new RegExp(`/w/${slug}(?:/|$)`));
-    await ensurePulsePage(page, slug!);
-    return slug!;
+    await ensurePulsePage(page, slug);
+    return slug;
   } catch (error) {
     throw new Error(
       `Failed to create and open workspace "${name}": ${String(error)}`,

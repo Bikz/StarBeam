@@ -403,6 +403,11 @@ export function buildDeterministicFallbackInternalCards(args: {
     const sourceLabel = task.sourceItem
       ? ` from ${sourceKindLabel(task.sourceItem.type)}`
       : "";
+    const url = task.sourceItem?.url;
+    const sources =
+      typeof url === "string" && url.startsWith("http")
+        ? toJsonCitations([{ url }])
+        : undefined;
     const due = task.dueAt
       ? `Due ${task.dueAt.toISOString().slice(0, 10)}.`
       : "";
@@ -415,10 +420,7 @@ export function buildDeterministicFallbackInternalCards(args: {
         : `Open task${sourceLabel}. ${due}`.trim(),
       why: "Open task in your queue.",
       action: "Close it, snooze it, or break it into one concrete next step.",
-      sources:
-        task.sourceItem?.url && task.sourceItem.url.startsWith("http")
-          ? toJsonCitations([{ url: task.sourceItem.url }])
-          : undefined,
+      sources,
       priority: 635 - out.length,
     });
   }
