@@ -123,6 +123,13 @@ export async function workspace_bootstrap(payload: unknown) {
       sync.google = { ok: 0, failed: 0 };
       for (const c of googleConnections) {
         try {
+          await prisma.googleConnection
+            .updateMany({
+              where: { id: c.id },
+              data: { lastAttemptedAt: new Date() },
+            })
+            .catch(() => undefined);
+
           await syncGoogleConnection({
             workspaceId,
             userId,
@@ -149,6 +156,13 @@ export async function workspace_bootstrap(payload: unknown) {
       sync.github = { ok: 0, failed: 0 };
       for (const c of githubConnections) {
         try {
+          await prisma.gitHubConnection
+            .updateMany({
+              where: { id: c.id },
+              data: { lastAttemptedAt: new Date() },
+            })
+            .catch(() => undefined);
+
           await syncGitHubConnection({
             workspaceId,
             userId,
@@ -171,6 +185,13 @@ export async function workspace_bootstrap(payload: unknown) {
       sync.linear = { ok: 0, failed: 0 };
       for (const c of linearConnections) {
         try {
+          await prisma.linearConnection
+            .updateMany({
+              where: { id: c.id },
+              data: { lastAttemptedAt: new Date() },
+            })
+            .catch(() => undefined);
+
           await syncLinearConnection({
             workspaceId,
             userId,
@@ -194,6 +215,13 @@ export async function workspace_bootstrap(payload: unknown) {
       sync.notion = { ok: 0, failed: 0 };
       for (const c of notionConnections) {
         try {
+          await prisma.notionConnection
+            .updateMany({
+              where: { id: c.id },
+              data: { lastAttemptedAt: new Date() },
+            })
+            .catch(() => undefined);
+
           await syncNotionConnection({
             workspaceId,
             userId,

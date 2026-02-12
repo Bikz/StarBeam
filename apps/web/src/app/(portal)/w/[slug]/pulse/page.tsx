@@ -50,7 +50,7 @@ export default async function PulsePage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ edition?: string }>;
+  searchParams: Promise<{ edition?: string; queued?: string }>;
 }) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) redirect("/");
@@ -129,6 +129,7 @@ export default async function PulsePage({
 
     const dl = `${siteOrigin()}/download`;
     const googleConnected = googleCount > 0;
+    const queued = (sp.queued ?? "").trim() === "1";
 
     return (
       <div className="sb-card p-7">
@@ -136,6 +137,13 @@ export default async function PulsePage({
           title="Starbeam is dreaming…"
           description="Connect one tool, generate your first pulse, and get it delivered in your menu bar."
         />
+
+        {queued ? (
+          <div className="mt-6 sb-alert">
+            Queued your first pulse. If you just connected Google, it can take a
+            few minutes. Refresh this page to check status.
+          </div>
+        ) : null}
 
         <div className="mt-6 grid gap-3">
           <div className="sb-card-inset p-5">

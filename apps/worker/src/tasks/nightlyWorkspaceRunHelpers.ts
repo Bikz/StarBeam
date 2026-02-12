@@ -223,6 +223,13 @@ export async function syncUserConnectorsAndMaybeCodex(args: {
 > | null> {
   for (const c of args.googleConnections) {
     try {
+      await prisma.googleConnection
+        .updateMany({
+          where: { id: c.id },
+          data: { lastAttemptedAt: new Date() },
+        })
+        .catch(() => undefined);
+
       await syncGoogleConnection({
         workspaceId: args.workspaceId,
         userId: args.userId,
@@ -242,6 +249,13 @@ export async function syncUserConnectorsAndMaybeCodex(args: {
 
   for (const c of args.githubConnections) {
     try {
+      await prisma.gitHubConnection
+        .updateMany({
+          where: { id: c.id },
+          data: { lastAttemptedAt: new Date() },
+        })
+        .catch(() => undefined);
+
       await syncGitHubConnection({
         workspaceId: args.workspaceId,
         userId: args.userId,
@@ -259,6 +273,13 @@ export async function syncUserConnectorsAndMaybeCodex(args: {
 
   for (const c of args.linearConnections) {
     try {
+      await prisma.linearConnection
+        .updateMany({
+          where: { id: c.id },
+          data: { lastAttemptedAt: new Date() },
+        })
+        .catch(() => undefined);
+
       await syncLinearConnection({
         workspaceId: args.workspaceId,
         userId: args.userId,
@@ -277,6 +298,13 @@ export async function syncUserConnectorsAndMaybeCodex(args: {
 
   for (const c of args.notionConnections) {
     try {
+      await prisma.notionConnection
+        .updateMany({
+          where: { id: c.id },
+          data: { lastAttemptedAt: new Date() },
+        })
+        .catch(() => undefined);
+
       await syncNotionConnection({
         workspaceId: args.workspaceId,
         userId: args.userId,

@@ -5,6 +5,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { sbButtonClass } from "@starbeam/shared";
 
+import { submitPulseCardFeedback } from "@/actions/submit-pulse-card-feedback";
 import { IconArrowUpRight, IconCheck, IconCopy } from "@/components/sb-icons";
 import { useToast } from "@/components/toast-provider";
 
@@ -145,6 +146,12 @@ export default function PulseReader({
   );
 
   const [done, setDone] = useState<Set<string>>(() => new Set());
+  const [feedback, setFeedback] = useState<Record<string, "up" | "down">>(
+    () => ({}),
+  );
+  const [feedbackBusy, setFeedbackBusy] = useState<Record<string, boolean>>(
+    () => ({}),
+  );
   const { push } = useToast();
 
   useEffect(() => {
@@ -173,6 +180,8 @@ export default function PulseReader({
           {cards.map((c) => {
             const citations = extractCitations(c.sources);
             const isDone = done.has(c.id);
+            const feedbackValue = feedback[c.id] ?? null;
+            const busy = feedbackBusy[c.id] ?? false;
 
             const copyText = [
               c.title,
@@ -332,6 +341,111 @@ export default function PulseReader({
                     </div>
                   </div>
                 ) : null}
+
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                  <div className="text-xs text-[color:var(--sb-muted)]">
+                    Was this helpful?
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      className={sbButtonClass({
+                        variant: "secondary",
+                        className: "h-9 px-4 text-xs font-semibold",
+                      })}
+                      disabled={busy || Boolean(feedbackValue)}
+                      aria-label="Mark card helpful"
+                      onClick={() => {
+                        if (busy || feedbackValue) return;
+                        setFeedbackBusy((prev) => ({ ...prev, [c.id]: true }));
+                        void submitPulseCardFeedback({
+                          workspaceSlug,
+                          editionDateIso: edition.editionDateIso,
+                          cardId: c.id,
+                          cardKind: c.kind,
+                          cardTitle: c.title,
+                          rating: "up",
+                        })
+                          .then(() => {
+                            setFeedback((prev) => ({ ...prev, [c.id]: "up" }));
+                            push({ kind: "success", title: "Thanks" });
+                          })
+                          .catch((err) => {
+                            const msg =
+                              err instanceof Error
+                                ? err.message
+                                : "Could not send feedback.";
+                            push({
+                              kind: "error",
+                              title: "Feedback failed",
+                              message: msg,
+                            });
+                          })
+                          .finally(() => {
+                            setFeedbackBusy((prev) => ({
+                              ...prev,
+                              [c.id]: false,
+                            }));
+                          });
+                      }}
+                    >
+                      Helpful
+                    </button>
+                    <button
+                      type="button"
+                      className={sbButtonClass({
+                        variant: "secondary",
+                        className: "h-9 px-4 text-xs font-semibold",
+                      })}
+                      disabled={busy || Boolean(feedbackValue)}
+                      aria-label="Mark card not helpful"
+                      onClick={() => {
+                        if (busy || feedbackValue) return;
+                        setFeedbackBusy((prev) => ({ ...prev, [c.id]: true }));
+                        void submitPulseCardFeedback({
+                          workspaceSlug,
+                          editionDateIso: edition.editionDateIso,
+                          cardId: c.id,
+                          cardKind: c.kind,
+                          cardTitle: c.title,
+                          rating: "down",
+                        })
+                          .then(() => {
+                            setFeedback((prev) => ({
+                              ...prev,
+                              [c.id]: "down",
+                            }));
+                            push({ kind: "success", title: "Thanks" });
+                          })
+                          .catch((err) => {
+                            const msg =
+                              err instanceof Error
+                                ? err.message
+                                : "Could not send feedback.";
+                            push({
+                              kind: "error",
+                              title: "Feedback failed",
+                              message: msg,
+                            });
+                          })
+                          .finally(() => {
+                            setFeedbackBusy((prev) => ({
+                              ...prev,
+                              [c.id]: false,
+                            }));
+                          });
+                      }}
+                    >
+                      Not helpful
+                    </button>
+
+                    {feedbackValue ? (
+                      <span className="text-xs text-[color:var(--sb-muted)]">
+                        Sent
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
               </article>
             );
           })}

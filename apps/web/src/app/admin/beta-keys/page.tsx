@@ -43,11 +43,36 @@ export default async function BetaKeysAdminPage({
     <div className="sb-bg">
       <div className="mx-auto max-w-4xl px-6 py-16">
         <div className="sb-card p-8">
-          <div className="sb-title text-2xl">Beta keys</div>
-          <p className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
-            Generate multi-use invite keys for private beta access. Keep the
-            plaintext code out of logs and screenshots.
-          </p>
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <div className="sb-title text-2xl">Beta keys</div>
+              <p className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
+                Generate multi-use invite keys for private beta access. Keep the
+                plaintext code out of logs and screenshots.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <Link
+                href="/admin/waitlist"
+                className={sbButtonClass({
+                  variant: "secondary",
+                  className: "h-10 px-4 text-xs font-semibold",
+                })}
+              >
+                Waitlist
+              </Link>
+              <Link
+                href="/admin/feedback"
+                className={sbButtonClass({
+                  variant: "secondary",
+                  className: "h-10 px-4 text-xs font-semibold",
+                })}
+              >
+                Feedback inbox
+              </Link>
+            </div>
+          </div>
 
           {created ? (
             <div className="mt-6 sb-card-inset p-4">
