@@ -38,7 +38,7 @@ export async function ensureReferralCodeForUser(
   throw new Error("Failed to mint referral code");
 }
 
-export async function ensurePersonalWorkspaceForUser(
+async function ensurePersonalWorkspaceForUser(
   tx: Tx,
   userId: string,
 ): Promise<void> {

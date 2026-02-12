@@ -8,9 +8,9 @@ import {
   useState,
 } from "react";
 
-export type ToastKind = "info" | "success" | "error";
+type ToastKind = "info" | "success" | "error";
 
-export type Toast = {
+type Toast = {
   id: string;
   kind: ToastKind;
   title: string;

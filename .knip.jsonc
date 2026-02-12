@@ -1,0 +1,10 @@
+{
+  "$schema": "./node_modules/knip/schema-jsonc.json",
+  "workspaces": {
+    "apps/worker": {
+      // `@openai/codex` is intentionally not imported as a library. We depend on it
+      // for the `codex` CLI binary under `node_modules/.bin/` used by worker jobs.
+      "ignoreDependencies": ["^@openai/codex$"],
+    },
+  },
+}

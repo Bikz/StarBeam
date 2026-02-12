@@ -9,7 +9,7 @@ import {
 } from "@/lib/betaEligibility";
 import { ensureReferralCodeForUser } from "@/lib/userProvisioning";
 
-export async function referralCountForUser(userId: string): Promise<number> {
+async function referralCountForUser(userId: string): Promise<number> {
   return prisma.user.count({
     where: {
       referredByUserId: userId,

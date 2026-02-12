@@ -1,6 +1,6 @@
 import { prisma } from "@starbeam/db";
 
-export class RateLimitError extends Error {
+class RateLimitError extends Error {
   status = 429 as const;
 
   constructor(message = "Too many requests") {

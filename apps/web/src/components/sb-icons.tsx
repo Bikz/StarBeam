@@ -166,32 +166,6 @@ export function IconSearch(props: SvgProps) {
   );
 }
 
-export function IconChevronLeft(props: SvgProps) {
-  return (
-    <svg
-      aria-hidden="true"
-      role="presentation"
-      focusable="false"
-      {...baseProps(props)}
-    >
-      <path d="M15 18l-6-6 6-6" />
-    </svg>
-  );
-}
-
-export function IconChevronRight(props: SvgProps) {
-  return (
-    <svg
-      aria-hidden="true"
-      role="presentation"
-      focusable="false"
-      {...baseProps(props)}
-    >
-      <path d="M9 18l6-6-6-6" />
-    </svg>
-  );
-}
-
 export function IconSidebarPanel(props: SvgProps) {
   return (
     <svg
@@ -202,22 +176,6 @@ export function IconSidebarPanel(props: SvgProps) {
     >
       <rect x="3.5" y="4.5" width="17" height="15" rx="2.5" />
       <path d="M9 4.5v15" />
-    </svg>
-  );
-}
-
-export function IconLogout(props: SvgProps) {
-  return (
-    <svg
-      aria-hidden="true"
-      role="presentation"
-      focusable="false"
-      {...baseProps(props)}
-    >
-      <path d="M10 17l-1 0a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4h1" />
-      <path d="M15 12H8" />
-      <path d="M12 9l3 3-3 3" />
-      <path d="M15 3h4v18h-4" />
     </svg>
   );
 }

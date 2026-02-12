@@ -42,7 +42,7 @@ function codexBinNamesForPlatform(): string[] {
   return ["codex"];
 }
 
-export async function resolveCodexExecutable(): Promise<string> {
+async function resolveCodexExecutable(): Promise<string> {
   const override = (process.env.STARB_CODEX_BIN ?? "").trim();
   if (override) return override;
 
@@ -111,7 +111,7 @@ async function makeEphemeralHome(): Promise<{
   return { dir, env };
 }
 
-export type CodexDetectResult = {
+type CodexDetectResult = {
   ok: boolean;
   resolvedCommand: string;
   exitCode: number | null;

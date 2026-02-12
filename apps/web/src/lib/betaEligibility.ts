@@ -6,14 +6,14 @@ export type BetaEligibilityStatus = {
   referralCount: number;
 };
 
-export type BetaEligibilityUser = {
+type BetaEligibilityUser = {
   id: string;
   email: string | null;
   betaAccessGrantedAt: Date | null;
   referralCode: string | null;
 };
 
-export type BetaEligibilityDeps = {
+type BetaEligibilityDeps = {
   findUser: (userId: string) => Promise<BetaEligibilityUser | null>;
   countReferrals: (userId: string) => Promise<number>;
   ensureReferralCode: (userId: string) => Promise<string>;
