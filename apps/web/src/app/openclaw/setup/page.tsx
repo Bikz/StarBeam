@@ -1,6 +1,8 @@
 import { sbButtonClass } from "@starbeam/shared";
 import Link from "next/link";
 
+import { webOrigin } from "@/lib/webOrigin";
+
 export default async function OpenClawSetupPage({
   searchParams,
 }: {
@@ -9,8 +11,14 @@ export default async function OpenClawSetupPage({
   const sp = await searchParams;
   const code = (sp.code ?? "").trim();
 
+  const pluginInstallSnippet =
+    "openclaw plugins install github:Bikz/openclaw-starbeam#v0.1.0";
+  const setupLink = code
+    ? `${webOrigin()}/openclaw/setup?code=${encodeURIComponent(code)}`
+    : "";
+
   const connectSnippet = code
-    ? `/starbeam connect ${code}`
+    ? `/starbeam connect ${setupLink}`
     : "/starbeam connect <setup-link-or-code>";
 
   return (
@@ -46,8 +54,10 @@ export default async function OpenClawSetupPage({
                 Ensure the OpenClaw{" "}
                 <span className="font-semibold">starbeam</span> plugin is
                 available. If <span className="font-mono">/starbeam</span> is
-                unknown, update OpenClaw to the newest version and enable the
-                plugin.
+                unknown, install the plugin, restart the gateway, and try again:
+                <div className="mt-2 font-mono text-xs sb-card-inset p-3 text-[color:var(--sb-fg)] break-all">
+                  {pluginInstallSnippet}
+                </div>
               </li>
               <li>
                 In your control chat, run:

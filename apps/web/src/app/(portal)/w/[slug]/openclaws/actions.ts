@@ -11,6 +11,8 @@ import { authOptions } from "@/lib/auth";
 import { sha256Hex } from "@/lib/apiTokens";
 import { webOrigin } from "@/lib/webOrigin";
 
+const OPENCLAW_STARBEAM_PLUGIN_SPEC = "github:Bikz/openclaw-starbeam#v0.1.0";
+
 const CreateOpenClawSchema = z.object({
   name: z.string().trim().min(1).max(80),
   mode: z.enum(["BRIEF", "AUTOPILOT"]).default("BRIEF"),
@@ -240,6 +242,9 @@ export async function generateOpenClawSetupPrompt(
     `Setup code (secret): ${deviceCode}`,
     "",
     "Steps:",
+    "0) Ensure the Starbeam plugin is installed in this OpenClaw instance. If /starbeam is unknown, run:",
+    `   openclaw plugins install ${OPENCLAW_STARBEAM_PLUGIN_SPEC}`,
+    "   Then restart the OpenClaw gateway, and verify /starbeam exists.",
     "1) Open the Starbeam setup link above in a browser and read it end-to-end.",
     "2) In the chat where you want to control this OpenClaw, run:",
     `   /starbeam connect ${setupUrl}`,
@@ -255,7 +260,8 @@ export async function generateOpenClawSetupPrompt(
     "- When Starbeam sends a BRIEF: store it for context; do not ask follow-ups unless needed.",
     "- When Starbeam sends an AUTOPILOT TASK: execute it, then report completion status.",
     "",
-    "If /starbeam is an unknown command:",
-    "- Update OpenClaw to the newest version, and ensure the built-in 'starbeam' plugin is enabled.",
+    "Installation notes:",
+    `- Plugin spec: ${OPENCLAW_STARBEAM_PLUGIN_SPEC}`,
+    "- After installing/updating plugins, you typically need to restart the gateway for commands to register.",
   ].join("\n");
 }
