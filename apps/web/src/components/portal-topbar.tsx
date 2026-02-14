@@ -25,6 +25,7 @@ function sectionLabel(
       { label: "Announcements", href: `${base}/announcements` },
       { label: "People", href: `${base}/members` },
       { label: "Integrations", href: `${base}/integrations` },
+      { label: "OpenClaws", href: `${base}/openclaws` },
       { label: "Runs", href: `${base}/jobs` },
     ];
 

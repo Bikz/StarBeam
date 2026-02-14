@@ -66,7 +66,13 @@ export async function POST(request: Request) {
 
   const existing = await prisma.apiRefreshToken.findFirst({
     where: { tokenHash, revokedAt: null, expiresAt: { gt: now } },
-    select: { id: true, userId: true },
+    select: {
+      id: true,
+      userId: true,
+      clientKind: true,
+      workspaceId: true,
+      openclawAgentId: true,
+    },
   });
 
   if (!existing) {
@@ -105,6 +111,9 @@ export async function POST(request: Request) {
         userId: existing.userId,
         tokenHash: rotated.tokenHash,
         expiresAt: refreshExpiresAt,
+        clientKind: existing.clientKind,
+        workspaceId: existing.workspaceId,
+        openclawAgentId: existing.openclawAgentId,
       },
     });
     return true;

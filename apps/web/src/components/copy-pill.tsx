@@ -30,10 +30,12 @@ export default function CopyPill({
   value,
   label,
   className,
+  title,
 }: {
   value: string;
   label: string;
   className?: string;
+  title?: string;
 }) {
   const [copied, setCopied] = useState<"idle" | "ok" | "fail">("idle");
   const id = useId();
@@ -59,7 +61,7 @@ export default function CopyPill({
         setCopied(ok ? "ok" : "fail");
       }}
       aria-describedby={status ? id : undefined}
-      title="Click to copy workspace ID"
+      title={title ?? "Click to copy"}
     >
       <span className="font-mono">{label}</span>
       <span className="sr-only" aria-live="polite" id={id}>

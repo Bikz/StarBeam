@@ -150,6 +150,16 @@ export default function CommandPalette({
             },
           },
           {
+            id: "nav:openclaws",
+            section: "Workspace",
+            label: "OpenClaws",
+            keywords: "openclaw agents autopilot",
+            perform: () => {
+              router.push(`/w/${w.slug}/openclaws`);
+              onClose();
+            },
+          },
+          {
             id: "nav:settings",
             section: "Workspace",
             label: "Settings",

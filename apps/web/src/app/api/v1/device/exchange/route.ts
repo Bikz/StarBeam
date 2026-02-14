@@ -62,7 +62,15 @@ export async function POST(request: Request) {
   const deviceCodeHash = sha256Hex(deviceCode);
   const authReq = await prisma.deviceAuthRequest.findUnique({
     where: { deviceCodeHash },
-    select: { id: true, status: true, approvedUserId: true, expiresAt: true },
+    select: {
+      id: true,
+      status: true,
+      approvedUserId: true,
+      expiresAt: true,
+      clientKind: true,
+      workspaceId: true,
+      openclawAgentId: true,
+    },
   });
   if (!authReq) {
     return jsonError({
@@ -133,8 +141,30 @@ export async function POST(request: Request) {
     if (updated.count !== 1) return false;
 
     await tx.apiRefreshToken.create({
-      data: { userId, tokenHash, expiresAt: refreshExpiresAt },
+      data: {
+        userId,
+        tokenHash,
+        expiresAt: refreshExpiresAt,
+        clientKind: authReq.clientKind,
+        workspaceId: authReq.workspaceId,
+        openclawAgentId: authReq.openclawAgentId,
+      },
     });
+
+    if (authReq.openclawAgentId) {
+      await tx.openClawAgent.updateMany({
+        where: {
+          id: authReq.openclawAgentId,
+          ...(authReq.workspaceId ? { workspaceId: authReq.workspaceId } : {}),
+          createdByUserId: userId,
+        },
+        data: {
+          status: "ONLINE",
+          lastSeenAt: now,
+          connectedAt: now,
+        },
+      });
+    }
 
     return true;
   });
@@ -201,7 +231,18 @@ export async function POST(request: Request) {
   }));
 
   return NextResponse.json(
-    { accessToken, refreshToken, expiresIn, user, workspaces },
+    {
+      accessToken,
+      refreshToken,
+      expiresIn,
+      user,
+      workspaces,
+      client: {
+        kind: authReq.clientKind,
+        workspaceId: authReq.workspaceId,
+        openclawAgentId: authReq.openclawAgentId,
+      },
+    },
     { headers: { "Cache-Control": "no-store" } },
   );
 }

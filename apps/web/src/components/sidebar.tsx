@@ -38,6 +38,7 @@ type NavIcon =
   | "announcements"
   | "people"
   | "integrations"
+  | "openclaws"
   | "runs";
 
 type NavItem = {
@@ -62,6 +63,7 @@ function iconFor(icon: NavIcon, className: string) {
   if (icon === "announcements") return <IconMegaphone className={className} />;
   if (icon === "people") return <IconUsers className={className} />;
   if (icon === "integrations") return <IconPlug className={className} />;
+  if (icon === "openclaws") return <IconMessage className={className} />;
   return <IconClock className={className} />;
 }
 
@@ -115,6 +117,7 @@ function navFor(
       label: "Integrations",
       icon: "integrations",
     },
+    { href: `${base}/openclaws`, label: "OpenClaws", icon: "openclaws" },
     { href: `${base}/members`, label: "People", icon: "people" },
   ];
 

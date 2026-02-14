@@ -46,6 +46,7 @@ model User {
   notionConnections      NotionConnection[]
   deviceAuthRequests     DeviceAuthRequest[]
   apiRefreshTokens       ApiRefreshToken[]
+  openclawAgents         OpenClawAgent[]
   sourceItems            SourceItem[]
   tasks                  Task[]
   blobs                  Blob[]               @relation("UserBlobs")
@@ -287,6 +288,9 @@ model Workspace {
   tasks           Task[]
   blobs           Blob[]          @relation("WorkspaceBlobs")
   usageEvents     UsageEvent[]
+  deviceAuthRequests DeviceAuthRequest[]
+  apiRefreshTokens   ApiRefreshToken[]
+  openclawAgents     OpenClawAgent[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -857,12 +861,22 @@ enum DeviceAuthStatus {
   CONSUMED
 }
 
+enum ApiClientKind {
+  MACOS
+  OPENCLAW
+}
+
 model DeviceAuthRequest {
   id String @id @default(cuid())
 
   // sha256(deviceCode) so we never persist the plaintext code.
   deviceCodeHash String @unique
   status         DeviceAuthStatus @default(PENDING)
+  clientKind     ApiClientKind    @default(MACOS)
+
+  // Optional client-scoped metadata (used by OpenClaw pairing).
+  workspaceId     String?
+  openclawAgentId String?
 
   approvedUserId String?
   approvedAt     DateTime?
@@ -870,13 +884,18 @@ model DeviceAuthRequest {
   expiresAt      DateTime
 
   approvedUser User? @relation(fields: [approvedUserId], references: [id], onDelete: SetNull)
+  workspace     Workspace?     @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  openclawAgent OpenClawAgent? @relation(fields: [openclawAgentId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([status])
+  @@index([clientKind])
   @@index([expiresAt])
   @@index([approvedUserId])
+  @@index([workspaceId])
+  @@index([openclawAgentId])
 }
 
 model ApiRefreshToken {
@@ -886,16 +905,138 @@ model ApiRefreshToken {
   // sha256(refreshToken) so we never persist the plaintext token.
   tokenHash String @unique
 
+  clientKind ApiClientKind @default(MACOS)
+
+  // Optional client-scoped metadata (used by OpenClaw pairing).
+  workspaceId     String?
+  openclawAgentId String?
+
   expiresAt DateTime
   revokedAt DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace     Workspace?     @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  openclawAgent OpenClawAgent? @relation(fields: [openclawAgentId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
 
   @@index([userId])
+  @@index([clientKind])
   @@index([expiresAt])
   @@index([revokedAt])
+  @@index([workspaceId])
+  @@index([openclawAgentId])
+}
+
+enum OpenClawAgentMode {
+  BRIEF
+  AUTOPILOT
+}
+
+enum OpenClawAgentStatus {
+  ONLINE
+  OFFLINE
+}
+
+enum OpenClawCommandType {
+  DELIVER_BRIEF
+  RUN_TASK
+}
+
+enum OpenClawCommandState {
+  PENDING
+  LEASED
+  ACKED
+  DONE
+  DISMISSED
+  FAILED
+}
+
+enum OpenClawEventKind {
+  HEARTBEAT
+  COMMAND_ACK
+  COMMAND_RESULT
+  TASK_STATE
+  LOG
+}
+
+model OpenClawAgent {
+  id String @id @default(cuid())
+
+  workspaceId     String
+  createdByUserId String
+
+  name             String
+  roleTitle        String?
+  responsibilities String?
+  mode             OpenClawAgentMode   @default(BRIEF)
+  status           OpenClawAgentStatus @default(OFFLINE)
+  lastSeenAt       DateTime?
+  connectedAt      DateTime?
+
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdByUser User      @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
+
+  commands OpenClawCommand[]
+  events   OpenClawEvent[]
+
+  deviceAuthRequests DeviceAuthRequest[]
+  refreshTokens      ApiRefreshToken[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId])
+  @@index([createdByUserId])
+  @@index([status])
+  @@index([lastSeenAt])
+}
+
+model OpenClawCommand {
+  id String @id @default(cuid())
+
+  openclawAgentId String
+  type            OpenClawCommandType
+  state           OpenClawCommandState @default(PENDING)
+
+  leaseId        String?
+  leaseExpiresAt DateTime?
+  leasedAt       DateTime?
+  ackedAt        DateTime?
+  finishedAt     DateTime?
+
+  payload      Json
+  result       Json?
+  errorSummary String?
+
+  openclawAgent OpenClawAgent @relation(fields: [openclawAgentId], references: [id], onDelete: Cascade)
+  events        OpenClawEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([openclawAgentId, createdAt])
+  @@index([state, leaseExpiresAt])
+  @@index([leaseExpiresAt])
+}
+
+model OpenClawEvent {
+  id String @id @default(cuid())
+
+  openclawAgentId String
+  commandId       String?
+  kind            OpenClawEventKind
+  leaseId         String?
+  payload         Json?
+
+  openclawAgent OpenClawAgent    @relation(fields: [openclawAgentId], references: [id], onDelete: Cascade)
+  command       OpenClawCommand? @relation(fields: [commandId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([openclawAgentId, createdAt])
+  @@index([commandId, createdAt])
+  @@index([kind, createdAt])
 }
 
 // DB-backed rate limiting buckets (works across multiple web instances).
