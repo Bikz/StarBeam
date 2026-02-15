@@ -23,6 +23,12 @@ type GoalSummary = {
 };
 
 type PersonalProfileSummary = {
+  fullName?: string | null;
+  location?: string | null;
+  company?: string | null;
+  companyUrl?: string | null;
+  linkedinUrl?: string | null;
+  websiteUrl?: string | null;
   jobTitle?: string | null;
   about?: string | null;
 } | null;

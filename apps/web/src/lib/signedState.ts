@@ -8,8 +8,20 @@ type SignedState = {
   workspaceId: string;
   workspaceSlug: string;
   nonce: string;
+  next?: string;
   iat: number; // seconds
 };
+
+function sanitizeNext(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  if (!trimmed.startsWith("/")) return undefined;
+  if (!trimmed.startsWith("/w/")) return undefined;
+  if (!trimmed.includes("/onboarding")) return undefined;
+  if (trimmed.length > 512) return undefined;
+  return trimmed;
+}
 
 function base64url(input: Buffer | string): string {
   const buf = typeof input === "string" ? Buffer.from(input, "utf8") : input;
@@ -32,10 +44,13 @@ function hmacSha256(secret: string, data: string): string {
 }
 
 export function mintSignedState(input: Omit<SignedState, "v" | "iat">): string {
+  const { next: rawNext, ...rest } = input;
+  const next = sanitizeNext(rawNext);
   const payload: SignedState = {
     v: 1,
     iat: Math.floor(Date.now() / 1000),
-    ...input,
+    ...rest,
+    ...(next ? { next } : {}),
   };
   const payloadB64 = base64url(JSON.stringify(payload));
   const sig = hmacSha256(requireAuthSecret(), payloadB64);
@@ -72,5 +87,7 @@ export function parseSignedState(token: string): SignedState {
     throw new Error("State expired");
   }
 
-  return parsed;
+  const { next: rawNext, ...rest } = parsed as SignedState;
+  const next = sanitizeNext(rawNext);
+  return { ...rest, ...(next ? { next } : {}) };
 }

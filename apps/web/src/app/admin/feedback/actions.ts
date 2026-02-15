@@ -33,7 +33,11 @@ const UpdateFeedbackTriageSchema = z.object({
 
 export async function updateFeedbackTriage(formData: FormData) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id || !session.user.email || !isAdminEmail(session.user.email)) {
+  if (
+    !session?.user?.id ||
+    !session.user.email ||
+    !isAdminEmail(session.user.email)
+  ) {
     redirect("/login");
   }
 

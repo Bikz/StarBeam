@@ -11,9 +11,30 @@ import {
   inferPulseLane,
   pulseSourceLabel,
 } from "@/lib/macosOverviewPresentation";
+import { deriveFirstPulseActivation } from "@/lib/activationState";
+import { isMacosActivationHintsEnabled } from "@/lib/flags";
 import { recordUsageEventSafe } from "@/lib/usageEvents";
 
 type Citation = { url: string; title?: string };
+type JobRunSummary = {
+  status: "QUEUED" | "RUNNING" | "SUCCEEDED" | "FAILED" | "PARTIAL" | null;
+  errorSummary: string | null;
+  createdAt: Date;
+  startedAt: Date | null;
+} | null;
+
+type PersonaTrack =
+  | "SOLO_FOUNDER"
+  | "SMALL_TEAM_5_10"
+  | "GROWTH_TEAM_11_50"
+  | "UNKNOWN";
+
+type PersonaSubmode =
+  | "SHIP_HEAVY"
+  | "GTM_HEAVY"
+  | "ALIGNMENT_GAP"
+  | "EXECUTION_DRIFT"
+  | "UNKNOWN";
 
 function iconForCardKind(kind: string): string | undefined {
   if (kind === "ANNOUNCEMENT") return "🔔";
@@ -61,6 +82,20 @@ function parseIntEnv(name: string, fallback: number): number {
   return Math.floor(n);
 }
 
+function hasGoogleAuthEnv(): boolean {
+  return Boolean(
+    (process.env.GOOGLE_CLIENT_ID ?? "").trim() &&
+    (process.env.GOOGLE_CLIENT_SECRET ?? "").trim(),
+  );
+}
+
+function ageMinsFrom(date: Date | null | undefined, now: Date): number | null {
+  if (!date) return null;
+  const ms = now.getTime() - date.getTime();
+  if (!Number.isFinite(ms) || ms < 0) return 0;
+  return Math.floor(ms / 60_000);
+}
+
 async function userIdFromRefreshToken(
   request: Request,
 ): Promise<string | null> {
@@ -99,6 +134,87 @@ function formatRelativeUntil(then: Date, now: Date): string {
   if (hr < 24) return `In ${hr}h`;
   const day = Math.round(hr / 24);
   return `In ${day}d`;
+}
+
+function inferPersonaTrack(args: {
+  memberCount: number;
+  integrationCount: number;
+  openTaskCount: number;
+}): PersonaTrack {
+  if (args.memberCount >= 11 && args.memberCount <= 50) {
+    return "GROWTH_TEAM_11_50";
+  }
+  if (args.memberCount >= 5 && args.memberCount <= 10) {
+    return "SMALL_TEAM_5_10";
+  }
+  if (args.memberCount >= 1 && args.memberCount <= 4) {
+    return "SOLO_FOUNDER";
+  }
+  if (args.integrationCount >= 3 && args.openTaskCount >= 3) {
+    return "SMALL_TEAM_5_10";
+  }
+  if (args.openTaskCount > 0) {
+    return "SOLO_FOUNDER";
+  }
+  return "UNKNOWN";
+}
+
+function recommendedFocusForPersona(persona: PersonaTrack): string {
+  if (persona === "SOLO_FOUNDER") {
+    return "Keep shipping, but commit one distribution or customer-research action today.";
+  }
+  if (persona === "SMALL_TEAM_5_10") {
+    return "Align owners for this week and remove one blocker that affects multiple teammates.";
+  }
+  if (persona === "GROWTH_TEAM_11_50") {
+    return "Improve execution quality by clarifying ownership, dependencies, and measurable outcomes.";
+  }
+  return "Choose one highest-leverage outcome and define the next concrete action.";
+}
+
+function inferPersonaSubmode(args: {
+  personaTrack: PersonaTrack;
+  memberCount: number;
+  integrationCount: number;
+  openTaskCount: number;
+}): PersonaSubmode {
+  if (
+    (args.personaTrack === "SMALL_TEAM_5_10" ||
+      args.personaTrack === "GROWTH_TEAM_11_50") &&
+    args.memberCount >= 5 &&
+    (args.integrationCount <= 1 || args.openTaskCount >= 8)
+  ) {
+    return "ALIGNMENT_GAP";
+  }
+  if (args.openTaskCount >= 5 && args.integrationCount <= 1) {
+    return "SHIP_HEAVY";
+  }
+  if (args.integrationCount >= 2 && args.openTaskCount <= 3) {
+    return "GTM_HEAVY";
+  }
+  if (args.openTaskCount >= 6) {
+    return "EXECUTION_DRIFT";
+  }
+  return "UNKNOWN";
+}
+
+function whyThisTodayForPersonaSubmode(args: {
+  personaTrack: PersonaTrack;
+  personaSubmode: PersonaSubmode;
+}): string {
+  if (args.personaSubmode === "SHIP_HEAVY") {
+    return "You are shipping quickly; add one concrete distribution action to convert output into outcomes.";
+  }
+  if (args.personaSubmode === "GTM_HEAVY") {
+    return "Your context is GTM-heavy today; choose a measurable experiment and close the loop by end of day.";
+  }
+  if (args.personaSubmode === "ALIGNMENT_GAP") {
+    return "Signals indicate alignment risk; clarify ownership and dependencies before adding new work.";
+  }
+  if (args.personaSubmode === "EXECUTION_DRIFT") {
+    return "Execution may be drifting; pick one highest-leverage action and finish it fully.";
+  }
+  return recommendedFocusForPersona(args.personaTrack);
 }
 
 export async function GET(request: Request) {
@@ -176,6 +292,7 @@ export async function GET(request: Request) {
   }
 
   const workspaceId = membership.workspaceId;
+  const hintsEnabled = isMacosActivationHintsEnabled();
 
   const now = new Date();
   const throttleMins = parseIntEnv("STARB_ACTIVE_UPDATE_THROTTLE_MINS", 60);
@@ -213,6 +330,7 @@ export async function GET(request: Request) {
 
   const [
     personalProfile,
+    workspaceMemberCount,
     activePersonalGoalCount,
     googleConnectedCount,
     githubConnectedCount,
@@ -221,11 +339,14 @@ export async function GET(request: Request) {
     tasks,
     completedTasks,
     events,
+    bootstrapJobRun,
+    autoFirstJobRun,
   ] = await Promise.all([
     prisma.workspaceMemberProfile.findUnique({
       where: { workspaceId_userId: { workspaceId, userId } },
       select: { jobTitle: true, about: true },
     }),
+    prisma.membership.count({ where: { workspaceId } }),
     prisma.personalGoal.count({
       where: { workspaceId, userId, active: true },
     }),
@@ -257,11 +378,11 @@ export async function GET(request: Request) {
         workspaceId,
         userId,
         status: "DONE",
-        updatedAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+        updatedAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
       },
       include: { sourceItem: true },
       orderBy: [{ updatedAt: "desc" }],
-      take: 10,
+      take: 60,
     }),
     prisma.sourceItem.findMany({
       where: {
@@ -276,13 +397,35 @@ export async function GET(request: Request) {
       orderBy: { occurredAt: "asc" },
       take: 10,
     }),
+    hintsEnabled
+      ? prisma.jobRun.findUnique({
+          where: { id: `bootstrap:${workspaceId}:${userId}` },
+          select: {
+            status: true,
+            errorSummary: true,
+            createdAt: true,
+            startedAt: true,
+          },
+        })
+      : Promise.resolve(null),
+    hintsEnabled
+      ? prisma.jobRun.findUnique({
+          where: { id: `auto-first:${workspaceId}:${userId}` },
+          select: {
+            status: true,
+            errorSummary: true,
+            createdAt: true,
+            startedAt: true,
+          },
+        })
+      : Promise.resolve(null),
   ]);
   await touchMembership;
 
   const hasPersonalProfile = Boolean(
     personalProfile &&
-      ((personalProfile.jobTitle ?? "").trim().length > 0 ||
-        (personalProfile.about ?? "").trim().length > 0),
+    ((personalProfile.jobTitle ?? "").trim().length > 0 ||
+      (personalProfile.about ?? "").trim().length > 0),
   );
 
   const onboarding = buildOnboardingPayload({
@@ -296,8 +439,50 @@ export async function GET(request: Request) {
         notionConnectedCount >
       0,
   });
+  const integrationCount =
+    googleConnectedCount +
+    githubConnectedCount +
+    linearConnectedCount +
+    notionConnectedCount;
+  const personaTrack = inferPersonaTrack({
+    memberCount: workspaceMemberCount,
+    integrationCount,
+    openTaskCount: tasks.length,
+  });
+  const personaSubmode = inferPersonaSubmode({
+    personaTrack,
+    memberCount: workspaceMemberCount,
+    integrationCount,
+    openTaskCount: tasks.length,
+  });
+  const pulseMeta = hintsEnabled
+    ? {
+        personaTrack,
+        personaSubmode,
+        recommendedFocus: recommendedFocusForPersona(personaTrack),
+        whyThisToday: whyThisTodayForPersonaSubmode({
+          personaTrack,
+          personaSubmode,
+        }),
+      }
+    : null;
 
-  const pulse = (edition?.cards ?? []).slice(0, 7).map((c) => {
+  const hiddenPulseCardIdSet = new Set<string>();
+  if (edition?.cards.length) {
+    const hiddenRows = await prisma.insightActionState.findMany({
+      where: {
+        workspaceId,
+        userId,
+        editionDate: edition.editionDate,
+        cardId: { in: edition.cards.map((card) => card.id) },
+        state: { in: ["DONE", "DISMISSED"] },
+      },
+      select: { cardId: true },
+    });
+    for (const row of hiddenRows) hiddenPulseCardIdSet.add(row.cardId);
+  }
+
+  const pulseCandidates = (edition?.cards ?? []).map((c) => {
     const sources = extractCitations(c.sources);
     const lane = inferPulseLane({
       onboardingMode: onboarding.mode,
@@ -328,6 +513,90 @@ export async function GET(request: Request) {
       occurredAt: c.createdAt.toISOString(),
     };
   });
+  const pulseWithoutOnboardingDupes =
+    onboarding.mode === "SETUP"
+      ? pulseCandidates.filter((card) => card.lane !== "ONBOARDING")
+      : pulseCandidates;
+  const pulse = pulseWithoutOnboardingDupes
+    .filter((card) => !hiddenPulseCardIdSet.has(card.id))
+    .slice(0, 7);
+
+  let activationHints: {
+    state: string;
+    nextAction: string;
+    reason: string;
+  } | null = null;
+  if (hintsEnabled) {
+    const [bootstrapCompat, autoFirstCompat] = await Promise.all([
+      bootstrapJobRun
+        ? Promise.resolve(null)
+        : prisma.jobRun.findUnique({
+            where: { id: `bootstrap:${workspaceId}` },
+            select: {
+              status: true,
+              errorSummary: true,
+              createdAt: true,
+              startedAt: true,
+            },
+          }),
+      autoFirstJobRun
+        ? Promise.resolve(null)
+        : prisma.jobRun.findUnique({
+            where: { id: `auto-first:${workspaceId}` },
+            select: {
+              status: true,
+              errorSummary: true,
+              createdAt: true,
+              startedAt: true,
+            },
+          }),
+    ]);
+
+    const bootstrapRun: JobRunSummary = bootstrapJobRun ?? bootstrapCompat;
+    const autoFirstRun: JobRunSummary = autoFirstJobRun ?? autoFirstCompat;
+    const staleThresholdMins = Math.max(
+      5,
+      parseIntEnv("STARB_FIRST_PULSE_STALE_MINS", 20),
+    );
+    const activation = deriveFirstPulseActivation({
+      hasAnyPulse: pulse.length > 0,
+      hasGoogleConnection:
+        googleConnectedCount +
+          githubConnectedCount +
+          linearConnectedCount +
+          notionConnectedCount >
+        0,
+      googleAuthConfigured: hasGoogleAuthEnv(),
+      queuedFromQueryParam: false,
+      bootstrapStatus: bootstrapRun?.status ?? null,
+      autoFirstStatus: autoFirstRun?.status ?? null,
+      bootstrapErrorSummary: bootstrapRun?.errorSummary,
+      autoFirstErrorSummary: autoFirstRun?.errorSummary,
+      bootstrapQueuedAgeMins:
+        bootstrapRun?.status === "QUEUED"
+          ? ageMinsFrom(bootstrapRun.createdAt, now)
+          : null,
+      bootstrapRunningAgeMins:
+        bootstrapRun?.status === "RUNNING"
+          ? ageMinsFrom(bootstrapRun.startedAt ?? bootstrapRun.createdAt, now)
+          : null,
+      autoFirstQueuedAgeMins:
+        autoFirstRun?.status === "QUEUED"
+          ? ageMinsFrom(autoFirstRun.createdAt, now)
+          : null,
+      autoFirstRunningAgeMins:
+        autoFirstRun?.status === "RUNNING"
+          ? ageMinsFrom(autoFirstRun.startedAt ?? autoFirstRun.createdAt, now)
+          : null,
+      staleThresholdMins,
+    });
+
+    activationHints = {
+      state: activation.state,
+      nextAction: activation.primaryAction,
+      reason: activation.errorDetail ?? activation.description,
+    };
+  }
 
   const focusItem = (t: (typeof tasks)[number]) => {
     const srcType =
@@ -357,14 +626,9 @@ export async function GET(request: Request) {
   const manual = sortedOpen.filter((t) => !t.sourceItemId);
   const derived = sortedOpen.filter((t) => Boolean(t.sourceItemId));
 
-  const focus = [
-    ...manual.slice(0, 3),
-    ...derived.slice(0, Math.max(0, 5 - Math.min(3, manual.length))),
-  ]
-    .slice(0, 5)
-    .map(focusItem);
+  const focus = [...manual, ...derived].map(focusItem);
 
-  const completedFocus = completedTasks.slice(0, 5).map((t) => ({
+  const completedFocus = completedTasks.map((t) => ({
     id: t.id,
     icon: "sf:checkmark.circle.fill",
     title: t.title,
@@ -421,7 +685,10 @@ export async function GET(request: Request) {
       focus,
       completedFocus,
       calendar,
+      editionDate: edition?.editionDate ?? null,
       generatedAt: now,
+      ...(activationHints ? { activationHints } : {}),
+      ...(pulseMeta ? { pulseMeta } : {}),
     },
     { headers: { "Cache-Control": "no-store" } },
   );

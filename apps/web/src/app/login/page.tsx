@@ -18,6 +18,7 @@ export default async function LoginPage({
 }: {
   searchParams: Promise<{
     callbackUrl?: string;
+    ignoreSession?: string;
     ref?: string;
     mode?: string;
     email?: string;
@@ -25,7 +26,10 @@ export default async function LoginPage({
   }>;
 }) {
   const session = await getServerSession(authOptions);
-  if (session?.user?.id) {
+  const sp = await searchParams;
+  const ignoreSession = sp.ignoreSession === "1";
+
+  if (session?.user?.id && !ignoreSession) {
     const status = await ensureBetaEligibilityProcessed(session.user.id);
     if (!status) {
       redirect(staleSessionSignOutUrl());
@@ -33,7 +37,6 @@ export default async function LoginPage({
     redirect(status.hasAccess ? `/w/personal-${session.user.id}` : "/beta");
   }
 
-  const sp = await searchParams;
   const authError = sp.error ? String(sp.error) : "";
   const mode =
     (sp.mode ?? "").trim().toLowerCase() === "waitlist" ? "waitlist" : "signin";

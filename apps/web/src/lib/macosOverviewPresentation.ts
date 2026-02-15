@@ -75,8 +75,10 @@ export function inferPulseLane(args: {
   if (args.onboardingMode !== "SETUP") return "DAILY";
   if (args.kind !== "INTERNAL") return "DAILY";
 
-  const text = `${args.title}\n${args.body ?? ""}\n${args.action ?? ""}`.toLowerCase();
-  const needsProfile = checklistStatus(args.onboardingChecklist, "profile") === "TODO";
+  const text =
+    `${args.title}\n${args.body ?? ""}\n${args.action ?? ""}`.toLowerCase();
+  const needsProfile =
+    checklistStatus(args.onboardingChecklist, "profile") === "TODO";
   const needsGoal =
     checklistStatus(args.onboardingChecklist, "personal_goal") === "TODO";
   const needsIntegration =
@@ -91,14 +93,25 @@ export function inferPulseLane(args: {
 
   if (
     needsGoal &&
-    matchesAny(text, ["personal goal", "add one personal goal", "goal for your work"])
+    matchesAny(text, [
+      "personal goal",
+      "add one personal goal",
+      "goal for your work",
+    ])
   ) {
     return "ONBOARDING";
   }
 
   if (
     needsIntegration &&
-    matchesAny(text, ["connect one integration", "github", "linear", "notion", "google drive", "integration"])
+    matchesAny(text, [
+      "connect one integration",
+      "github",
+      "linear",
+      "notion",
+      "google drive",
+      "integration",
+    ])
   ) {
     return "ONBOARDING";
   }

@@ -4,9 +4,7 @@ import { sbButtonClass } from "@starbeam/shared";
 
 import { prisma } from "@starbeam/db";
 
-import {
-  disconnectGitHubConnection,
-} from "@/app/(portal)/w/[slug]/integrations/githubActions";
+import { disconnectGitHubConnection } from "@/app/(portal)/w/[slug]/integrations/githubActions";
 import {
   startGoogleConnect,
   disconnectGoogleConnection,
@@ -196,7 +194,11 @@ export default async function IntegrationsPage({
 
           <div className="mt-6 flex flex-wrap items-center gap-3">
             <form
-              action={startGoogleConnect.bind(null, membership.workspace.slug)}
+              action={startGoogleConnect.bind(
+                null,
+                membership.workspace.slug,
+                "",
+              )}
             >
               <button
                 type="submit"

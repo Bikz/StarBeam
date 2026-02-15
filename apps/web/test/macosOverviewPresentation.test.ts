@@ -30,7 +30,10 @@ test("buildOnboardingPayload: returns DAILY when setup is done", () => {
   });
 
   assert.equal(payload.mode, "DAILY");
-  assert.equal(payload.checklist.every((item) => item.status === "DONE"), true);
+  assert.equal(
+    payload.checklist.every((item) => item.status === "DONE"),
+    true,
+  );
 });
 
 test("inferPulseLane: identifies onboarding internal cards in setup mode", () => {

@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { computeFunnelFromEvents } from "../src/lib/opsFunnel";
+import {
+  computeChainCoveragePct,
+  computeFunnelFromEvents,
+  computeInsightQualityRates,
+} from "../src/lib/opsFunnel";
 
 const t0 = new Date("2026-02-01T00:00:00.000Z");
 
@@ -11,22 +15,87 @@ function at(hoursFromStart: number): Date {
 
 test("computeFunnelFromEvents calculates activation and week-1 retention", () => {
   const result = computeFunnelFromEvents([
-    { eventType: "SIGNED_IN", userId: "u1", workspaceId: null, createdAt: at(0) },
-    { eventType: "GOOGLE_CONNECTED", userId: "u1", workspaceId: "w1", createdAt: at(1) },
-    { eventType: "FIRST_PULSE_QUEUED", userId: "u1", workspaceId: "w1", createdAt: at(2) },
-    { eventType: "FIRST_PULSE_READY", userId: "u1", workspaceId: "w1", createdAt: at(3) },
-    { eventType: "PULSE_VIEWED_WEB", userId: "u1", workspaceId: "w1", createdAt: at(6) },
-    { eventType: "PULSE_VIEWED_WEB", userId: "u1", workspaceId: "w1", createdAt: at(30) },
-    { eventType: "PULSE_VIEWED_WEB", userId: "u1", workspaceId: "w1", createdAt: at(60) },
-    { eventType: "OVERVIEW_SYNCED_MACOS", userId: "u1", workspaceId: "w1", createdAt: at(24) },
+    {
+      eventType: "SIGNED_IN",
+      userId: "u1",
+      workspaceId: null,
+      createdAt: at(0),
+    },
+    {
+      eventType: "GOOGLE_CONNECTED",
+      userId: "u1",
+      workspaceId: "w1",
+      createdAt: at(1),
+    },
+    {
+      eventType: "FIRST_PULSE_QUEUED",
+      userId: "u1",
+      workspaceId: "w1",
+      createdAt: at(2),
+    },
+    {
+      eventType: "FIRST_PULSE_READY",
+      userId: "u1",
+      workspaceId: "w1",
+      createdAt: at(3),
+    },
+    {
+      eventType: "PULSE_VIEWED_WEB",
+      userId: "u1",
+      workspaceId: "w1",
+      createdAt: at(6),
+    },
+    {
+      eventType: "PULSE_VIEWED_WEB",
+      userId: "u1",
+      workspaceId: "w1",
+      createdAt: at(30),
+    },
+    {
+      eventType: "PULSE_VIEWED_WEB",
+      userId: "u1",
+      workspaceId: "w1",
+      createdAt: at(60),
+    },
+    {
+      eventType: "OVERVIEW_SYNCED_MACOS",
+      userId: "u1",
+      workspaceId: "w1",
+      createdAt: at(24),
+    },
 
-    { eventType: "SIGNED_IN", userId: "u2", workspaceId: null, createdAt: at(0) },
-    { eventType: "GOOGLE_CONNECTED", userId: "u2", workspaceId: "w2", createdAt: at(1) },
+    {
+      eventType: "SIGNED_IN",
+      userId: "u2",
+      workspaceId: null,
+      createdAt: at(0),
+    },
+    {
+      eventType: "GOOGLE_CONNECTED",
+      userId: "u2",
+      workspaceId: "w2",
+      createdAt: at(1),
+    },
 
-    { eventType: "SIGNED_IN", userId: "u3", workspaceId: null, createdAt: at(0) },
-    { eventType: "FIRST_PULSE_READY", userId: "u3", workspaceId: "w3", createdAt: at(24 * 9) },
+    {
+      eventType: "SIGNED_IN",
+      userId: "u3",
+      workspaceId: null,
+      createdAt: at(0),
+    },
+    {
+      eventType: "FIRST_PULSE_READY",
+      userId: "u3",
+      workspaceId: "w3",
+      createdAt: at(24 * 9),
+    },
 
-    { eventType: "FIRST_PULSE_READY", userId: "u4", workspaceId: "w4", createdAt: at(2) },
+    {
+      eventType: "FIRST_PULSE_READY",
+      userId: "u4",
+      workspaceId: "w4",
+      createdAt: at(2),
+    },
   ]);
 
   assert.deepEqual(result.activation, {
@@ -42,5 +111,78 @@ test("computeFunnelFromEvents calculates activation and week-1 retention", () =>
     pulseViewedWeek1_1plus: 1,
     pulseViewedWeek1_3plus: 1,
     overviewSyncedWeek1_1plus: 1,
+  });
+});
+
+test("computeChainCoveragePct measures full activation chain coverage", () => {
+  const events = [
+    {
+      eventType: "SIGNED_IN",
+      userId: "u1",
+      workspaceId: null,
+      createdAt: at(0),
+    },
+    {
+      eventType: "GOOGLE_CONNECTED",
+      userId: "u1",
+      workspaceId: "w1",
+      createdAt: at(1),
+    },
+    {
+      eventType: "FIRST_PULSE_QUEUED",
+      userId: "u1",
+      workspaceId: "w1",
+      createdAt: at(2),
+    },
+    {
+      eventType: "FIRST_PULSE_READY",
+      userId: "u1",
+      workspaceId: "w1",
+      createdAt: at(3),
+    },
+    {
+      eventType: "SIGNED_IN",
+      userId: "u2",
+      workspaceId: null,
+      createdAt: at(0),
+    },
+    {
+      eventType: "GOOGLE_CONNECTED",
+      userId: "u2",
+      workspaceId: "w2",
+      createdAt: at(1),
+    },
+  ] as const;
+
+  assert.equal(computeChainCoveragePct(events.slice() as never), 50);
+});
+
+test("computeInsightQualityRates computes feedback and completion percentages", () => {
+  const rates = computeInsightQualityRates({
+    helpful: 6,
+    notHelpful: 4,
+    viewed: 20,
+    markedDone: 7,
+  });
+
+  assert.deepEqual(rates, {
+    helpfulRatePct: 60,
+    notHelpfulRatePct: 40,
+    actionCompletionRatePct: 35,
+  });
+});
+
+test("computeInsightQualityRates returns zeros when denominators are empty", () => {
+  const rates = computeInsightQualityRates({
+    helpful: 0,
+    notHelpful: 0,
+    viewed: 0,
+    markedDone: 0,
+  });
+
+  assert.deepEqual(rates, {
+    helpfulRatePct: 0,
+    notHelpfulRatePct: 0,
+    actionCompletionRatePct: 0,
   });
 });

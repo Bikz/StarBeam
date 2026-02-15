@@ -11,6 +11,7 @@ struct FocusListView: View {
   @State private var todoDetails: String = ""
   @State private var showDetails: Bool = false
   @State private var showCompleted: Bool = false
+  @State private var showAllOpen: Bool = false
 
   @FocusState private var titleFocused: Bool
 
@@ -27,7 +28,8 @@ struct FocusListView: View {
         .padding(10)
         .starbeamCard()
       } else {
-        ForEach(items) { item in
+        let visibleOpenItems = showAllOpen ? items : Array(items.prefix(8))
+        ForEach(visibleOpenItems) { item in
           HStack(alignment: .top, spacing: 10) {
             CardIcon(item.icon)
 
@@ -46,19 +48,42 @@ struct FocusListView: View {
 
             Spacer(minLength: 0)
 
-            Button {
-              Task { await model.setTodoDone(taskID: item.id, isDone: true) }
-            } label: {
-              Image(systemName: "checkmark.circle")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(.secondary)
-                .frame(width: 26, height: 26)
+            HStack(spacing: 6) {
+              Button {
+                Task { await model.setTodoDone(taskID: item.id, isDone: true) }
+              } label: {
+                Image(systemName: "checkmark.circle")
+                  .font(.system(size: 14, weight: .semibold))
+                  .foregroundStyle(.secondary)
+                  .frame(width: 26, height: 26)
+              }
+              .buttonStyle(.plain)
+              .accessibilityLabel("Mark todo as done")
+
+              Button {
+                Task { await model.deleteTodo(taskID: item.id) }
+              } label: {
+                Image(systemName: "trash")
+                  .font(.system(size: 13, weight: .semibold))
+                  .foregroundStyle(.secondary)
+                  .frame(width: 26, height: 26)
+              }
+              .buttonStyle(.plain)
+              .accessibilityLabel("Delete todo")
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Mark todo as done")
           }
           .padding(10)
           .starbeamCard()
+        }
+
+        if items.count > 8 {
+          Button(showAllOpen ? "Show fewer todos" : "Show all todos (\(items.count))") {
+            showAllOpen.toggle()
+          }
+          .buttonStyle(.plain)
+          .font(.system(size: 12, weight: .semibold, design: .rounded))
+          .foregroundStyle(.secondary)
+          .padding(.leading, 2)
         }
       }
 
@@ -137,6 +162,30 @@ struct FocusListView: View {
                   }
                 }
                 Spacer(minLength: 0)
+
+                HStack(spacing: 6) {
+                  Button {
+                    Task { await model.setTodoDone(taskID: item.id, isDone: false) }
+                  } label: {
+                    Image(systemName: "arrow.uturn.backward.circle")
+                      .font(.system(size: 13, weight: .semibold))
+                      .foregroundStyle(.secondary)
+                      .frame(width: 24, height: 24)
+                  }
+                  .buttonStyle(.plain)
+                  .accessibilityLabel("Reopen todo")
+
+                  Button {
+                    Task { await model.deleteTodo(taskID: item.id) }
+                  } label: {
+                    Image(systemName: "trash")
+                      .font(.system(size: 13, weight: .semibold))
+                      .foregroundStyle(.secondary)
+                      .frame(width: 24, height: 24)
+                  }
+                  .buttonStyle(.plain)
+                  .accessibilityLabel("Delete todo")
+                }
               }
               .padding(10)
               .starbeamCard()

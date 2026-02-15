@@ -30,6 +30,11 @@ export type FirstPulseActivationInput = {
   autoFirstStatus: FirstPulseJobStatus;
   bootstrapErrorSummary?: string | null;
   autoFirstErrorSummary?: string | null;
+  bootstrapQueuedAgeMins?: number | null;
+  bootstrapRunningAgeMins?: number | null;
+  autoFirstQueuedAgeMins?: number | null;
+  autoFirstRunningAgeMins?: number | null;
+  staleThresholdMins?: number | null;
 };
 
 export type FirstPulseActivation = {
@@ -83,9 +88,29 @@ function classifyBlocking(summary: string | null): boolean {
   );
 }
 
+function isStale(args: {
+  queuedAgeMins?: number | null;
+  runningAgeMins?: number | null;
+  staleThresholdMins: number;
+}): boolean {
+  const queuedAge =
+    typeof args.queuedAgeMins === "number" ? args.queuedAgeMins : -1;
+  const runningAge =
+    typeof args.runningAgeMins === "number" ? args.runningAgeMins : -1;
+  return (
+    queuedAge >= args.staleThresholdMins ||
+    runningAge >= args.staleThresholdMins
+  );
+}
+
 export function deriveFirstPulseActivation(
   input: FirstPulseActivationInput,
 ): FirstPulseActivation {
+  const staleThresholdMins =
+    typeof input.staleThresholdMins === "number" && input.staleThresholdMins > 0
+      ? Math.floor(input.staleThresholdMins)
+      : 20;
+
   if (input.hasAnyPulse) {
     return {
       state: "ready",
@@ -119,6 +144,28 @@ export function deriveFirstPulseActivation(
   }
 
   const statuses = [input.bootstrapStatus, input.autoFirstStatus];
+  const stale =
+    isStale({
+      queuedAgeMins: input.bootstrapQueuedAgeMins,
+      runningAgeMins: input.bootstrapRunningAgeMins,
+      staleThresholdMins,
+    }) ||
+    isStale({
+      queuedAgeMins: input.autoFirstQueuedAgeMins,
+      runningAgeMins: input.autoFirstRunningAgeMins,
+      staleThresholdMins,
+    });
+
+  if (stale) {
+    return {
+      state: "failed_retriable",
+      primaryAction: "generate_now",
+      title: "First pulse appears stuck",
+      description:
+        "The first run has been queued/running longer than expected. Retry now to recover.",
+      errorDetail: `No completion after ${staleThresholdMins} minutes.`,
+    };
+  }
 
   if (hasStatus(statuses, "RUNNING")) {
     return {
@@ -183,7 +230,8 @@ export function deriveFirstPulseActivation(
     state: "not_started",
     primaryAction: "generate_now",
     title: "Generate your first pulse",
-    description: "You’re connected. Generate now to create your first daily pulse.",
+    description:
+      "You’re connected. Generate now to create your first daily pulse.",
     errorDetail: null,
   };
 }

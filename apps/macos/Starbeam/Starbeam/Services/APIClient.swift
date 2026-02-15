@@ -24,6 +24,15 @@ struct APIClient {
     var task: Task
   }
 
+  struct TaskDeletePayload: Codable, Equatable {
+    var ok: Bool
+    var taskId: String
+  }
+
+  struct PulseActionPayload: Codable, Equatable {
+    var ok: Bool
+  }
+
   struct Task: Codable, Equatable {
     var id: String
     var title: String
@@ -193,6 +202,63 @@ struct APIClient {
     let http = try requireHTTP(response)
     if (200...299).contains(http.statusCode) {
       return try decode(TaskPayload.self, from: data)
+    }
+    if let payload = try? decode(APIErrorPayload.self, from: data) {
+      throw APIError.oauth(code: payload.error, description: payload.errorDescription)
+    }
+    throw APIError.http(statusCode: http.statusCode, body: String(decoding: data, as: UTF8.self))
+  }
+
+  func deleteTask(workspaceID: String, taskID: String, accessToken: String, refreshToken: String) async throws -> TaskDeletePayload {
+    let url = try urlForPath("/api/v1/macos/tasks/delete")
+    var request = URLRequest(url: url)
+    request.httpMethod = "POST"
+    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+    request.setValue(refreshToken, forHTTPHeaderField: "X-Starbeam-Refresh-Token")
+    request.httpBody = try JSONEncoder().encode([
+      "workspaceId": workspaceID,
+      "taskId": taskID,
+    ])
+
+    let (data, response) = try await urlSession.data(for: request)
+    let http = try requireHTTP(response)
+    if (200...299).contains(http.statusCode) {
+      return try decode(TaskDeletePayload.self, from: data)
+    }
+    if let payload = try? decode(APIErrorPayload.self, from: data) {
+      throw APIError.oauth(code: payload.error, description: payload.errorDescription)
+    }
+    throw APIError.http(statusCode: http.statusCode, body: String(decoding: data, as: UTF8.self))
+  }
+
+  func updatePulseActionState(
+    workspaceID: String,
+    editionDate: Date,
+    cardID: String,
+    state: String,
+    accessToken: String,
+    refreshToken: String
+  ) async throws -> PulseActionPayload {
+    let url = try urlForPath("/api/v1/macos/pulse/actions")
+    var request = URLRequest(url: url)
+    request.httpMethod = "POST"
+    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+    request.setValue(refreshToken, forHTTPHeaderField: "X-Starbeam-Refresh-Token")
+
+    let iso = ISO8601DateFormatter().string(from: editionDate)
+    request.httpBody = try JSONEncoder().encode([
+      "workspaceId": workspaceID,
+      "editionDateIso": iso,
+      "cardId": cardID,
+      "state": state,
+    ])
+
+    let (data, response) = try await urlSession.data(for: request)
+    let http = try requireHTTP(response)
+    if (200...299).contains(http.statusCode) {
+      return try decode(PulseActionPayload.self, from: data)
     }
     if let payload = try? decode(APIErrorPayload.self, from: data) {
       throw APIError.oauth(code: payload.error, description: payload.errorDescription)

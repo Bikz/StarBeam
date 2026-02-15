@@ -22,6 +22,51 @@ const WebInsightOutputSchema = z.object({
 type WebInsightCard = z.infer<typeof WebInsightCardSchema>;
 
 type ToolSource = { url?: string; title?: string };
+export type PromptCacheRetention = "in_memory" | "24h";
+
+export type WebInsightUsage = {
+  inputTokens: number;
+  cachedInputTokens: number;
+  outputTokens: number;
+};
+
+const WebInsightOutputJsonSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["cards"],
+  properties: {
+    cards: {
+      type: "array",
+      minItems: 0,
+      maxItems: 2,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["title", "body", "why", "action", "citations"],
+        properties: {
+          title: { type: "string" },
+          body: { type: "string" },
+          why: { type: "string" },
+          action: { type: "string" },
+          citations: {
+            type: "array",
+            minItems: 1,
+            maxItems: 6,
+            items: {
+              type: "object",
+              additionalProperties: false,
+              required: ["url"],
+              properties: {
+                url: { type: "string", format: "uri" },
+                title: { type: "string" },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+} as const;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
@@ -75,6 +120,47 @@ function extractToolSources(response: unknown): ToolSource[] {
   return sources;
 }
 
+function refusalMessage(response: unknown): string | null {
+  const r = response as { output?: unknown[] };
+  const output = Array.isArray(r?.output) ? r.output : [];
+  for (const item of output) {
+    if (!item || typeof item !== "object") continue;
+    const it = item as { type?: unknown; content?: unknown };
+    if (it.type !== "message" || !Array.isArray(it.content)) continue;
+    for (const part of it.content) {
+      if (!part || typeof part !== "object") continue;
+      const p = part as { type?: unknown; refusal?: unknown };
+      if (p.type === "refusal" && typeof p.refusal === "string") {
+        return p.refusal.trim() || "refused";
+      }
+    }
+  }
+  return null;
+}
+
+function extractResponseJsonText(response: unknown): string {
+  const resp = response as { output_text?: unknown; output?: unknown[] };
+  if (typeof resp.output_text === "string" && resp.output_text.trim()) {
+    return resp.output_text;
+  }
+
+  const output = Array.isArray(resp.output) ? resp.output : [];
+  const chunks: string[] = [];
+  for (const item of output) {
+    if (!item || typeof item !== "object") continue;
+    const it = item as { type?: unknown; content?: unknown };
+    if (it.type !== "message" || !Array.isArray(it.content)) continue;
+    for (const part of it.content) {
+      if (!part || typeof part !== "object") continue;
+      const p = part as { type?: unknown; text?: unknown };
+      if (p.type === "output_text" && typeof p.text === "string" && p.text) {
+        chunks.push(p.text);
+      }
+    }
+  }
+  return chunks.join("").trim();
+}
+
 function normalizeUrl(url: string): string {
   // Keep it simple: drop trailing slash for stable matching.
   return url.replace(/\/$/, "");
@@ -109,12 +195,20 @@ export async function generateWebInsights({
   model,
   input,
   allowedDomains,
+  promptCacheKey,
+  promptCacheRetention,
 }: {
   openaiApiKey: string;
   model: string;
   input: string;
   allowedDomains?: string[];
-}): Promise<{ cards: WebInsightCard[]; toolSources: ToolSource[] }> {
+  promptCacheKey?: string;
+  promptCacheRetention?: PromptCacheRetention;
+}): Promise<{
+  cards: WebInsightCard[];
+  toolSources: ToolSource[];
+  usage?: WebInsightUsage;
+}> {
   const client = new OpenAI({ apiKey: openaiApiKey });
 
   const tools: Tool[] = [
@@ -134,15 +228,70 @@ export async function generateWebInsights({
         tools,
         tool_choice: "auto",
         input,
+        max_output_tokens: 1200,
+        ...(promptCacheKey ? { prompt_cache_key: promptCacheKey } : {}),
+        ...(promptCacheRetention
+          ? { prompt_cache_retention: promptCacheRetention }
+          : {}),
+        text: {
+          format: {
+            type: "json_schema",
+            name: "web_insight_output",
+            strict: true,
+            schema: WebInsightOutputJsonSchema,
+          },
+        },
       }),
     3,
   );
 
+  const status = (response as { status?: unknown }).status;
+  if (status === "incomplete") {
+    const reason =
+      (
+        response as {
+          incomplete_details?: { reason?: unknown } | null;
+        }
+      ).incomplete_details?.reason ?? "unknown";
+    throw new Error(`Web insight response incomplete (${String(reason)}).`);
+  }
+
+  const refusal = refusalMessage(response);
+  if (refusal) {
+    throw new Error(`Web insight response refused: ${refusal}`);
+  }
+
   const toolSources = extractToolSources(response);
-  const resp = response as unknown as { output_text?: unknown };
-  const rawText = typeof resp.output_text === "string" ? resp.output_text : "";
+  const usageRaw = (
+    response as {
+      usage?: {
+        input_tokens?: unknown;
+        output_tokens?: unknown;
+        input_tokens_details?: { cached_tokens?: unknown } | null;
+      };
+    }
+  ).usage;
+  const usage =
+    usageRaw && typeof usageRaw === "object"
+      ? {
+          inputTokens:
+            typeof usageRaw.input_tokens === "number"
+              ? usageRaw.input_tokens
+              : 0,
+          cachedInputTokens:
+            typeof usageRaw.input_tokens_details?.cached_tokens === "number"
+              ? usageRaw.input_tokens_details.cached_tokens
+              : 0,
+          outputTokens:
+            typeof usageRaw.output_tokens === "number"
+              ? usageRaw.output_tokens
+              : 0,
+        }
+      : undefined;
+
+  const rawText = extractResponseJsonText(response);
   if (!rawText.trim()) {
-    return { cards: [], toolSources };
+    return { cards: [], toolSources, ...(usage ? { usage } : {}) };
   }
 
   let parsedJson: unknown;
@@ -155,7 +304,7 @@ export async function generateWebInsights({
   const parsed = WebInsightOutputSchema.parse(parsedJson);
   const cards = filterCitationsToSources(parsed.cards ?? [], toolSources);
 
-  return { cards, toolSources };
+  return { cards, toolSources, ...(usage ? { usage } : {}) };
 }
 
 export function buildDepartmentWebResearchPrompt(args: {

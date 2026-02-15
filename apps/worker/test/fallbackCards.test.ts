@@ -63,3 +63,44 @@ test("buildDeterministicFallbackInternalCards avoids duplicate titles", () => {
   assert.equal(cards.length, 1);
   assert.notEqual(cards[0]?.title, existingTitle);
 });
+
+test("buildDeterministicFallbackInternalCards prioritizes overnight-open tasks", () => {
+  const cards = buildDeterministicFallbackInternalCards({
+    minCards: 5,
+    maxCards: 7,
+    existingCount: 4,
+    existingTitles: new Set(),
+    workspaceName: "Acme",
+    personalProfile: { jobTitle: "Founder", about: "Building and selling" },
+    personalGoals: [],
+    workspaceGoals: [],
+    tasks: [
+      {
+        id: "t_stale",
+        title: "Launch welcome email",
+        body: "Draft and send first activation sequence",
+        status: "OPEN",
+        dueAt: null,
+        snoozedUntil: null,
+        updatedAt: new Date("2026-02-10T00:00:00.000Z"),
+        sourceItem: null,
+      },
+      {
+        id: "t_fresh",
+        title: "Polish pricing copy",
+        body: "Ship pricing clarifications",
+        status: "OPEN",
+        dueAt: null,
+        snoozedUntil: null,
+        updatedAt: new Date(),
+        sourceItem: null,
+      },
+    ],
+    sourceItems: [],
+  });
+
+  assert.equal(cards.length, 1);
+  assert.match(cards[0]?.title ?? "", /Launch welcome email/);
+  assert.match(cards[0]?.why ?? "", /execution friction/i);
+  assert.match(cards[0]?.action ?? "", /15-minute/i);
+});

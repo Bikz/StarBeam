@@ -227,13 +227,17 @@ export async function GET(request: Request) {
       // Don't block Google connect on queue availability.
     }
 
-    return NextResponse.redirect(
-      `${webOrigin()}/w/${parsedState.workspaceSlug}/integrations?connected=google`,
-    );
+    const redirectUrl = parsedState.next
+      ? new URL(parsedState.next, webOrigin())
+      : new URL(`/w/${parsedState.workspaceSlug}/integrations`, webOrigin());
+    redirectUrl.searchParams.set("connected", "google");
+    return NextResponse.redirect(redirectUrl.toString());
   } catch (err) {
     const code = googleConnectErrorCode(err);
-    return NextResponse.redirect(
-      `${webOrigin()}/w/${parsedState.workspaceSlug}/integrations?error=${encodeURIComponent(code)}`,
-    );
+    const redirectUrl = parsedState.next
+      ? new URL(parsedState.next, webOrigin())
+      : new URL(`/w/${parsedState.workspaceSlug}/integrations`, webOrigin());
+    redirectUrl.searchParams.set("error", code);
+    return NextResponse.redirect(redirectUrl.toString());
   }
 }

@@ -4,6 +4,8 @@ import path from "node:path";
 
 import { z } from "zod";
 
+import type { PersonaSubmode, PersonaTrack } from "../insights/persona";
+import { normalizeInsightMeta } from "../insights/ranker";
 import { runCodexExec } from "./exec";
 import { materializeWorkspaceContextForCodex } from "./materialize";
 
@@ -18,6 +20,33 @@ const BaseCardSchema = z.object({
   body: z.string().min(1),
   why: z.string().min(1),
   action: z.string().min(1),
+  insightMeta: z
+    .object({
+      personaTrack: z.enum([
+        "SOLO_FOUNDER",
+        "SMALL_TEAM_5_10",
+        "GROWTH_TEAM_11_50",
+        "UNKNOWN",
+      ]),
+      personaSubmode: z
+        .enum([
+          "SHIP_HEAVY",
+          "GTM_HEAVY",
+          "ALIGNMENT_GAP",
+          "EXECUTION_DRIFT",
+          "UNKNOWN",
+        ])
+        .optional(),
+      skillRef: z.string().min(1).max(120).optional(),
+      skillOrigin: z.enum(["CURATED", "PARTNER", "DISCOVERED"]).optional(),
+      expectedHelpfulLift: z.number().min(0).max(1).optional(),
+      expectedActionLift: z.number().min(0).max(1).optional(),
+      relevanceScore: z.number().min(0).max(1).optional(),
+      actionabilityScore: z.number().min(0).max(1).optional(),
+      confidenceScore: z.number().min(0).max(1).optional(),
+      noveltyScore: z.number().min(0).max(1).optional(),
+    })
+    .optional(),
 });
 
 const InternalCardSchema = BaseCardSchema.extend({
@@ -47,6 +76,25 @@ const CodexPulseOutputSchema = z.object({
 
 type CodexPulseOutput = z.infer<typeof CodexPulseOutputSchema>;
 
+export type PulseGenerationResult = {
+  output: CodexPulseOutput;
+  departmentNameToId: Map<string, string>;
+  estimate: {
+    provider: "local_codex" | "openai_hosted_shell";
+    attemptCount: number;
+    promptBytes: number;
+    contextBytes: number;
+    approxInputTokens: number;
+    approxOutputTokens: number;
+    durationMs: number;
+    usage?: {
+      inputTokens: number;
+      cachedInputTokens: number;
+      outputTokens: number;
+    };
+  };
+};
+
 function pulseOutputJsonSchema(args: { includeWebResearch: boolean }): unknown {
   const baseCardSchema = {
     type: "object",
@@ -59,6 +107,43 @@ function pulseOutputJsonSchema(args: { includeWebResearch: boolean }): unknown {
       body: { type: "string" },
       why: { type: "string" },
       action: { type: "string" },
+      insightMeta: {
+        type: "object",
+        additionalProperties: false,
+        required: ["personaTrack"],
+        properties: {
+          personaTrack: {
+            type: "string",
+            enum: [
+              "SOLO_FOUNDER",
+              "SMALL_TEAM_5_10",
+              "GROWTH_TEAM_11_50",
+              "UNKNOWN",
+            ],
+          },
+          personaSubmode: {
+            type: "string",
+            enum: [
+              "SHIP_HEAVY",
+              "GTM_HEAVY",
+              "ALIGNMENT_GAP",
+              "EXECUTION_DRIFT",
+              "UNKNOWN",
+            ],
+          },
+          skillRef: { type: "string" },
+          skillOrigin: {
+            type: "string",
+            enum: ["CURATED", "PARTNER", "DISCOVERED"],
+          },
+          expectedHelpfulLift: { type: "number", minimum: 0, maximum: 1 },
+          expectedActionLift: { type: "number", minimum: 0, maximum: 1 },
+          relevanceScore: { type: "number", minimum: 0, maximum: 1 },
+          actionabilityScore: { type: "number", minimum: 0, maximum: 1 },
+          confidenceScore: { type: "number", minimum: 0, maximum: 1 },
+          noveltyScore: { type: "number", minimum: 0, maximum: 1 },
+        },
+      },
       citations: {
         type: "array",
         maxItems: 6,
@@ -119,6 +204,9 @@ function buildPulsePrompt(args: {
   workspaceName: string;
   departmentNames: string[];
   includeWebResearch: boolean;
+  personaTrack: PersonaTrack;
+  personaSubmode: PersonaSubmode;
+  allowedSkillRefs: string[];
 }): string {
   return [
     "You are Starbeam, a nightly pulse agent.",
@@ -164,6 +252,11 @@ function buildPulsePrompt(args: {
     "Use the internal source items (email/calendar/drive/github/linear/notion), tasks, and goals to create INTERNAL cards that help the user prioritize.",
     "Prioritize INTERNAL cards when internal context is strong, even if web research is available.",
     "Use departments.json (including promptTemplate) + workspace-goals/personal-goals to keep the pulse aligned with goals and tracks.",
+    `Persona track: ${args.personaTrack}.`,
+    `Persona submode: ${args.personaSubmode}.`,
+    args.allowedSkillRefs.length
+      ? `Prefer these skill frames when relevant: ${args.allowedSkillRefs.join(", ")}.`
+      : "No skill frames available; rely on internal context and direct prioritization.",
     "Keep it direct and actionable.",
     "",
     `Company/workspace: ${args.workspaceName}`,
@@ -180,6 +273,9 @@ function buildPulsePrompt(args: {
       : "",
     "- INTERNAL cards can have 0 citations, but should reference source item URLs when possible.",
     "- Each card body should be 2-4 lines.",
+    "- Include insightMeta for each card. Scores are 0..1.",
+    "- insightMeta.personaTrack should usually match the provided persona track unless evidence strongly suggests otherwise.",
+    "- If any OPEN tasks have been untouched for >24h (see tasks.jsonl.updatedAt), include at least one INTERNAL card focused on unblocking that stale task quickly.",
     "",
   ].join("\n");
 }
@@ -199,6 +295,12 @@ export async function generatePulseCardsWithCodexExec(args: {
     departmentId?: string | null;
   }>;
   personalProfile?: {
+    fullName?: string | null;
+    location?: string | null;
+    company?: string | null;
+    companyUrl?: string | null;
+    linkedinUrl?: string | null;
+    websiteUrl?: string | null;
     jobTitle?: string | null;
     about?: string | null;
   } | null;
@@ -234,22 +336,10 @@ export async function generatePulseCardsWithCodexExec(args: {
   model?: string;
   reasoningEffort?: "minimal" | "low" | "medium" | "high" | "xhigh";
   includeWebResearch?: boolean;
-}): Promise<{
-  output: CodexPulseOutput;
-  departmentNameToId: Map<string, string>;
-  estimate: {
-    promptBytes: number;
-    contextBytes: number;
-    approxInputTokens: number;
-    approxOutputTokens: number;
-    durationMs: number;
-    usage?: {
-      inputTokens: number;
-      cachedInputTokens: number;
-      outputTokens: number;
-    };
-  };
-}> {
+  personaTrack?: PersonaTrack;
+  personaSubmode?: PersonaSubmode;
+  allowedSkillRefs?: string[];
+}): Promise<PulseGenerationResult> {
   const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "starbeam-codex-run-"));
   const schemaPath = path.join(tmp, "pulse.schema.json");
   const outputPath = path.join(tmp, "pulse.output.json");
@@ -283,6 +373,9 @@ export async function generatePulseCardsWithCodexExec(args: {
         workspaceName: args.workspace.name,
         departmentNames,
         includeWebResearch,
+        personaTrack: args.personaTrack ?? "UNKNOWN",
+        personaSubmode: args.personaSubmode ?? "UNKNOWN",
+        allowedSkillRefs: args.allowedSkillRefs ?? [],
       });
 
       const promptBytes = Buffer.byteLength(prompt, "utf8");
@@ -310,14 +403,35 @@ export async function generatePulseCardsWithCodexExec(args: {
       const text = await fs.readFile(outputPath, "utf8");
       const parsedJson = JSON.parse(text) as unknown;
       const output = CodexPulseOutputSchema.parse(parsedJson);
+      const normalizedCards = output.cards.map((card) => ({
+        ...card,
+        insightMeta: normalizeInsightMeta({
+          personaTrack:
+            card.insightMeta?.personaTrack ?? args.personaTrack ?? "UNKNOWN",
+          personaSubmode:
+            card.insightMeta?.personaSubmode ??
+            args.personaSubmode ??
+            "UNKNOWN",
+          skillRef: card.insightMeta?.skillRef,
+          skillOrigin: card.insightMeta?.skillOrigin,
+          expectedHelpfulLift: card.insightMeta?.expectedHelpfulLift,
+          expectedActionLift: card.insightMeta?.expectedActionLift,
+          relevanceScore: card.insightMeta?.relevanceScore,
+          actionabilityScore: card.insightMeta?.actionabilityScore,
+          confidenceScore: card.insightMeta?.confidenceScore,
+          noveltyScore: card.insightMeta?.noveltyScore,
+        }),
+      }));
 
       const approxInputTokens = Math.ceil((promptBytes + contextBytes) / 4);
       const approxOutputTokens = Math.ceil(Buffer.byteLength(text, "utf8") / 4);
 
       return {
-        output,
+        output: { ...output, cards: normalizedCards },
         departmentNameToId,
         estimate: {
+          provider: "local_codex",
+          attemptCount: res.attemptCount,
           promptBytes,
           contextBytes,
           approxInputTokens,

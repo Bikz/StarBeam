@@ -11,6 +11,22 @@ import { IconArrowUpRight, IconCheck, IconCopy } from "@/components/sb-icons";
 import { useToast } from "@/components/toast-provider";
 
 type Citation = { url: string; title?: string };
+type PersonaTrack =
+  | "SOLO_FOUNDER"
+  | "SMALL_TEAM_5_10"
+  | "GROWTH_TEAM_11_50"
+  | "UNKNOWN";
+type InsightMeta = {
+  personaTrack: PersonaTrack;
+  personaSubmode?: string;
+  skillRef?: string;
+  skillOrigin?: "CURATED" | "PARTNER" | "DISCOVERED";
+  expectedHelpfulLift?: number;
+  relevanceScore?: number;
+  actionabilityScore?: number;
+  confidenceScore?: number;
+  noveltyScore?: number;
+};
 
 type PulseCard = {
   id: string;
@@ -24,11 +40,44 @@ type PulseCard = {
   createdAt: string;
 };
 
+type InsightInteractionPayload = {
+  workspaceSlug: string;
+  editionDateIso: string;
+  cardId: string;
+  interactionType:
+    | "VIEWED"
+    | "SOURCE_OPENED"
+    | "COPIED"
+    | "MARKED_DONE"
+    | "HELPFUL"
+    | "NOT_HELPFUL";
+  actionState?: "OPEN" | "DONE" | "DISMISSED";
+  platform?: "web" | "macos";
+  reasonCode?: string | null;
+  metadata?: unknown;
+};
+
+const downvoteReasons = [
+  { code: "NOT_RELEVANT", label: "Not relevant" },
+  { code: "TOO_GENERIC", label: "Too generic" },
+  { code: "NOT_ACTIONABLE", label: "Not actionable" },
+  { code: "LOW_CONFIDENCE", label: "Low confidence" },
+  { code: "WRONG_TIMING", label: "Wrong timing" },
+  { code: "OTHER", label: "Other" },
+] as const;
+
 function kindLabel(kind: string): string {
   if (kind === "ANNOUNCEMENT") return "Announcement";
   if (kind === "GOAL") return "Goal";
   if (kind === "WEB_RESEARCH") return "Web research";
   return "Internal";
+}
+
+function personaLabel(track: PersonaTrack): string {
+  if (track === "SOLO_FOUNDER") return "solo founder";
+  if (track === "SMALL_TEAM_5_10") return "small team (5-10)";
+  if (track === "GROWTH_TEAM_11_50") return "growth team (11-50)";
+  return "unknown";
 }
 
 function extractCitations(sources: unknown): Citation[] {
@@ -46,6 +95,84 @@ function extractCitations(sources: unknown): Citation[] {
       return { url, ...(title ? { title } : {}) } satisfies Citation;
     })
     .filter((c): c is Citation => c !== null);
+}
+
+function extractInsightMeta(sources: unknown): InsightMeta | null {
+  if (!sources || typeof sources !== "object") return null;
+  const obj = sources as Record<string, unknown>;
+  const meta = obj.insightMeta;
+  if (!meta || typeof meta !== "object") return null;
+
+  const m = meta as Record<string, unknown>;
+  const personaTrack = m.personaTrack;
+  if (
+    personaTrack !== "SOLO_FOUNDER" &&
+    personaTrack !== "SMALL_TEAM_5_10" &&
+    personaTrack !== "GROWTH_TEAM_11_50" &&
+    personaTrack !== "UNKNOWN"
+  ) {
+    return null;
+  }
+
+  const skillRef = typeof m.skillRef === "string" ? m.skillRef : undefined;
+  const personaSubmode =
+    typeof m.personaSubmode === "string" ? m.personaSubmode : undefined;
+  const skillOrigin =
+    m.skillOrigin === "CURATED" ||
+    m.skillOrigin === "PARTNER" ||
+    m.skillOrigin === "DISCOVERED"
+      ? m.skillOrigin
+      : undefined;
+  const asNum = (value: unknown) =>
+    typeof value === "number" && Number.isFinite(value) ? value : undefined;
+
+  return {
+    personaTrack,
+    ...(personaSubmode ? { personaSubmode } : {}),
+    ...(skillRef ? { skillRef } : {}),
+    ...(skillOrigin ? { skillOrigin } : {}),
+    expectedHelpfulLift: asNum(m.expectedHelpfulLift),
+    relevanceScore: asNum(m.relevanceScore),
+    actionabilityScore: asNum(m.actionabilityScore),
+    confidenceScore: asNum(m.confidenceScore),
+    noveltyScore: asNum(m.noveltyScore),
+  };
+}
+
+async function postInsightInteraction(payload: InsightInteractionPayload) {
+  try {
+    const res = await fetch("/api/v1/insights/interactions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...payload,
+        platform: payload.platform ?? "web",
+      }),
+    });
+    if (!res.ok && res.status !== 404) {
+      // non-fatal; telemetry should never break core UX.
+      // intentionally ignored
+    }
+  } catch {
+    // non-fatal; telemetry should never break core UX.
+  }
+}
+
+async function postInsightActionState(payload: {
+  workspaceSlug: string;
+  editionDateIso: string;
+  cardId: string;
+  state: "OPEN" | "DONE" | "DISMISSED";
+  metadata?: unknown;
+}) {
+  const res = await fetch("/api/v1/insights/actions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok && res.status !== 404) {
+    throw new Error("Could not update action state.");
+  }
 }
 
 function hostnameFor(url: string): string {
@@ -131,10 +258,12 @@ function Favicon({ domain }: { domain: string }) {
 export default function PulseReader({
   workspaceSlug,
   edition,
+  actionStateServerEnabled,
   cards,
 }: {
   workspaceSlug: string;
   edition: { editionDateIso: string; status: string };
+  actionStateServerEnabled?: boolean;
   cards: PulseCard[];
 }) {
   const editionDate = useMemo(
@@ -145,20 +274,50 @@ export default function PulseReader({
     () => storageKey(workspaceSlug, edition.editionDateIso),
     [workspaceSlug, edition.editionDateIso],
   );
+  const useServerActionState = Boolean(actionStateServerEnabled);
 
-  const [done, setDone] = useState<Set<string>>(() => new Set());
+  const [done, setDone] = useState<Set<string>>(() =>
+    useServerActionState ? new Set() : readDoneSet(doneKey),
+  );
   const [feedback, setFeedback] = useState<Record<string, "up" | "down">>(
     () => ({}),
   );
   const [feedbackBusy, setFeedbackBusy] = useState<Record<string, boolean>>(
     () => ({}),
   );
+  const [downReasonDraft, setDownReasonDraft] = useState<
+    Record<string, string>
+  >(() => ({}));
+  const [betterHintDraft, setBetterHintDraft] = useState<
+    Record<string, string>
+  >(() => ({}));
   const { push } = useToast();
   const didTrackView = useRef(false);
 
   useEffect(() => {
-    setDone(readDoneSet(doneKey));
-  }, [doneKey]);
+    if (!useServerActionState) {
+      queueMicrotask(() => setDone(readDoneSet(doneKey)));
+      return;
+    }
+    const qs = new URLSearchParams({
+      workspaceSlug,
+      editionDateIso: edition.editionDateIso,
+    });
+    void fetch(`/api/v1/insights/actions?${qs.toString()}`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    })
+      .then(async (res) => {
+        if (!res.ok) return;
+        const data = (await res.json()) as { doneCardIds?: string[] };
+        const ids = Array.isArray(data.doneCardIds) ? data.doneCardIds : [];
+        setDone(new Set(ids));
+      })
+      .catch(() => {
+        // fallback to local cache when server state is unavailable
+        setDone(readDoneSet(doneKey));
+      });
+  }, [doneKey, edition.editionDateIso, useServerActionState, workspaceSlug]);
 
   useEffect(() => {
     if (didTrackView.current) return;
@@ -168,7 +327,18 @@ export default function PulseReader({
       editionDateIso: edition.editionDateIso,
       cardCount: cards.length,
     });
-  }, [workspaceSlug, edition.editionDateIso, cards.length]);
+    void Promise.all(
+      cards.map((card) =>
+        postInsightInteraction({
+          workspaceSlug,
+          editionDateIso: edition.editionDateIso,
+          cardId: card.id,
+          interactionType: "VIEWED",
+          metadata: { kind: card.kind },
+        }),
+      ),
+    );
+  }, [workspaceSlug, edition.editionDateIso, cards]);
 
   const now = new Date();
   const rel = relativeDay(editionDate, now);
@@ -191,9 +361,12 @@ export default function PulseReader({
         <div className="mt-6 grid gap-3">
           {cards.map((c) => {
             const citations = extractCitations(c.sources);
+            const insightMeta = extractInsightMeta(c.sources);
             const isDone = done.has(c.id);
             const feedbackValue = feedback[c.id] ?? null;
             const busy = feedbackBusy[c.id] ?? false;
+            const downReasonValue = downReasonDraft[c.id] ?? "";
+            const betterHintValue = betterHintDraft[c.id] ?? "";
 
             const copyText = [
               c.title,
@@ -223,6 +396,34 @@ export default function PulseReader({
                     <div className="mt-1 text-xs text-[color:var(--sb-muted)]">
                       {kindLabel(c.kind)} · priority {c.priority}
                     </div>
+                    {insightMeta ? (
+                      <div className="mt-1 text-[11px] text-[color:var(--sb-muted)]">
+                        why this for you:{" "}
+                        <span className="font-semibold text-[color:var(--sb-fg)]">
+                          {personaLabel(insightMeta.personaTrack)}
+                        </span>
+                        {insightMeta.skillRef ? (
+                          <>
+                            {" "}
+                            · frame{" "}
+                            <span className="font-semibold text-[color:var(--sb-fg)]">
+                              {insightMeta.skillRef}
+                            </span>
+                          </>
+                        ) : null}
+                        {insightMeta.personaSubmode ? (
+                          <>
+                            {" "}
+                            · mode{" "}
+                            <span className="font-semibold text-[color:var(--sb-fg)]">
+                              {insightMeta.personaSubmode
+                                .toLowerCase()
+                                .replaceAll("_", " ")}
+                            </span>
+                          </>
+                        ) : null}
+                      </div>
+                    ) : null}
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -235,9 +436,16 @@ export default function PulseReader({
                       onClick={() => {
                         void navigator.clipboard
                           .writeText(copyText)
-                          .then(() =>
-                            push({ kind: "success", title: "Copied" }),
-                          )
+                          .then(() => {
+                            push({ kind: "success", title: "Copied" });
+                            return postInsightInteraction({
+                              workspaceSlug,
+                              editionDateIso: edition.editionDateIso,
+                              cardId: c.id,
+                              interactionType: "COPIED",
+                              metadata: { kind: c.kind },
+                            });
+                          })
                           .catch(() =>
                             push({
                               kind: "error",
@@ -258,6 +466,13 @@ export default function PulseReader({
                         onClick={() => {
                           const url = citations[0]?.url;
                           if (!url) return;
+                          void postInsightInteraction({
+                            workspaceSlug,
+                            editionDateIso: edition.editionDateIso,
+                            cardId: c.id,
+                            interactionType: "SOURCE_OPENED",
+                            metadata: { kind: c.kind, url },
+                          });
                           window.open(url, "_blank", "noreferrer");
                         }}
                       >
@@ -275,13 +490,46 @@ export default function PulseReader({
                       aria-label={isDone ? "Mark not done" : "Mark done"}
                       title={isDone ? "Undo" : "Done"}
                       onClick={() => {
+                        const nextDone = !isDone;
                         setDone((prev) => {
                           const next = new Set(prev);
                           if (next.has(c.id)) next.delete(c.id);
                           else next.add(c.id);
-                          writeDoneSet(doneKey, next);
+                          if (!useServerActionState) {
+                            writeDoneSet(doneKey, next);
+                          }
                           return next;
                         });
+                        if (useServerActionState) {
+                          void postInsightActionState({
+                            workspaceSlug,
+                            editionDateIso: edition.editionDateIso,
+                            cardId: c.id,
+                            state: nextDone ? "DONE" : "OPEN",
+                            metadata: { kind: c.kind, platform: "web" },
+                          }).catch((err) => {
+                            const msg =
+                              err instanceof Error
+                                ? err.message
+                                : "Could not update action state.";
+                            push({
+                              kind: "error",
+                              title: "State update failed",
+                              message: msg,
+                            });
+                          });
+                        }
+                        if (nextDone) {
+                          void postInsightInteraction({
+                            workspaceSlug,
+                            editionDateIso: edition.editionDateIso,
+                            cardId: c.id,
+                            interactionType: "MARKED_DONE",
+                            actionState: "DONE",
+                            platform: "web",
+                            metadata: { kind: c.kind },
+                          });
+                        }
                       }}
                     >
                       <IconCheck className="h-4 w-4" />
@@ -332,6 +580,15 @@ export default function PulseReader({
                             rel="noreferrer"
                             className="sb-card-inset px-3 py-2 text-sm hover:underline"
                             title={s.url}
+                            onClick={() => {
+                              void postInsightInteraction({
+                                workspaceSlug,
+                                editionDateIso: edition.editionDateIso,
+                                cardId: c.id,
+                                interactionType: "SOURCE_OPENED",
+                                metadata: { kind: c.kind, url: s.url },
+                              });
+                            }}
                           >
                             <div className="flex items-center gap-2 min-w-0">
                               <Favicon domain={domain} />
@@ -414,6 +671,8 @@ export default function PulseReader({
                       onClick={() => {
                         if (busy || feedbackValue) return;
                         setFeedbackBusy((prev) => ({ ...prev, [c.id]: true }));
+                        const reasonCode = downReasonValue.trim() || undefined;
+                        const betterHint = betterHintValue.trim() || undefined;
                         void submitPulseCardFeedback({
                           workspaceSlug,
                           editionDateIso: edition.editionDateIso,
@@ -421,6 +680,8 @@ export default function PulseReader({
                           cardKind: c.kind,
                           cardTitle: c.title,
                           rating: "down",
+                          ...(reasonCode ? { reasonCode } : {}),
+                          ...(betterHint ? { betterHint } : {}),
                         })
                           .then(() => {
                             setFeedback((prev) => ({
@@ -458,6 +719,49 @@ export default function PulseReader({
                     ) : null}
                   </div>
                 </div>
+                {!feedbackValue ? (
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                    <label className="grid gap-1 text-xs text-[color:var(--sb-muted)]">
+                      <span>Not helpful reason (optional)</span>
+                      <select
+                        className="h-9 rounded-md border border-black/10 bg-transparent px-2 text-xs text-[color:var(--sb-fg)] dark:border-white/15"
+                        value={downReasonValue}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          setDownReasonDraft((prev) => ({
+                            ...prev,
+                            [c.id]: value,
+                          }));
+                        }}
+                      >
+                        <option value="">Select reason</option>
+                        {downvoteReasons.map((reason) => (
+                          <option key={reason.code} value={reason.code}>
+                            {reason.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="grid gap-1 text-xs text-[color:var(--sb-muted)]">
+                      <span>What would be better? (optional)</span>
+                      <input
+                        type="text"
+                        value={betterHintValue}
+                        maxLength={280}
+                        className="h-9 rounded-md border border-black/10 bg-transparent px-2 text-xs text-[color:var(--sb-fg)] placeholder:text-[color:var(--sb-muted)] dark:border-white/15"
+                        placeholder="Be specific (e.g., add owner + next step)."
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          setBetterHintDraft((prev) => ({
+                            ...prev,
+                            [c.id]: value,
+                          }));
+                        }}
+                      />
+                    </label>
+                  </div>
+                ) : null}
               </article>
             );
           })}

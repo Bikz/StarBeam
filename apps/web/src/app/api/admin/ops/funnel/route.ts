@@ -54,13 +54,19 @@ export async function GET(request: Request) {
     url.searchParams.get("programStatus"),
   );
 
-  const summary = await getOpsFunnelSummary({ windowDays, programStatusFilter });
+  const summary = await getOpsFunnelSummary({
+    windowDays,
+    programStatusFilter,
+  });
 
   return noStoreJson({
     ok: true,
     generatedAt: summary.generatedAt,
     windowDays: summary.windowDays,
     activation: summary.activation,
+    chainCoveragePct: summary.chainCoveragePct,
+    insightQuality: summary.insightQuality,
+    activationBacklog: summary.activationBacklog,
     retention: summary.retention,
     designPartners: summary.designPartners,
     byWorkspace: summary.byWorkspace,

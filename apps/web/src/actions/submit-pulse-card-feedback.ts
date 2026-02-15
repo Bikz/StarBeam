@@ -6,6 +6,8 @@ import { getServerSession } from "next-auth";
 import { z } from "zod";
 
 import { authOptions } from "@/lib/auth";
+import { isInsightFeedbackEnabled } from "@/lib/flags";
+import { normalizeInsightReasonCode } from "@/lib/insightInteractions";
 import { consumeRateLimit } from "@/lib/rateLimit";
 
 const Schema = z.object({
@@ -15,6 +17,8 @@ const Schema = z.object({
   cardKind: z.string().min(1).max(64),
   cardTitle: z.string().min(0).max(300),
   rating: z.enum(["up", "down"]),
+  reasonCode: z.string().min(1).max(120).optional(),
+  betterHint: z.string().min(1).max(600).optional(),
 });
 
 export async function submitPulseCardFeedback(input: z.infer<typeof Schema>) {
@@ -41,6 +45,7 @@ export async function submitPulseCardFeedback(input: z.infer<typeof Schema>) {
 
   const headerStore = await headers();
   const ua = headerStore.get("user-agent") ?? "";
+  const reasonCode = normalizeInsightReasonCode(parsed.data.reasonCode);
 
   const payload = {
     type: "pulse_card_feedback",
@@ -51,6 +56,8 @@ export async function submitPulseCardFeedback(input: z.infer<typeof Schema>) {
     cardKind: parsed.data.cardKind,
     cardTitle: parsed.data.cardTitle,
     rating: parsed.data.rating,
+    reasonCode,
+    betterHint: parsed.data.betterHint ?? null,
     userId: session.user.id,
     email: session.user.email ?? null,
     createdAtIso: new Date().toISOString(),
@@ -66,4 +73,27 @@ export async function submitPulseCardFeedback(input: z.infer<typeof Schema>) {
       userAgent: ua,
     },
   });
+
+  if (isInsightFeedbackEnabled()) {
+    const editionDate = new Date(parsed.data.editionDateIso);
+    const hasEditionDate = Number.isFinite(editionDate.getTime());
+    await prisma.insightInteraction.create({
+      data: {
+        workspaceId: membership.workspaceId,
+        userId: session.user.id,
+        ...(hasEditionDate ? { editionDate } : {}),
+        cardId: parsed.data.cardId,
+        interactionType:
+          parsed.data.rating === "up" ? "HELPFUL" : "NOT_HELPFUL",
+        reasonCode,
+        metadata: {
+          cardKind: parsed.data.cardKind,
+          cardTitle: parsed.data.cardTitle,
+          ...(parsed.data.betterHint
+            ? { betterHint: parsed.data.betterHint }
+            : {}),
+        },
+      },
+    });
+  }
 }

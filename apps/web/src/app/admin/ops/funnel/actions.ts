@@ -8,6 +8,11 @@ import { prisma } from "@starbeam/db";
 
 import { isAdminEmail } from "@/lib/admin";
 import { authOptions } from "@/lib/auth";
+import { isOpsManualSkillControlEnabled } from "@/lib/flags";
+import {
+  parseDisabledSkillRefsInput,
+  saveInsightManualControls,
+} from "@/lib/insightManualControls";
 
 const ProgramTypeSchema = z.enum(["NONE", "DESIGN_PARTNER"]);
 const ProgramStatusSchema = z.enum(["NONE", "PROSPECT", "ACTIVE", "CHURNED"]);
@@ -19,6 +24,13 @@ const UpdateWorkspaceProgramSchema = z.object({
   programStartedAt: z.string().trim().optional(),
   programEndedAt: z.string().trim().optional(),
   programNotes: z.string().max(4000).optional(),
+});
+
+const UpdateManualSkillControlsSchema = z.object({
+  discoveredSkillExecutionEnabled: z
+    .enum(["on", "off", "true", "false", "1", "0"])
+    .optional(),
+  disabledSkillRefs: z.string().optional(),
 });
 
 function parseDateOnly(value: string | undefined): Date | null {
@@ -71,6 +83,44 @@ export async function updateWorkspaceProgram(formData: FormData) {
           ? (parsed.data.programNotes ?? "").trim()
           : "",
     },
+  });
+
+  redirect("/admin/ops/funnel?updated=1");
+}
+
+export async function updateInsightManualControls(formData: FormData) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.email || !isAdminEmail(session.user.email)) {
+    redirect("/login");
+  }
+  if (!isOpsManualSkillControlEnabled()) {
+    redirect("/admin/ops/funnel?error=manual_controls_disabled");
+  }
+
+  const parsed = UpdateManualSkillControlsSchema.safeParse({
+    discoveredSkillExecutionEnabled: (() => {
+      const raw = String(
+        formData.get("discoveredSkillExecutionEnabled") ?? "",
+      ).trim();
+      return raw.length ? raw : undefined;
+    })(),
+    disabledSkillRefs: String(formData.get("disabledSkillRefs") ?? ""),
+  });
+  if (!parsed.success) {
+    redirect("/admin/ops/funnel?error=invalid_manual_controls");
+  }
+
+  const discoveredSkillExecutionEnabled =
+    parsed.data.discoveredSkillExecutionEnabled === "on" ||
+    parsed.data.discoveredSkillExecutionEnabled === "true" ||
+    parsed.data.discoveredSkillExecutionEnabled === "1";
+  const disabledSkillRefs = parseDisabledSkillRefsInput(
+    parsed.data.disabledSkillRefs ?? "",
+  );
+
+  await saveInsightManualControls({
+    discoveredSkillExecutionEnabled,
+    disabledSkillRefs,
   });
 
   redirect("/admin/ops/funnel?updated=1");

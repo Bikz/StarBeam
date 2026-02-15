@@ -77,6 +77,19 @@ struct Overview: Codable, Equatable {
     var title: String
   }
 
+  struct ActivationHints: Codable, Equatable {
+    var state: String
+    var nextAction: String
+    var reason: String?
+  }
+
+  struct PulseMeta: Codable, Equatable {
+    var personaTrack: String
+    var personaSubmode: String?
+    var recommendedFocus: String
+    var whyThisToday: String?
+  }
+
   var workspace: Workspace
   var bumpMessage: String?
   var onboarding: Onboarding?
@@ -84,7 +97,10 @@ struct Overview: Codable, Equatable {
   var focus: [FocusItem]
   var completedFocus: [FocusItem]?
   var calendar: [CalendarItem]
+  var editionDate: Date?
   var generatedAt: Date?
+  var activationHints: ActivationHints? = nil
+  var pulseMeta: PulseMeta? = nil
 
   var onboardingMode: Onboarding.Mode { onboarding?.mode ?? .daily }
   var onboardingChecklist: [Onboarding.ChecklistItem] { onboarding?.checklist ?? [] }

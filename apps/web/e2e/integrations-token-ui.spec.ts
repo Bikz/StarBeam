@@ -19,28 +19,38 @@ test("integrations token forms: gated CTA, helper copy, and token links", async 
   await gotoWithRetry(page, `/w/${slug}/integrations`);
 
   const githubCard = page.locator("#github");
-  const githubButton = githubCard.getByRole("button", { name: "Connect GitHub" });
+  const githubButton = githubCard.getByRole("button", {
+    name: "Connect GitHub",
+  });
   const githubInput = githubCard.locator('input[name="token"]');
   await expect(githubButton).toBeDisabled();
-  await expect(githubCard.getByRole("link", { name: "Create token" })).toHaveAttribute(
+  await expect(
+    githubCard.getByRole("link", { name: "Create token" }),
+  ).toHaveAttribute(
     "href",
     "https://github.com/settings/personal-access-tokens/new",
   );
-  await expect(githubCard.getByText("We verify the token before saving it.")).toBeVisible();
+  await expect(
+    githubCard.getByText("We verify the token before saving it."),
+  ).toBeVisible();
   await githubInput.fill("ghp_test_token");
   await expect(githubButton).toBeEnabled();
   await githubInput.fill("   ");
   await expect(githubButton).toBeDisabled();
 
   const linearCard = page.locator("#linear");
-  const linearButton = linearCard.getByRole("button", { name: "Connect Linear" });
+  const linearButton = linearCard.getByRole("button", {
+    name: "Connect Linear",
+  });
   const linearInput = linearCard.locator('input[name="token"]');
   await expect(linearButton).toBeDisabled();
   await expect(
     linearCard.getByRole("link", { name: "Create API key" }),
   ).toHaveAttribute("href", "https://linear.app/settings/account/security");
   await expect(
-    linearCard.getByText("Starbeam reads your assigned issues and recent updates"),
+    linearCard.getByText(
+      "Starbeam reads your assigned issues and recent updates",
+    ),
   ).toBeVisible();
   await linearInput.fill("lin_api_test");
   await expect(linearButton).toBeEnabled();
@@ -48,16 +58,21 @@ test("integrations token forms: gated CTA, helper copy, and token links", async 
   await expect(linearButton).toBeDisabled();
 
   const notionCard = page.locator("#notion");
-  const notionButton = notionCard.getByRole("button", { name: "Connect Notion" });
+  const notionButton = notionCard.getByRole("button", {
+    name: "Connect Notion",
+  });
   const notionInput = notionCard.locator('input[name="token"]');
   await expect(notionButton).toBeDisabled();
   await expect(
     notionCard.getByRole("link", { name: "Create integration" }),
   ).toHaveAttribute("href", "https://www.notion.so/my-integrations");
   await expect(
-    notionCard.getByText("share the pages and databases with your integration", {
-      exact: false,
-    }),
+    notionCard.getByText(
+      "share the pages and databases with your integration",
+      {
+        exact: false,
+      },
+    ),
   ).toBeVisible();
   await notionInput.fill("secret_test");
   await expect(notionButton).toBeEnabled();
@@ -104,7 +119,9 @@ test("integrations GitHub scope: selected without repos shows inline error and s
   await expect(connectionRow.locator(".sb-alert")).toContainText(
     "Add at least one repo",
   );
-  await expect(page).toHaveURL(new RegExp(`/w/${slug}/integrations(?:\\?.*)?$`));
+  await expect(page).toHaveURL(
+    new RegExp(`/w/${slug}/integrations(?:\\?.*)?$`),
+  );
   await expect(page.getByText("Something went wrong")).toHaveCount(0);
 
   const afterResp = await request.get(

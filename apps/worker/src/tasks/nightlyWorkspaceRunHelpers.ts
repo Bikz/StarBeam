@@ -1,13 +1,18 @@
 import type { Prisma } from "@starbeam/db";
 import { prisma } from "@starbeam/db";
 
+import type { PersonaSubmode, PersonaTrack } from "../lib/insights/persona";
 import { persistCodexMemory } from "../lib/codex/memory";
-import { generatePulseCardsWithCodexExec } from "../lib/codex/pulse";
+import {
+  generatePulseCardsWithCodexExec,
+  type PulseGenerationResult,
+} from "../lib/codex/pulse";
 import {
   generateFocusTasks,
   isGoogleAuthRevoked,
   syncGoogleConnection,
 } from "../lib/google/sync";
+import { generatePulseCardsWithHostedShell } from "../lib/openai/hostedShellInsights";
 import {
   isAuthRevoked as isGitHubAuthRevoked,
   syncGitHubConnection,
@@ -23,6 +28,8 @@ import {
 import {
   buildDepartmentWebResearchPrompt,
   generateWebInsights,
+  type PromptCacheRetention,
+  type WebInsightUsage,
 } from "../lib/webResearch";
 
 type WorkspaceGoalSummary = {
@@ -42,6 +49,12 @@ type PersonalGoalSummary = {
 };
 
 type PersonalProfileSummary = {
+  fullName: string | null;
+  location: string | null;
+  company: string | null;
+  companyUrl: string | null;
+  linkedinUrl: string | null;
+  websiteUrl: string | null;
   jobTitle: string | null;
   about: string | null;
 } | null;
@@ -74,11 +87,20 @@ type SourceItemSummary = {
 
 export function toJsonCitations(
   citations: Array<{ url: string; title?: string }>,
+  insightMeta?: {
+    personaTrack: PersonaTrack;
+    skillRef?: string;
+    relevanceScore: number;
+    actionabilityScore: number;
+    confidenceScore: number;
+    noveltyScore: number;
+  },
 ): Prisma.InputJsonValue {
   return {
     citations: citations
       .map((c) => (c.title ? { url: c.url, title: c.title } : { url: c.url }))
       .slice(0, 6),
+    ...(insightMeta ? { insightMeta } : {}),
   };
 }
 
@@ -88,11 +110,19 @@ export function priorityForGoal(priority: string): number {
   return 860;
 }
 
+function stablePromptCacheKey(args: {
+  workspaceId: string;
+  departmentId: string;
+  model: string;
+}): string {
+  return `starbeam:web-research:v1:${args.workspaceId}:${args.departmentId}:${args.model}`;
+}
+
 export async function generateLegacyDepartmentWebResearchCards(args: {
   enabled: boolean;
   openaiApiKey: string;
   model: string;
-  workspace: { name: string };
+  workspace: { id: string; name: string };
   profile: {
     websiteUrl: string | null;
     description: string | null;
@@ -110,6 +140,8 @@ export async function generateLegacyDepartmentWebResearchCards(args: {
     promptTemplate: string;
     memberships: Array<{ userId: string }>;
   }>;
+  promptCacheRetention?: PromptCacheRetention;
+  onUsage?: (usage: WebInsightUsage) => void;
   onPartialError: (message: string) => void;
 }): Promise<
   Map<
@@ -163,11 +195,18 @@ export async function generateLegacyDepartmentWebResearchCards(args: {
     });
 
     try {
-      const { cards } = await generateWebInsights({
+      const { cards, usage } = await generateWebInsights({
         openaiApiKey: args.openaiApiKey,
         model: args.model,
         input: prompt,
+        promptCacheKey: stablePromptCacheKey({
+          workspaceId: args.workspace.id,
+          departmentId: dept.id,
+          model: args.model,
+        }),
+        promptCacheRetention: args.promptCacheRetention,
       });
+      if (usage && args.onUsage) args.onUsage(usage);
 
       const stored = cards.map((c, idx) => ({
         kind: "WEB_RESEARCH" as const,
@@ -220,11 +259,15 @@ export async function syncUserConnectorsAndMaybeCodex(args: {
   codexModel: string;
   codexReasoningEffort: "minimal" | "low" | "medium" | "high" | "xhigh";
   codexWebSearchEnabled: boolean;
+  openaiHostedShellEnabled: boolean;
+  openaiApiKey: string;
+  compactionEnabled: boolean;
+  personaTrack: PersonaTrack;
+  personaSubmode: PersonaSubmode;
+  allowedSkillRefs: string[];
   editionDate: Date;
   onPartialError: (message: string) => void;
-}): Promise<Awaited<
-  ReturnType<typeof generatePulseCardsWithCodexExec>
-> | null> {
+}): Promise<PulseGenerationResult | null> {
   for (const c of args.googleConnections) {
     try {
       await prisma.googleConnection
@@ -338,6 +381,45 @@ export async function syncUserConnectorsAndMaybeCodex(args: {
     }
   }
 
+  if (args.openaiHostedShellEnabled && args.openaiApiKey) {
+    try {
+      const hosted = await generatePulseCardsWithHostedShell({
+        workspace: args.workspace,
+        profile: args.profile,
+        goals: args.goals,
+        personalProfile: args.personalProfile,
+        personalGoals: args.personalGoals,
+        tasks: args.tasks,
+        departments: args.departments,
+        model: process.env.STARB_HOSTED_SHELL_MODEL ?? "gpt-5.2-codex",
+        reasoningEffort: args.codexReasoningEffort,
+        personaTrack: args.personaTrack,
+        personaSubmode: args.personaSubmode,
+        allowedSkillRefs: args.allowedSkillRefs,
+        openaiApiKey: args.openaiApiKey,
+        compactionEnabled: args.compactionEnabled,
+      });
+
+      try {
+        await persistCodexMemory({
+          workspaceId: args.workspaceId,
+          userId: args.userId,
+          editionDate: args.editionDate,
+          baseMarkdown: hosted.output.memory.baseMarkdown,
+          dailyMarkdown: hosted.output.memory.dailyMarkdown,
+        });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        args.onPartialError(`Hosted memory persistence failed: ${msg}`);
+      }
+
+      return hosted;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      args.onPartialError(`Hosted shell pulse generation failed: ${msg}`);
+    }
+  }
+
   if (!args.codexAvailable) return null;
 
   try {
@@ -353,6 +435,9 @@ export async function syncUserConnectorsAndMaybeCodex(args: {
       model: args.codexModel,
       reasoningEffort: args.codexReasoningEffort,
       includeWebResearch: args.codexWebSearchEnabled,
+      personaTrack: args.personaTrack,
+      personaSubmode: args.personaSubmode,
+      allowedSkillRefs: args.allowedSkillRefs,
     });
 
     try {
@@ -431,7 +516,23 @@ export function buildDeterministicFallbackInternalCards(args: {
   };
 
   const openTasks = args.tasks.filter((task) => task.status === "OPEN");
-  for (const task of openTasks.slice(0, 3)) {
+  const now = Date.now();
+  const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+  const prioritizedOpenTasks = openTasks.slice().sort((a, b) => {
+    const aAge = now - a.updatedAt.getTime();
+    const bAge = now - b.updatedAt.getTime();
+    const aOvernight = aAge >= ONE_DAY_MS;
+    const bOvernight = bAge >= ONE_DAY_MS;
+    if (aOvernight !== bOvernight) return aOvernight ? -1 : 1;
+
+    const ad = a.dueAt ? a.dueAt.getTime() : Number.POSITIVE_INFINITY;
+    const bd = b.dueAt ? b.dueAt.getTime() : Number.POSITIVE_INFINITY;
+    if (ad !== bd) return ad - bd;
+
+    return a.updatedAt.getTime() - b.updatedAt.getTime();
+  });
+
+  for (const task of prioritizedOpenTasks.slice(0, 3)) {
     const taskBody = compactText(task.body, 180);
     const sourceLabel = task.sourceItem
       ? ` from ${sourceKindLabel(task.sourceItem.type)}`
@@ -444,15 +545,26 @@ export function buildDeterministicFallbackInternalCards(args: {
     const due = task.dueAt
       ? `Due ${task.dueAt.toISOString().slice(0, 10)}.`
       : "";
+    const staleAgeMs = now - task.updatedAt.getTime();
+    const staleLabel =
+      staleAgeMs >= ONE_DAY_MS
+        ? `Open for ${Math.max(1, Math.floor(staleAgeMs / ONE_DAY_MS))}d.`
+        : "";
 
     pushCard({
       kind: "INTERNAL",
       title: `Task: ${compactText(task.title, 92)}`,
       body: taskBody
-        ? `${taskBody}\n${due}`.trim()
-        : `Open task${sourceLabel}. ${due}`.trim(),
-      why: "Open task in your queue.",
-      action: "Close it, snooze it, or break it into one concrete next step.",
+        ? `${taskBody}\n${staleLabel} ${due}`.trim()
+        : `Open task${sourceLabel}. ${staleLabel} ${due}`.trim(),
+      why:
+        staleAgeMs >= ONE_DAY_MS
+          ? "Open overnight task indicates execution friction."
+          : "Open task in your queue.",
+      action:
+        staleAgeMs >= ONE_DAY_MS
+          ? "Shrink scope to a 15-minute first step, remove one blocker, and schedule it now."
+          : "Close it, snooze it, or break it into one concrete next step.",
       sources,
       priority: 635 - out.length,
     });

@@ -16,7 +16,7 @@ function requireGoogleEnv(): { clientId: string } {
   return { clientId };
 }
 
-export async function startGoogleConnect(workspaceSlug: string) {
+export async function startGoogleConnect(workspaceSlug: string, next?: string) {
   const { userId, workspace } = await requireMembership(workspaceSlug);
 
   const { clientId } = requireGoogleEnv();
@@ -32,10 +32,12 @@ export async function startGoogleConnect(workspaceSlug: string) {
     "https://www.googleapis.com/auth/drive.readonly",
   ];
 
+  const nextPath = typeof next === "string" ? next.trim() : "";
   const state = mintSignedState({
     userId,
     workspaceId: workspace.id,
     workspaceSlug: workspace.slug,
+    ...(nextPath ? { next: nextPath } : {}),
     nonce: crypto.randomBytes(16).toString("hex"),
   });
 

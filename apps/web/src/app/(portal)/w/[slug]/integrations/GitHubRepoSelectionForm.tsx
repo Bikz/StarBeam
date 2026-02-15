@@ -24,7 +24,8 @@ export default function GitHubRepoSelectionForm({
   const [repos, setRepos] = useState(initialRepos.join("\n"));
 
   const bound = useMemo(
-    () => updateGitHubRepoSelectionAction.bind(null, workspaceSlug, connectionId),
+    () =>
+      updateGitHubRepoSelectionAction.bind(null, workspaceSlug, connectionId),
     [connectionId, workspaceSlug],
   );
   const [state, formAction, pending] = useActionState(
@@ -33,9 +34,12 @@ export default function GitHubRepoSelectionForm({
   );
 
   const repoError =
-    state?.ok === false && state.fieldErrors?.repos ? state.fieldErrors.repos : "";
+    state?.ok === false && state.fieldErrors?.repos
+      ? state.fieldErrors.repos
+      : "";
   const showSelectedWarning =
-    mode === "SELECTED" && repos.trim().split(/\s+/).filter(Boolean).length === 0;
+    mode === "SELECTED" &&
+    repos.trim().split(/\s+/).filter(Boolean).length === 0;
 
   return (
     <form action={formAction} className="grid w-full gap-2">
@@ -44,7 +48,9 @@ export default function GitHubRepoSelectionForm({
         <select
           name="mode"
           value={mode}
-          onChange={(e) => setMode(e.target.value === "ALL" ? "ALL" : "SELECTED")}
+          onChange={(e) =>
+            setMode(e.target.value === "ALL" ? "ALL" : "SELECTED")
+          }
           className="sb-select sb-select-compact"
           disabled={pending}
         >
@@ -54,7 +60,9 @@ export default function GitHubRepoSelectionForm({
       </div>
 
       <div className="grid gap-1">
-        <div className="text-[11px] font-extrabold sb-title">Selected repos</div>
+        <div className="text-[11px] font-extrabold sb-title">
+          Selected repos
+        </div>
         <textarea
           name="repos"
           value={repos}

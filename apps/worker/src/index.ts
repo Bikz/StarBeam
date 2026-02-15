@@ -17,6 +17,16 @@ function isTruthyEnv(value: string | undefined): boolean {
   return ["1", "true", "yes"].includes((value ?? "").trim().toLowerCase());
 }
 
+function defaultEnabledWhenUnset(
+  envName: string,
+  env: NodeJS.ProcessEnv = process.env,
+): boolean {
+  if (env[envName] === undefined) {
+    return (env.NODE_ENV ?? "development") !== "production";
+  }
+  return isTruthyEnv(env[envName]);
+}
+
 function pollIntervalMinsFromEnv(env: NodeJS.ProcessEnv = process.env): number {
   const raw = (env.STARB_CONNECTOR_POLL_INTERVAL_MINS ?? "").trim();
   const n = raw ? Number(raw) : NaN;
@@ -56,10 +66,22 @@ function dbHygieneGcCrontab(env: NodeJS.ProcessEnv = process.env): string {
   return "35 6 * * * db_hygiene_gc\n";
 }
 
+function retryFailedFirstPulsesCrontab(
+  env: NodeJS.ProcessEnv = process.env,
+): string {
+  const enabled = defaultEnabledWhenUnset(
+    "STARB_FIRST_PULSE_AUTO_RETRY_V1",
+    env,
+  );
+  if (!enabled) return "\n";
+  return "*/15 * * * * retry_failed_first_pulses\n";
+}
+
 function makeCrontab(env: NodeJS.ProcessEnv = process.env): string {
   return [
     connectorPollCrontab(env),
     dailyPulseCrontab(env),
+    retryFailedFirstPulsesCrontab(env),
     blobGcCrontab(env),
     dbHygieneGcCrontab(env),
   ].join("");
@@ -113,8 +135,34 @@ async function main() {
   );
   const connectorPollIntervalMins = pollIntervalMinsFromEnv();
   const codexExecEnabled = isTruthyEnv(process.env.STARB_CODEX_EXEC_ENABLED);
+  const firstPulseAutoRetryEnabled = defaultEnabledWhenUnset(
+    "STARB_FIRST_PULSE_AUTO_RETRY_V1",
+  );
+  const openAIHostedShellEnabled = defaultEnabledWhenUnset(
+    "STARB_OPENAI_HOSTED_SHELL_V1",
+  );
+  const skillDiscoveryShadowEnabled = defaultEnabledWhenUnset(
+    "STARB_SKILL_DISCOVERY_SHADOW_V1",
+  );
+  const compactionEnabled = defaultEnabledWhenUnset("STARB_COMPACTION_V1");
+  const personaSubmodesEnabled = defaultEnabledWhenUnset(
+    "STARB_PERSONA_SUBMODES_V1",
+  );
+  const discoveredSkillExecutionEnabled = defaultEnabledWhenUnset(
+    "STARB_DISCOVERED_SKILL_EXEC_V1",
+  );
+  const goalHelpfulnessEvalEnabled = defaultEnabledWhenUnset(
+    "STARB_GOAL_HELPFULNESS_EVAL_V1",
+  );
+  const hybridRankerEnabled = defaultEnabledWhenUnset("STARB_HYBRID_RANKER_V1");
+  const opsManualSkillControlEnabled = defaultEnabledWhenUnset(
+    "STARB_OPS_MANUAL_SKILL_CONTROL_V1",
+  );
   const codexApiKeyPresent = Boolean(
     (process.env.CODEX_API_KEY ?? process.env.OPENAI_API_KEY ?? "").trim(),
+  );
+  const hostedSkillMapPresent = Boolean(
+    (process.env.STARB_HOSTED_SHELL_SKILL_MAP_JSON ?? "").trim(),
   );
   const blobStoreConfigured = isBlobStoreConfigured();
   const blobVerifyEnabled =
@@ -133,9 +181,21 @@ async function main() {
       intervalMins: connectorPollIntervalMins,
       tickMins: 5,
     },
+    activation: {
+      firstPulseAutoRetryEnabled,
+    },
     codex: {
       execEnabled: codexExecEnabled,
       hasCodexKey: codexApiKeyPresent,
+      openAIHostedShellEnabled,
+      skillDiscoveryShadowEnabled,
+      compactionEnabled,
+      personaSubmodesEnabled,
+      discoveredSkillExecutionEnabled,
+      goalHelpfulnessEvalEnabled,
+      hybridRankerEnabled,
+      opsManualSkillControlEnabled,
+      hostedSkillMapPresent,
       hasBlobStore: blobStoreConfigured,
     },
     blobStore: { verifyOnBoot: blobVerifyEnabled },

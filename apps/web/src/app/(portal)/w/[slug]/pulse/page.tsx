@@ -5,14 +5,12 @@ import { sbButtonClass } from "@starbeam/shared";
 
 import { prisma } from "@starbeam/db";
 
-import { generateFirstPulseNow } from "@/actions/generate-first-pulse-now";
 import PulseReader from "@/components/pulse-reader";
 import PageHeader from "@/components/page-header";
-import { AdvancedOnly } from "@/components/ui-mode";
 import { authOptions } from "@/lib/auth";
+import { isActionStateServerEnabled, isOnboardingV2Enabled } from "@/lib/flags";
+import { decidePulseGate } from "@/lib/pulseOnboardingGating";
 import { siteOrigin } from "@/lib/siteOrigin";
-import { startGoogleConnect } from "@/app/(portal)/w/[slug]/integrations/googleActions";
-import { deriveFirstPulseActivation } from "@/lib/activationState";
 
 function formatEditionDate(d: Date): string {
   return new Intl.DateTimeFormat(undefined, {
@@ -29,15 +27,6 @@ function statusLabel(status: string): string {
 
 function statusPill(status: string) {
   return <div className="sb-pill">{statusLabel(status)}</div>;
-}
-
-function hasGoogleAuthEnv(): boolean {
-  return (
-    typeof process.env.GOOGLE_CLIENT_ID === "string" &&
-    process.env.GOOGLE_CLIENT_ID.length > 0 &&
-    typeof process.env.GOOGLE_CLIENT_SECRET === "string" &&
-    process.env.GOOGLE_CLIENT_SECRET.length > 0
-  );
 }
 
 function jobStatusLabel(status: string | null | undefined): string {
@@ -65,6 +54,8 @@ export default async function PulsePage({
   if (!membership) notFound();
 
   const base = `/w/${membership.workspace.slug}`;
+  const onboardingV2 = isOnboardingV2Enabled();
+  const actionStateServerEnabled = isActionStateServerEnabled();
 
   const editions = await prisma.pulseEdition.findMany({
     where: { workspaceId: membership.workspace.id, userId: session.user.id },
@@ -78,36 +69,31 @@ export default async function PulsePage({
     },
   });
 
-  if (editions.length === 0) {
-    const [googleCount, deviceTokens, bootstrapJobRun, autoFirstJobRun] =
-      await Promise.all([
-        prisma.googleConnection.count({
-          where: {
-            workspaceId: membership.workspace.id,
-            ownerUserId: session.user.id,
-            status: "CONNECTED",
-          },
-        }),
-        prisma.apiRefreshToken.count({
-          where: {
-            userId: session.user.id,
-            revokedAt: null,
-            expiresAt: { gt: new Date() },
-          },
-        }),
-        prisma.jobRun.findUnique({
-          where: {
-            id: `bootstrap:${membership.workspace.id}:${session.user.id}`,
-          },
-          select: { status: true, errorSummary: true },
-        }),
-        prisma.jobRun.findUnique({
-          where: {
-            id: `auto-first:${membership.workspace.id}:${session.user.id}`,
-          },
-          select: { status: true, errorSummary: true },
-        }),
-      ]);
+  const gate = decidePulseGate({
+    editionsCount: editions.length,
+    onboardingEnabled: onboardingV2,
+    onboardingCompletedAt: membership.onboardingCompletedAt,
+  });
+
+  if (gate.kind === "redirect_onboarding") {
+    redirect(`${base}/onboarding`);
+  }
+
+  if (gate.kind === "render_generating") {
+    const [bootstrapJobRun, autoFirstJobRun] = await Promise.all([
+      prisma.jobRun.findUnique({
+        where: {
+          id: `bootstrap:${membership.workspace.id}:${session.user.id}`,
+        },
+        select: { status: true, errorSummary: true },
+      }),
+      prisma.jobRun.findUnique({
+        where: {
+          id: `auto-first:${membership.workspace.id}:${session.user.id}`,
+        },
+        select: { status: true, errorSummary: true },
+      }),
+    ]);
 
     // Backward-compat: older deployments stored bootstrap/auto-first as workspace-scoped ids.
     const [bootstrapJobRunCompat, autoFirstJobRunCompat] = await Promise.all([
@@ -129,277 +115,75 @@ export default async function PulsePage({
     const autoFirstRun = autoFirstJobRun ?? autoFirstJobRunCompat;
 
     const dl = `${siteOrigin()}/download`;
-    const googleConnected = googleCount > 0;
-    const queued = (sp.queued ?? "").trim() === "1";
-    const activation = deriveFirstPulseActivation({
-      hasAnyPulse: false,
-      hasGoogleConnection: googleConnected,
-      googleAuthConfigured: hasGoogleAuthEnv(),
-      queuedFromQueryParam: queued,
-      bootstrapStatus: bootstrapRun?.status ?? null,
-      autoFirstStatus: autoFirstRun?.status ?? null,
-      bootstrapErrorSummary: bootstrapRun?.errorSummary,
-      autoFirstErrorSummary: autoFirstRun?.errorSummary,
-    });
 
     return (
       <div className="sb-card p-7">
-        <PageHeader title={activation.title} description={activation.description} />
+        <PageHeader
+          title="Generating your first pulse"
+          description="Starbeam generates a pulse each day based on your context and connected sources. You can add teammates and OpenClaws to expand coverage across your workspace."
+        />
 
         <div className="mt-6 sb-card-inset p-5">
           <div className="text-xs font-semibold tracking-wide uppercase text-[color:var(--sb-muted)]">
-            Activation state
+            Status
           </div>
-          <div className="mt-1 flex flex-wrap items-center gap-2">
-            <div className="sb-pill">{activation.state}</div>
-            <span className="text-xs text-[color:var(--sb-muted)]">
-              Google {googleConnected ? "connected" : "not connected"}
-            </span>
+          <div className="mt-2 grid gap-2 text-sm text-[color:var(--sb-muted)]">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-semibold text-[color:var(--sb-fg)]">
+                Bootstrap
+              </span>
+              <span aria-hidden>·</span>
+              <span>{jobStatusLabel(bootstrapRun?.status)}</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-semibold text-[color:var(--sb-fg)]">
+                Run
+              </span>
+              <span aria-hidden>·</span>
+              <span>{jobStatusLabel(autoFirstRun?.status)}</span>
+            </div>
           </div>
-          {activation.errorDetail ? (
-            <div className="mt-3 text-xs text-[color:var(--sb-muted)] whitespace-pre-wrap">
-              {activation.errorDetail}
+
+          {bootstrapRun?.errorSummary || autoFirstRun?.errorSummary ? (
+            <div className="mt-4 text-xs text-[color:var(--sb-muted)] whitespace-pre-wrap">
+              {bootstrapRun?.errorSummary
+                ? `Bootstrap error: ${bootstrapRun.errorSummary}\n`
+                : ""}
+              {autoFirstRun?.errorSummary
+                ? `Run error: ${autoFirstRun.errorSummary}`
+                : ""}
             </div>
           ) : null}
-          <div className="mt-4">
-            {activation.primaryAction === "connect_google" ? (
-              <form
-                action={startGoogleConnect.bind(
-                  null,
-                  membership.workspace.slug,
-                )}
-              >
-                <button
-                  type="submit"
-                  className={sbButtonClass({
-                    variant: "primary",
-                    className: "h-11 px-5 text-sm font-extrabold",
-                  })}
-                  disabled={!hasGoogleAuthEnv()}
-                  title={
-                    !hasGoogleAuthEnv()
-                      ? "Google OAuth not configured"
-                      : undefined
-                  }
-                >
-                  Connect Google
-                </button>
-              </form>
-            ) : null}
 
-            {activation.primaryAction === "generate_now" ? (
-              <form
-                action={generateFirstPulseNow.bind(
-                  null,
-                  membership.workspace.slug,
-                )}
-              >
-                <button
-                  type="submit"
-                  className={sbButtonClass({
-                    variant: "primary",
-                    className: "h-11 px-5 text-sm font-extrabold",
-                  })}
-                >
-                  Generate first pulse
-                </button>
-              </form>
-            ) : null}
-
-            {activation.primaryAction === "refresh" ? (
-              <Link
-                href={`${base}/pulse?queued=1`}
-                className={sbButtonClass({
-                  variant: "primary",
-                  className: "h-11 px-5 text-sm font-extrabold",
-                })}
-              >
-                Refresh status
-              </Link>
-            ) : null}
-
-            {activation.primaryAction === "open_integrations" ? (
-              <Link
-                href={`${base}/integrations`}
-                className={sbButtonClass({
-                  variant: "primary",
-                  className: "h-11 px-5 text-sm font-extrabold",
-                })}
-              >
-                Open integrations
-              </Link>
-            ) : null}
-
-            {activation.primaryAction === "open_pulse" ? (
-              <Link
-                href={`${base}/pulse`}
-                className={sbButtonClass({
-                  variant: "primary",
-                  className: "h-11 px-5 text-sm font-extrabold",
-                })}
-              >
-                Open pulse
-              </Link>
-            ) : null}
-          </div>
-        </div>
-
-        <div className="mt-6 grid gap-3">
-          <div className="sb-card-inset p-5">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <div className="text-xs font-semibold tracking-wide uppercase text-[color:var(--sb-muted)]">
-                  Step 1
-                </div>
-                <div className="sb-title text-base font-extrabold">
-                  Connect Google
-                </div>
-                <div className="mt-1 text-sm text-[color:var(--sb-muted)]">
-                  Status:{" "}
-                  <span className="font-semibold text-[color:var(--sb-fg)]">
-                    {googleConnected ? "connected" : "not connected"}
-                  </span>
-                </div>
-              </div>
-
-              <form
-                action={startGoogleConnect.bind(
-                  null,
-                  membership.workspace.slug,
-                )}
-              >
-                <button
-                  type="submit"
-                  className={sbButtonClass({
-                    variant: "secondary",
-                    className: "h-11 px-5 text-sm font-semibold",
-                  })}
-                  disabled={!hasGoogleAuthEnv()}
-                  title={
-                    !hasGoogleAuthEnv()
-                      ? "Google OAuth not configured"
-                      : undefined
-                  }
-                >
-                  Connect
-                </button>
-              </form>
-            </div>
-
-            {!hasGoogleAuthEnv() ? (
-              <div className="mt-3 text-xs text-[color:var(--sb-muted)]">
-                Google OAuth is not configured yet. Set{" "}
-                <code>GOOGLE_CLIENT_ID</code> and{" "}
-                <code>GOOGLE_CLIENT_SECRET</code>.
-              </div>
-            ) : null}
-          </div>
-
-          <div className="sb-card-inset p-5">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <div className="text-xs font-semibold tracking-wide uppercase text-[color:var(--sb-muted)]">
-                  Step 2
-                </div>
-                <div className="sb-title text-base font-extrabold">
-                  Generate your first pulse
-                </div>
-                <div className="mt-1 text-sm text-[color:var(--sb-muted)]">
-                  Bootstrap:{" "}
-                  <span className="font-semibold text-[color:var(--sb-fg)]">
-                    {jobStatusLabel(bootstrapRun?.status)}
-                  </span>{" "}
-                  <span aria-hidden>·</span> Run:{" "}
-                  <span className="font-semibold text-[color:var(--sb-fg)]">
-                    {jobStatusLabel(autoFirstRun?.status)}
-                  </span>
-                </div>
-                {bootstrapRun?.errorSummary || autoFirstRun?.errorSummary ? (
-                  <div className="mt-2 text-xs text-[color:var(--sb-muted)] whitespace-pre-wrap">
-                    {bootstrapRun?.errorSummary
-                      ? `Bootstrap error: ${bootstrapRun.errorSummary}\n`
-                      : ""}
-                    {autoFirstRun?.errorSummary
-                      ? `Run error: ${autoFirstRun.errorSummary}`
-                      : ""}
-                  </div>
-                ) : null}
-              </div>
-
-              <form
-                action={generateFirstPulseNow.bind(
-                  null,
-                  membership.workspace.slug,
-                )}
-              >
-                <button
-                  type="submit"
-                  className={sbButtonClass({
-                    variant: "secondary",
-                    className: "h-11 px-5 text-sm font-semibold",
-                  })}
-                >
-                  Generate now
-                </button>
-              </form>
-            </div>
-
-            <div className="mt-3 text-xs text-[color:var(--sb-muted)] leading-relaxed">
-              Tip: if you just connected Google, Starbeam may auto-queue a first
-              run. “Generate now” is always safe.
-            </div>
-          </div>
-
-          <div className="sb-card-inset p-5">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <div className="text-xs font-semibold tracking-wide uppercase text-[color:var(--sb-muted)]">
-                  Step 3
-                </div>
-                <div className="sb-title text-base font-extrabold">
-                  Get it in your menu bar
-                </div>
-                <div className="mt-1 text-sm text-[color:var(--sb-muted)]">
-                  {deviceTokens > 0
-                    ? "macOS app signed in"
-                    : "not signed in yet"}
-                </div>
-              </div>
-              <a
-                href={dl}
-                className={sbButtonClass({
-                  variant: "secondary",
-                  className: "h-11 px-5 text-sm font-semibold",
-                })}
-              >
-                Download macOS app
-              </a>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-6 flex flex-wrap items-center gap-3">
-          <Link
-            href={`${base}/settings`}
-            className={sbButtonClass({
-              variant: "secondary",
-              className: "h-11 px-5 text-sm font-semibold",
-            })}
-          >
-            Open settings
-          </Link>
-
-          <AdvancedOnly>
+          <div className="mt-5 flex flex-wrap items-center gap-3">
             <Link
-              href={`${base}/jobs`}
+              href={`${base}/pulse?queued=1`}
+              className={sbButtonClass({
+                variant: "primary",
+                className: "h-11 px-5 text-sm font-extrabold",
+              })}
+            >
+              Refresh
+            </Link>
+            <Link
+              href={`${base}/integrations`}
               className={sbButtonClass({
                 variant: "secondary",
                 className: "h-11 px-5 text-sm font-semibold",
               })}
             >
-              Advanced status
+              Connect integrations
             </Link>
-          </AdvancedOnly>
+            <a
+              href={dl}
+              className={sbButtonClass({
+                variant: "secondary",
+                className: "h-11 px-5 text-sm font-semibold",
+              })}
+            >
+              Download macOS app
+            </a>
+          </div>
         </div>
       </div>
     );
@@ -437,6 +221,7 @@ export default async function PulsePage({
             editionDateIso: selected.editionDate.toISOString(),
             status: selected.status,
           }}
+          actionStateServerEnabled={actionStateServerEnabled}
           cards={selected.cards.map((c) => ({
             id: c.id,
             kind: c.kind,

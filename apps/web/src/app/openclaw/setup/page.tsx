@@ -9,7 +9,6 @@ export const metadata: Metadata = {
   title: "Starbeam x OpenClaw Setup",
   robots: { index: false, follow: false },
 };
-
 export default async function OpenClawSetupPage({
   searchParams,
 }: {

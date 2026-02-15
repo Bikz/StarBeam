@@ -61,6 +61,36 @@ final class AppModel {
     firstPulseBoostTask = nil
   }
 
+  private func normalizedActivationState(from overview: Overview?) -> String {
+    let raw = overview?.activationHints?.state ?? ""
+    return raw
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+      .lowercased()
+      .replacingOccurrences(of: "-", with: "_")
+  }
+
+  private func nextFirstPulseBoostSleepSeconds(
+    elapsed: TimeInterval,
+    overview: Overview?
+  ) -> TimeInterval? {
+    let state = normalizedActivationState(from: overview)
+    switch state {
+    case "ready", "failed_blocking":
+      return nil
+    case "running":
+      return 20
+    case "queued":
+      return 30
+    case "failed_retriable":
+      return 45
+    case "not_started":
+      return elapsed < 10 * 60 ? 75 : 120
+    default:
+      // Backward-compatible fallback when hints are missing.
+      return elapsed < 10 * 60 ? 30 : 60
+    }
+  }
+
   private func startFirstPulseBoostIfNeeded() {
     if firstPulseBoostTask != nil { return }
     guard canSync else { return }
@@ -77,13 +107,19 @@ final class AppModel {
         if !self.canSync { break }
         if let overview = self.overview, !overview.pulse.isEmpty { break }
 
+        let elapsed = Date().timeIntervalSince(startedAt)
+        guard let sleepSeconds = self.nextFirstPulseBoostSleepSeconds(
+          elapsed: elapsed,
+          overview: self.overview
+        ) else {
+          break
+        }
+
         // Avoid stacking refresh calls.
         if !self.isRefreshing {
           await self.refresh()
         }
 
-        let elapsed = Date().timeIntervalSince(startedAt)
-        let sleepSeconds: TimeInterval = elapsed < 10 * 60 ? 30 : 60
         do {
           try await Task.sleep(nanoseconds: UInt64(sleepSeconds * 1_000_000_000))
         } catch {
@@ -344,6 +380,109 @@ final class AppModel {
       }
       lastError = AppError(
         title: "Couldn’t update todo",
+        message: "Try again.",
+        debugDetails: String(describing: error)
+      )
+    }
+  }
+
+  func deleteTodo(taskID: String) async {
+    guard auth.isSignedIn else { return }
+    guard var activeSession = auth.session else { return }
+
+    let workspaceID = settings.workspaceID.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !workspaceID.isEmpty else { return }
+
+    let trimmedID = taskID.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmedID.isEmpty else { return }
+
+    let baseURLString = settings.serverBaseURL.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard let baseURL = URL(string: baseURLString) else { return }
+
+    let client = APIClient(baseURL: baseURL)
+
+    do {
+      do {
+        try await refreshActiveSessionIfNeeded(client: client, activeSession: &activeSession)
+      } catch {
+        if let notice = noticeForRefreshAuthFailure(error) {
+          signOut(notice: notice)
+          return
+        }
+        throw error
+      }
+
+      _ = try await client.deleteTask(
+        workspaceID: workspaceID,
+        taskID: trimmedID,
+        accessToken: activeSession.accessToken,
+        refreshToken: activeSession.refreshToken
+      )
+
+      await refresh()
+    } catch {
+      if let notice = noticeForRefreshAuthFailure(error) {
+        signOut(notice: notice)
+        return
+      }
+      lastError = AppError(
+        title: "Couldn’t delete todo",
+        message: "Try again.",
+        debugDetails: String(describing: error)
+      )
+    }
+  }
+
+  func setPulseCardState(cardID: String, state: String) async {
+    guard auth.isSignedIn else { return }
+    guard var activeSession = auth.session else { return }
+
+    let workspaceID = settings.workspaceID.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !workspaceID.isEmpty else { return }
+
+    let trimmedCardID = cardID.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmedCardID.isEmpty else { return }
+
+    let normalizedState = state.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+    guard normalizedState == "DONE" || normalizedState == "DISMISSED" || normalizedState == "OPEN" else {
+      return
+    }
+
+    guard let editionDate = overview?.editionDate else { return }
+
+    let baseURLString = settings.serverBaseURL.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard let baseURL = URL(string: baseURLString) else { return }
+
+    let client = APIClient(baseURL: baseURL)
+
+    do {
+      do {
+        try await refreshActiveSessionIfNeeded(client: client, activeSession: &activeSession)
+      } catch {
+        if let notice = noticeForRefreshAuthFailure(error) {
+          signOut(notice: notice)
+          return
+        }
+        throw error
+      }
+
+      _ = try await client.updatePulseActionState(
+        workspaceID: workspaceID,
+        editionDate: editionDate,
+        cardID: trimmedCardID,
+        state: normalizedState,
+        accessToken: activeSession.accessToken,
+        refreshToken: activeSession.refreshToken
+      )
+
+      await refresh()
+    } catch {
+      if let notice = noticeForRefreshAuthFailure(error) {
+        signOut(notice: notice)
+        return
+      }
+      lastError = AppError(
+        title: "Couldn’t update pulse card",
         message: "Try again.",
         debugDetails: String(describing: error)
       )

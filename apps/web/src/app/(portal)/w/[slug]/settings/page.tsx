@@ -1,5 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
+import Link from "next/link";
+import { sbButtonClass } from "@starbeam/shared";
 
 import { prisma } from "@starbeam/db";
 
@@ -7,6 +9,7 @@ import PageHeader from "@/components/page-header";
 import ThemeToggle from "@/components/theme-toggle";
 import UiModeToggle from "@/components/ui-mode-toggle";
 import { authOptions } from "@/lib/auth";
+import { isOnboardingV2Enabled } from "@/lib/flags";
 
 export default async function SettingsPage({
   params,
@@ -20,12 +23,34 @@ export default async function SettingsPage({
 
   const membership = await prisma.membership.findFirst({
     where: { userId: session.user.id, workspace: { slug } },
-    select: { id: true },
+    include: { workspace: true },
   });
   if (!membership) notFound();
 
+  const onboardingV2 = isOnboardingV2Enabled();
+
   return (
     <div className="grid gap-6">
+      {onboardingV2 ? (
+        <section className="sb-card p-7">
+          <PageHeader
+            title="Setup"
+            description="Use guided setup to complete onboarding and improve first-pulse reliability."
+          />
+          <div className="mt-6">
+            <Link
+              href={`/w/${membership.workspace.slug}/onboarding`}
+              className={sbButtonClass({
+                variant: "primary",
+                className: "h-11 px-5 text-sm font-extrabold",
+              })}
+            >
+              Open guided setup
+            </Link>
+          </div>
+        </section>
+      ) : null}
+
       <section className="sb-card p-7">
         <PageHeader
           title="Theme"

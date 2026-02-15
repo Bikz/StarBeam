@@ -54,6 +54,11 @@ model User {
   feedbackSubmissions    Feedback[]           @relation("FeedbackSubmittedBy")
   triagedFeedback        Feedback[]           @relation("FeedbackTriagedBy")
   usageEvents            UsageEvent[]
+  insightDeliveries      InsightDelivery[]
+  insightInteractions    InsightInteraction[]
+  insightActionStates    InsightActionState[]
+  skillCandidates        SkillCandidate[]
+  skillExecutionTraces   SkillExecutionTrace[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -192,6 +197,21 @@ enum FeedbackTriageStatus {
   WONT_FIX
 }
 
+enum PersonaTrack {
+  SOLO_FOUNDER
+  SMALL_TEAM_5_10
+  GROWTH_TEAM_11_50
+  UNKNOWN
+}
+
+enum PersonaSubmode {
+  SHIP_HEAVY
+  GTM_HEAVY
+  ALIGNMENT_GAP
+  EXECUTION_DRIFT
+  UNKNOWN
+}
+
 enum UsageEventType {
   SIGNED_IN
   GOOGLE_CONNECTED
@@ -200,6 +220,21 @@ enum UsageEventType {
   PULSE_VIEWED_WEB
   OVERVIEW_SYNCED_MACOS
   INVITE_ACCEPTED
+}
+
+enum InsightInteractionType {
+  VIEWED
+  SOURCE_OPENED
+  COPIED
+  MARKED_DONE
+  HELPFUL
+  NOT_HELPFUL
+}
+
+enum InsightActionStateValue {
+  OPEN
+  DONE
+  DISMISSED
 }
 
 model UsageEvent {
@@ -217,6 +252,137 @@ model UsageEvent {
   @@index([eventType, createdAt])
   @@index([workspaceId, createdAt])
   @@index([userId, createdAt])
+}
+
+model InsightDelivery {
+  id                 String      @id @default(cuid())
+  workspaceId        String
+  userId             String
+  editionId          String?
+  cardId             String
+  cardKind           String
+  personaTrack       PersonaTrack   @default(UNKNOWN)
+  personaSubmode     PersonaSubmode @default(UNKNOWN)
+  skillRef           String?
+  skillOrigin        String?
+  expectedHelpfulLift Float?
+  expectedActionLift Float?
+  relevanceScore     Float?
+  actionabilityScore Float?
+  confidenceScore    Float?
+  noveltyScore       Float?
+  modelSource        String      @default("local_codex")
+  metadata           Json?
+  createdAt          DateTime    @default(now())
+
+  workspace Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  edition   PulseEdition? @relation(fields: [editionId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, createdAt])
+  @@index([userId, createdAt])
+  @@index([personaTrack, createdAt])
+  @@index([personaSubmode, createdAt])
+  @@index([skillRef, createdAt])
+  @@index([editionId])
+  @@index([cardId, createdAt])
+}
+
+model InsightInteraction {
+  id              String                @id @default(cuid())
+  workspaceId     String
+  userId          String
+  editionDate     DateTime?
+  cardId          String
+  interactionType InsightInteractionType
+  reasonCode      String?
+  metadata        Json?
+  createdAt       DateTime              @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
+  @@index([userId, createdAt])
+  @@index([interactionType, createdAt])
+  @@index([cardId, createdAt])
+}
+
+model InsightActionState {
+  id          String                  @id @default(cuid())
+  workspaceId String
+  userId      String
+  editionDate DateTime
+  cardId      String
+  state       InsightActionStateValue @default(OPEN)
+  metadata    Json?
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId, editionDate, cardId])
+  @@index([workspaceId, createdAt])
+  @@index([userId, createdAt])
+  @@index([cardId, createdAt])
+}
+
+model SkillCandidate {
+  id                 String        @id @default(cuid())
+  workspaceId        String
+  userId             String
+  runId              String?
+  personaTrack       PersonaTrack   @default(UNKNOWN)
+  personaSubmode     PersonaSubmode @default(UNKNOWN)
+  skillRef           String
+  source             String
+  fitReason          String
+  risk               String
+  decision           String         @default("PENDING")
+  expectedHelpfulLift Float?
+  expectedActionLift Float?
+  confidence         Float?
+  evaluatorMetadata  Json?
+  createdAt          DateTime       @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  run       JobRun?   @relation(fields: [runId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, createdAt])
+  @@index([personaTrack, createdAt])
+  @@index([personaSubmode, createdAt])
+  @@index([skillRef, createdAt])
+}
+
+model SkillExecutionTrace {
+  id                 String         @id @default(cuid())
+  workspaceId        String
+  userId             String
+  runId              String?
+  cardId             String?
+  personaTrack       PersonaTrack   @default(UNKNOWN)
+  personaSubmode     PersonaSubmode @default(UNKNOWN)
+  skillRef           String
+  skillOrigin        String
+  decision           String
+  reason             String?
+  expectedHelpfulLift Float?
+  expectedActionLift Float?
+  confidence         Float?
+  metadata           Json?
+  createdAt          DateTime       @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  run       JobRun?   @relation(fields: [runId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, createdAt])
+  @@index([personaTrack, createdAt])
+  @@index([personaSubmode, createdAt])
+  @@index([skillRef, createdAt])
+  @@index([cardId, createdAt])
 }
 
 enum WorkspaceProgramType {
@@ -288,6 +454,11 @@ model Workspace {
   tasks           Task[]
   blobs           Blob[]          @relation("WorkspaceBlobs")
   usageEvents     UsageEvent[]
+  insightDeliveries InsightDelivery[]
+  insightInteractions InsightInteraction[]
+  insightActionStates InsightActionState[]
+  skillCandidates SkillCandidate[]
+  skillExecutionTraces SkillExecutionTrace[]
   deviceAuthRequests DeviceAuthRequest[]
   apiRefreshTokens   ApiRefreshToken[]
   openclawAgents     OpenClawAgent[]
@@ -305,6 +476,7 @@ model Membership {
   role        Role   @default(MEMBER)
   primaryDepartmentId String?
   lastActiveAt DateTime?
+  onboardingCompletedAt DateTime?
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -354,6 +526,12 @@ model WorkspaceMemberProfile {
   workspaceId String
   userId      String
 
+  fullName String?
+  location String?
+  company String?
+  companyUrl String?
+  linkedinUrl String?
+  websiteUrl String?
   jobTitle String?
   about    String?
 
@@ -782,6 +960,7 @@ model PulseEdition {
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   cards     PulseCard[]
+  insightDeliveries InsightDelivery[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -846,6 +1025,8 @@ model JobRun {
   meta         Json?
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  skillCandidates SkillCandidate[]
+  skillExecutionTraces SkillExecutionTrace[]
 
   createdAt DateTime @default(now())
 
@@ -884,7 +1065,7 @@ model DeviceAuthRequest {
   expiresAt      DateTime
 
   approvedUser User? @relation(fields: [approvedUserId], references: [id], onDelete: SetNull)
-  workspace     Workspace?     @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  workspace     Workspace?    @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
   openclawAgent OpenClawAgent? @relation(fields: [openclawAgentId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
@@ -915,7 +1096,7 @@ model ApiRefreshToken {
   revokedAt DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  workspace     Workspace?     @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  workspace     Workspace?    @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
   openclawAgent OpenClawAgent? @relation(fields: [openclawAgentId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
@@ -1029,7 +1210,7 @@ model OpenClawEvent {
   leaseId         String?
   payload         Json?
 
-  openclawAgent OpenClawAgent    @relation(fields: [openclawAgentId], references: [id], onDelete: Cascade)
+  openclawAgent OpenClawAgent   @relation(fields: [openclawAgentId], references: [id], onDelete: Cascade)
   command       OpenClawCommand? @relation(fields: [commandId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())

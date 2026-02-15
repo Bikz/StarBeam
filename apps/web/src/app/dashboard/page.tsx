@@ -12,6 +12,7 @@ import CopyPill from "@/components/copy-pill";
 import PageHeader from "@/components/page-header";
 import { authOptions } from "@/lib/auth";
 import { requireBetaAccessOrRedirect } from "@/lib/betaAccess";
+import { isOnboardingV2Enabled } from "@/lib/flags";
 
 function isProfileUseful(
   profile: {
@@ -118,6 +119,7 @@ export default async function DashboardPage() {
   const personalCount = memberships.filter(
     (m) => m.workspace.type !== "ORG",
   ).length;
+  const onboardingV2 = isOnboardingV2Enabled();
 
   return (
     <AppShell
@@ -214,7 +216,9 @@ export default async function DashboardPage() {
                   if (!editionReady) {
                     todo.push({
                       label: "Finish setup",
-                      href: `/w/${m.workspace.slug}/settings`,
+                      href: onboardingV2
+                        ? `/w/${m.workspace.slug}/onboarding`
+                        : `/w/${m.workspace.slug}/settings`,
                     });
                   }
 
@@ -239,6 +243,7 @@ export default async function DashboardPage() {
                           <CopyPill
                             value={m.workspace.slug}
                             label={`id:${m.workspace.slug}`}
+                            title="Click to copy workspace ID"
                           />
                           <span className="text-[11px] font-semibold tracking-wide uppercase text-[color:var(--sb-muted)]">
                             {m.workspace.type}

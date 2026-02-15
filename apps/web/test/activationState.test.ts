@@ -49,6 +49,17 @@ test("deriveFirstPulseActivation returns queued and running states deterministic
   assert.equal(running.state, "running");
 });
 
+test("deriveFirstPulseActivation marks stale queued/running jobs as retriable", () => {
+  const activation = deriveFirstPulseActivation({
+    ...baseInput(),
+    autoFirstStatus: "RUNNING",
+    autoFirstRunningAgeMins: 31,
+    staleThresholdMins: 20,
+  });
+  assert.equal(activation.state, "failed_retriable");
+  assert.equal(activation.primaryAction, "generate_now");
+});
+
 test("deriveFirstPulseActivation marks retriable failures", () => {
   const activation = deriveFirstPulseActivation({
     ...baseInput(),

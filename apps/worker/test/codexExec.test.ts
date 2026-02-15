@@ -61,6 +61,20 @@ if (oIdx < 0 || !argv[oIdx + 1]) {
   process.exit(7);
 }
 const outPath = argv[oIdx + 1];
+const flakyStatePath = process.env.FAKE_CODEX_FLAKY_STATE_PATH;
+const failFirstRetryable = (process.env.FAKE_CODEX_FAIL_FIRST_RETRYABLE ?? "0") === "1";
+if (failFirstRetryable && flakyStatePath) {
+  let count = 0;
+  try {
+    count = Number(fs.readFileSync(flakyStatePath, "utf8") || "0");
+  } catch {}
+  if (!Number.isFinite(count) || count < 0) count = 0;
+  if (count === 0) {
+    fs.writeFileSync(flakyStatePath, "1", "utf8");
+    console.error("429 rate limit: retry later");
+    process.exit(75);
+  }
+}
 
 let input = "";
 process.stdin.setEncoding("utf8");
@@ -126,6 +140,60 @@ test("runCodexExec passes approval policy before subcommand (no web search)", as
     if (oldOpenaiKey === undefined) delete process.env.OPENAI_API_KEY;
     else process.env.OPENAI_API_KEY = oldOpenaiKey;
     delete process.env.FAKE_CODEX_EXPECT_SEARCH;
+    await fs.rm(tmp, { recursive: true, force: true }).catch(() => undefined);
+  }
+});
+
+test("runCodexExec retries transient non-zero exit once and succeeds", async () => {
+  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "starbeam-fake-codex-"));
+  const oldBin = process.env.STARB_CODEX_BIN;
+  const oldOpenaiKey = process.env.OPENAI_API_KEY;
+  const oldRetryAttempts = process.env.STARB_CODEX_EXEC_MAX_ATTEMPTS;
+  const oldRetryDelayMs = process.env.STARB_CODEX_EXEC_RETRY_INITIAL_DELAY_MS;
+
+  try {
+    const { binDir } = await writeFakeCodexBin({ dir: tmp });
+    process.env.STARB_CODEX_BIN =
+      process.platform === "win32"
+        ? path.join(binDir, "codex.cmd")
+        : path.join(binDir, "codex");
+    process.env.FAKE_CODEX_EXPECT_SEARCH = "0";
+    process.env.FAKE_CODEX_FAIL_FIRST_RETRYABLE = "1";
+    process.env.FAKE_CODEX_FLAKY_STATE_PATH = path.join(tmp, "flaky-state.txt");
+    process.env.OPENAI_API_KEY = "sk-test";
+    process.env.STARB_CODEX_EXEC_MAX_ATTEMPTS = "2";
+    process.env.STARB_CODEX_EXEC_RETRY_INITIAL_DELAY_MS = "50";
+    delete process.env.STARB_CODEX_JSON_EVENTS;
+
+    const outSchema = path.join(tmp, "schema.json");
+    const outMsg = path.join(tmp, "out.json");
+
+    const res = await runCodexExec({
+      cwd: tmp,
+      prompt: "hello",
+      outputSchemaPath: outSchema,
+      outputLastMessagePath: outMsg,
+      enableWebSearch: false,
+      timeoutMs: 10_000,
+    });
+
+    assert.equal(res.exitCode, 0);
+    assert.equal(res.attemptCount, 2);
+    assert.match(res.stdout, /ok/);
+  } finally {
+    if (oldBin === undefined) delete process.env.STARB_CODEX_BIN;
+    else process.env.STARB_CODEX_BIN = oldBin;
+    if (oldOpenaiKey === undefined) delete process.env.OPENAI_API_KEY;
+    else process.env.OPENAI_API_KEY = oldOpenaiKey;
+    if (oldRetryAttempts === undefined)
+      delete process.env.STARB_CODEX_EXEC_MAX_ATTEMPTS;
+    else process.env.STARB_CODEX_EXEC_MAX_ATTEMPTS = oldRetryAttempts;
+    if (oldRetryDelayMs === undefined)
+      delete process.env.STARB_CODEX_EXEC_RETRY_INITIAL_DELAY_MS;
+    else process.env.STARB_CODEX_EXEC_RETRY_INITIAL_DELAY_MS = oldRetryDelayMs;
+    delete process.env.FAKE_CODEX_EXPECT_SEARCH;
+    delete process.env.FAKE_CODEX_FAIL_FIRST_RETRYABLE;
+    delete process.env.FAKE_CODEX_FLAKY_STATE_PATH;
     await fs.rm(tmp, { recursive: true, force: true }).catch(() => undefined);
   }
 });

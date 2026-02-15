@@ -43,19 +43,40 @@ function csvEscape(value: string): string {
   return `"${value.replaceAll('"', '""')}"`;
 }
 
-function toCsv(summary: Awaited<ReturnType<typeof getOpsFunnelSummary>>): string {
+function toCsv(
+  summary: Awaited<ReturnType<typeof getOpsFunnelSummary>>,
+): string {
   const lines: string[] = ["metric,value"];
 
   const scalarMetrics: Array<[string, number | string]> = [
     ["windowDays", summary.windowDays],
+    ["chainCoveragePct", summary.chainCoveragePct],
+    [
+      "insightQuality.helpfulRatePct7d",
+      summary.insightQuality.helpfulRatePct7d,
+    ],
+    [
+      "insightQuality.notHelpfulRatePct7d",
+      summary.insightQuality.notHelpfulRatePct7d,
+    ],
+    [
+      "insightQuality.actionCompletionRatePct7d",
+      summary.insightQuality.actionCompletionRatePct7d,
+    ],
     ["activation.signedIn", summary.activation.signedIn],
     ["activation.googleConnected", summary.activation.googleConnected],
     ["activation.firstPulseQueued", summary.activation.firstPulseQueued],
     ["activation.firstPulseReady", summary.activation.firstPulseReady],
     ["activation.readyWithin24h", summary.activation.readyWithin24h],
     ["activation.readyWithin7d", summary.activation.readyWithin7d],
-    ["retention.pulseViewedWeek1_1plus", summary.retention.pulseViewedWeek1_1plus],
-    ["retention.pulseViewedWeek1_3plus", summary.retention.pulseViewedWeek1_3plus],
+    [
+      "retention.pulseViewedWeek1_1plus",
+      summary.retention.pulseViewedWeek1_1plus,
+    ],
+    [
+      "retention.pulseViewedWeek1_3plus",
+      summary.retention.pulseViewedWeek1_3plus,
+    ],
     [
       "retention.overviewSyncedWeek1_1plus",
       summary.retention.overviewSyncedWeek1_1plus,
@@ -63,6 +84,22 @@ function toCsv(summary: Awaited<ReturnType<typeof getOpsFunnelSummary>>): string
     ["designPartners.prospectCount", summary.designPartners.prospectCount],
     ["designPartners.activeCount", summary.designPartners.activeCount],
     ["designPartners.churnedCount", summary.designPartners.churnedCount],
+    [
+      "activationBacklog.connectedNoPulse24h",
+      summary.activationBacklog.connectedNoPulse24h,
+    ],
+    [
+      "activationBacklog.failedBlocking24h",
+      summary.activationBacklog.failedBlocking24h,
+    ],
+    [
+      "activationBacklog.failedRetriable24h",
+      summary.activationBacklog.failedRetriable24h,
+    ],
+    [
+      "activationBacklog.queuedOrRunningStale24h",
+      summary.activationBacklog.queuedOrRunningStale24h,
+    ],
   ];
 
   for (const [metric, value] of scalarMetrics) {
@@ -99,6 +136,12 @@ function toCsv(summary: Awaited<ReturnType<typeof getOpsFunnelSummary>>): string
   }
 
   lines.push("");
+  lines.push("activationFailureReason,count");
+  for (const row of summary.activationBacklog.topFailureReasons) {
+    lines.push(`${csvEscape(row.reason)},${csvEscape(String(row.count))}`);
+  }
+
+  lines.push("");
   lines.push("feedbackCategory,count");
   for (const row of summary.feedback.topCategories7d) {
     lines.push(`${csvEscape(row.category)},${csvEscape(String(row.count))}`);
@@ -120,7 +163,10 @@ export async function GET(request: Request) {
   );
   const format = (url.searchParams.get("format") ?? "csv").trim().toLowerCase();
 
-  const summary = await getOpsFunnelSummary({ windowDays, programStatusFilter });
+  const summary = await getOpsFunnelSummary({
+    windowDays,
+    programStatusFilter,
+  });
   const stamp = summary.generatedAt.slice(0, 10);
 
   if (format === "json") {

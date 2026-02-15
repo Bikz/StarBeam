@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { prisma } from "@starbeam/db";
 
 import { authOptions } from "@/lib/auth";
+import { isOnboardingV2Enabled } from "@/lib/flags";
 
 // `/w/:slug` is intentionally a thin redirect so Pulse is always the primary object.
 export default async function WorkspaceHome({
@@ -22,5 +23,25 @@ export default async function WorkspaceHome({
   });
   if (!membership) notFound();
 
-  redirect(`/w/${membership.workspace.slug}/pulse`);
+  const base = `/w/${membership.workspace.slug}`;
+  const onboardingV2 = isOnboardingV2Enabled();
+
+  if (!onboardingV2) {
+    redirect(`${base}/pulse`);
+  }
+
+  const existingPulse = await prisma.pulseEdition.findFirst({
+    where: { workspaceId: membership.workspace.id, userId: session.user.id },
+    select: { id: true },
+  });
+
+  if (existingPulse) {
+    redirect(`${base}/pulse`);
+  }
+
+  if (!membership.onboardingCompletedAt) {
+    redirect(`${base}/onboarding`);
+  }
+
+  redirect(`${base}/pulse`);
 }

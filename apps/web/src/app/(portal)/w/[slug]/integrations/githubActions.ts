@@ -151,7 +151,8 @@ export async function updateGitHubRepoSelectionAction(
   if (!existing) {
     return {
       ok: false,
-      message: "This GitHub connection no longer exists. Refresh and try again.",
+      message:
+        "This GitHub connection no longer exists. Refresh and try again.",
     };
   }
 

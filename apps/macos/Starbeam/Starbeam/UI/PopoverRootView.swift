@@ -509,17 +509,34 @@ struct PopoverRootView: View {
   }
 
   private var pulseHeader: some View {
-    HStack(alignment: .firstTextBaseline, spacing: 8) {
-      Text(model.overview?.onboardingMode == .setup ? "Daily ideas" : "Your Pulse")
-        .font(.system(size: 18, weight: .bold, design: .rounded))
-        .accessibilityAddTraits(.isHeader)
+    VStack(alignment: .leading, spacing: 4) {
+      HStack(alignment: .firstTextBaseline, spacing: 8) {
+        Text(model.overview?.onboardingMode == .setup ? "Daily ideas" : "Your Pulse")
+          .font(.system(size: 18, weight: .bold, design: .rounded))
+          .accessibilityAddTraits(.isHeader)
 
-      Spacer(minLength: 0)
+        Spacer(minLength: 0)
 
-      if let label = pulseUpdatedLabel {
-        Text(label)
-          .font(.system(size: 11, weight: .semibold, design: .rounded))
-          .foregroundStyle(.secondary)
+        if let label = pulseUpdatedLabel {
+          Text(label)
+            .font(.system(size: 11, weight: .semibold, design: .rounded))
+            .foregroundStyle(.secondary)
+        }
+      }
+
+      if let pulseMeta = model.overview?.pulseMeta {
+        VStack(alignment: .leading, spacing: 2) {
+          Text("Focus: \(pulseMeta.recommendedFocus)")
+            .font(.system(size: 11, weight: .medium, design: .rounded))
+            .foregroundStyle(.secondary)
+            .lineLimit(2)
+          if let whyThisToday = pulseMeta.whyThisToday, !whyThisToday.isEmpty {
+            Text(whyThisToday)
+              .font(.system(size: 11, weight: .regular, design: .rounded))
+              .foregroundStyle(.secondary)
+              .lineLimit(2)
+          }
+        }
       }
     }
     .padding(.top, 2)
@@ -606,7 +623,13 @@ struct PopoverRootView: View {
           ForEach(Array(overview.pulse.enumerated()), id: \.element.id) { index, card in
             PulseCardView(
               card: card,
-              highlightPriority: index < 2
+              highlightPriority: index < 2,
+              onMarkDone: {
+                Task { await model.setPulseCardState(cardID: card.id, state: "DONE") }
+              },
+              onDismiss: {
+                Task { await model.setPulseCardState(cardID: card.id, state: "DISMISSED") }
+              }
             )
           }
         }
@@ -618,6 +641,7 @@ struct PopoverRootView: View {
 
   private var emptyPulse: some View {
     let workspaceID = model.settings.workspaceID.trimmingCharacters(in: .whitespacesAndNewlines)
+    let cta = emptyPulseCTA()
 
     return VStack(alignment: .leading, spacing: 6) {
       Text("No pulse yet")
@@ -628,16 +652,16 @@ struct PopoverRootView: View {
         .foregroundStyle(.secondary)
         .fixedSize(horizontal: false, vertical: true)
 
-      if !workspaceID.isEmpty, model.dashboardURL(kind: .pulse) != nil {
+      if !workspaceID.isEmpty, let cta {
         Button {
-          openDashboard()
+          NSWorkspace.shared.open(cta.url)
         } label: {
-          Text("Finish setup in web")
+          Text(cta.label)
             .font(.system(size: 12, weight: .bold, design: .rounded))
         }
         .buttonStyle(.plain)
         .padding(.top, 6)
-        .accessibilityLabel("Finish setup in web dashboard")
+        .accessibilityLabel(cta.label)
       }
     }
     .padding(14)
@@ -651,7 +675,96 @@ struct PopoverRootView: View {
     if workspaceID.isEmpty {
       return "Add your Workspace ID in Settings to enable sync."
     }
+
+    if let hints = model.overview?.activationHints {
+      let reason = (hints.reason ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+      let state = normalizedActivationHintState(hints.state)
+      switch state {
+      case "running":
+        return reason.isEmpty
+          ? "Generating your first pulse now. We’ll keep checking in the background."
+          : reason
+      case "queued":
+        return reason.isEmpty
+          ? "Your first pulse is queued. It should be ready shortly."
+          : reason
+      case "failed_retriable":
+        return reason.isEmpty
+          ? "First pulse hit a temporary issue. Open web to retry."
+          : reason
+      case "failed_blocking":
+        return reason.isEmpty
+          ? "Setup is blocked. Open web integrations to fix and retry."
+          : reason
+      case "not_started":
+        return reason.isEmpty
+          ? "Complete setup in web to generate your first pulse."
+          : reason
+      default:
+        break
+      }
+    }
+
     return "Starbeam runs overnight and will drop your pulse cards here when they’re ready."
+  }
+
+  private func normalizedActivationHintState(_ value: String) -> String {
+    value
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+      .lowercased()
+      .replacingOccurrences(of: "-", with: "_")
+  }
+
+  private func normalizedActivationHintAction(_ value: String) -> String {
+    value
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+      .lowercased()
+      .replacingOccurrences(of: "-", with: "_")
+  }
+
+  private func emptyPulseCTA() -> (label: String, url: URL)? {
+    guard let slug = model.overview?.workspace.slug?.trimmingCharacters(in: .whitespacesAndNewlines),
+      !slug.isEmpty
+    else {
+      guard let fallback = model.dashboardURL(kind: .pulse) else { return nil }
+      return ("Finish setup in web", fallback)
+    }
+
+    guard let hints = model.overview?.activationHints else {
+      guard let fallback = model.dashboardURL(kind: .pulse) else { return nil }
+      return ("Finish setup in web", fallback)
+    }
+
+    let action = normalizedActivationHintAction(hints.nextAction)
+    let path: String
+    let label: String
+
+    switch action {
+    case "connect_google":
+      path = "/w/\(slug)/integrations"
+      label = "Connect Google in web"
+    case "open_integrations":
+      path = "/w/\(slug)/integrations"
+      label = "Open integrations in web"
+    case "generate_now":
+      path = "/w/\(slug)/pulse"
+      label = "Generate first pulse in web"
+    case "refresh":
+      path = "/w/\(slug)/pulse?queued=1"
+      label = "Refresh in web"
+    case "open_pulse":
+      path = "/w/\(slug)/pulse"
+      label = "Open pulse in web"
+    default:
+      path = "/w/\(slug)/onboarding"
+      label = "Finish setup in web"
+    }
+
+    if let url = model.dashboardURL(path: path) {
+      return (label, url)
+    }
+    guard let fallback = model.dashboardURL(kind: .pulse) else { return nil }
+    return (label, fallback)
   }
 
   private var splitPanels: some View {

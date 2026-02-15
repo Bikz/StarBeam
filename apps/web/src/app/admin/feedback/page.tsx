@@ -38,7 +38,21 @@ function parsePulseCardFeedback(message: string): {
   }
 }
 
-const triageStatusOptions = ["ALL", "NEW", "REVIEWED", "ACTIONED", "WONT_FIX"] as const;
+function parseDefectLinkKey(note: string | null | undefined): string | null {
+  const text = (note ?? "").trim();
+  if (!text) return null;
+  const match = /(?:^|\s)(DEFECT:[A-Z0-9._-]+)/i.exec(text);
+  if (!match) return null;
+  return match[1]?.toUpperCase() ?? null;
+}
+
+const triageStatusOptions = [
+  "ALL",
+  "NEW",
+  "REVIEWED",
+  "ACTIONED",
+  "WONT_FIX",
+] as const;
 const categoryOptions = [
   "ALL",
   "NOISE",
@@ -60,12 +74,15 @@ export default async function FeedbackAdminPage({
   }>;
 }) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.email || !isAdminEmail(session.user.email)) redirect("/login");
+  if (!session?.user?.email || !isAdminEmail(session.user.email))
+    redirect("/login");
 
   const sp = (await searchParams) ?? {};
   const source = typeof sp.source === "string" ? sp.source.trim() : "";
   const triageStatusRaw =
-    typeof sp.triageStatus === "string" ? sp.triageStatus.trim().toUpperCase() : "ALL";
+    typeof sp.triageStatus === "string"
+      ? sp.triageStatus.trim().toUpperCase()
+      : "ALL";
   const triageStatus = triageStatusOptions.includes(
     triageStatusRaw as (typeof triageStatusOptions)[number],
   )
@@ -74,7 +91,9 @@ export default async function FeedbackAdminPage({
 
   const categoryRaw =
     typeof sp.category === "string" ? sp.category.trim().toUpperCase() : "ALL";
-  const category = categoryOptions.includes(categoryRaw as (typeof categoryOptions)[number])
+  const category = categoryOptions.includes(
+    categoryRaw as (typeof categoryOptions)[number],
+  )
     ? (categoryRaw as (typeof categoryOptions)[number])
     : "ALL";
 
@@ -145,7 +164,9 @@ export default async function FeedbackAdminPage({
             </div>
           </div>
 
-          {updated ? <div className="mt-6 sb-alert">Triage updated.</div> : null}
+          {updated ? (
+            <div className="mt-6 sb-alert">Triage updated.</div>
+          ) : null}
           {error ? (
             <div className="mt-6 sb-alert">
               <strong>Error:</strong> {error}
@@ -154,7 +175,9 @@ export default async function FeedbackAdminPage({
 
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
             <div className="sb-card-inset p-4">
-              <div className="text-xs font-semibold text-[color:var(--sb-muted)]">Status filter</div>
+              <div className="text-xs font-semibold text-[color:var(--sb-muted)]">
+                Status filter
+              </div>
               <div className="mt-3 flex flex-wrap gap-2">
                 {triageStatusOptions.map((opt) => (
                   <Link
@@ -176,7 +199,9 @@ export default async function FeedbackAdminPage({
             </div>
 
             <div className="sb-card-inset p-4">
-              <div className="text-xs font-semibold text-[color:var(--sb-muted)]">Category filter</div>
+              <div className="text-xs font-semibold text-[color:var(--sb-muted)]">
+                Category filter
+              </div>
               <div className="mt-3 flex flex-wrap gap-2">
                 {categoryOptions.map((opt) => (
                   <Link
@@ -198,13 +223,35 @@ export default async function FeedbackAdminPage({
             </div>
           </div>
 
+          <div className="mt-3 sb-card-inset p-4">
+            <div className="text-xs font-semibold text-[color:var(--sb-muted)]">
+              Defect linking convention
+            </div>
+            <p className="mt-2 text-xs leading-relaxed text-[color:var(--sb-muted)]">
+              Include a defect reference in triage notes as{" "}
+              <code>DEFECT:&lt;id&gt;</code> (example:{" "}
+              <code>DEFECT:ACTIVATION-102</code>) so feedback items map cleanly
+              to tracked defects.
+            </p>
+          </div>
+
           <div className="mt-8">
             {items.length === 0 ? (
-              <div className="text-sm text-[color:var(--sb-muted)]">No feedback yet.</div>
+              <div className="text-sm text-[color:var(--sb-muted)]">
+                No feedback yet.
+              </div>
             ) : (
               <div className="grid gap-3">
                 {items.map((f) => (
                   <div key={f.id} className="sb-card-inset p-5">
+                    {(() => {
+                      const defectKey = parseDefectLinkKey(f.triageNote);
+                      return defectKey ? (
+                        <div className="mb-3 inline-flex rounded-full border border-[color:var(--sb-border)] px-2 py-0.5 text-[11px] font-semibold tracking-wide text-[color:var(--sb-muted)]">
+                          Linked defect: {defectKey}
+                        </div>
+                      ) : null;
+                    })()}
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="text-sm font-semibold text-[color:var(--sb-fg)]">
                         {f.email || f.userId || "unknown"}
@@ -221,8 +268,11 @@ export default async function FeedbackAdminPage({
                         const parsed = parsePulseCardFeedback(f.message);
                         if (!parsed) return f.message;
 
-                        const label = parsed.rating === "up" ? "Helpful" : "Not helpful";
-                        const title = parsed.cardTitle ? ` — ${parsed.cardTitle}` : "";
+                        const label =
+                          parsed.rating === "up" ? "Helpful" : "Not helpful";
+                        const title = parsed.cardTitle
+                          ? ` — ${parsed.cardTitle}`
+                          : "";
                         return `Pulse card feedback: ${label} · ${parsed.cardKind} · ${parsed.workspaceSlug} · ${parsed.editionDateIso}${title}`;
                       })()}
                     </div>
@@ -233,7 +283,10 @@ export default async function FeedbackAdminPage({
                       </div>
                     ) : null}
 
-                    <form action={updateFeedbackTriage} className="mt-4 grid gap-2 md:grid-cols-4">
+                    <form
+                      action={updateFeedbackTriage}
+                      className="mt-4 grid gap-2 md:grid-cols-4"
+                    >
                       <input type="hidden" name="feedbackId" value={f.id} />
 
                       <label className="text-xs text-[color:var(--sb-muted)] grid gap-1">
@@ -245,7 +298,9 @@ export default async function FeedbackAdminPage({
                         >
                           <option value="">(none)</option>
                           <option value="NOISE">NOISE</option>
-                          <option value="MISSING_CONTEXT">MISSING_CONTEXT</option>
+                          <option value="MISSING_CONTEXT">
+                            MISSING_CONTEXT
+                          </option>
                           <option value="WRONG_PRIORITY">WRONG_PRIORITY</option>
                           <option value="LOW_CONFIDENCE">LOW_CONFIDENCE</option>
                           <option value="OTHER">OTHER</option>
@@ -272,16 +327,21 @@ export default async function FeedbackAdminPage({
                           type="text"
                           name="triageNote"
                           defaultValue={f.triageNote}
-                          placeholder="What changed or why no action"
+                          placeholder="What changed or why no action (optionally DEFECT:<id>)"
                           className="sb-input h-10 text-sm"
                         />
                       </label>
 
                       <div className="md:col-span-4 flex flex-wrap items-center justify-between gap-3">
                         <div className="text-xs text-[color:var(--sb-muted)]">
-                          Status: {f.triageStatus.toLowerCase()} · Category: {f.category?.toLowerCase() ?? "none"}
-                          {f.triagedAt ? ` · Triaged at ${f.triagedAt.toISOString()}` : ""}
-                          {f.triagedBy?.email ? ` · by ${f.triagedBy.email}` : ""}
+                          Status: {f.triageStatus.toLowerCase()} · Category:{" "}
+                          {f.category?.toLowerCase() ?? "none"}
+                          {f.triagedAt
+                            ? ` · Triaged at ${f.triagedAt.toISOString()}`
+                            : ""}
+                          {f.triagedBy?.email
+                            ? ` · by ${f.triagedBy.email}`
+                            : ""}
                         </div>
                         <button
                           type="submit"

@@ -5,6 +5,42 @@ import { z } from "zod";
 
 import { isCodexInstalled } from "../lib/codex/exec";
 import { isValidIanaTimeZone, startOfDayKeyUtcForTimeZone } from "../lib/dates";
+import {
+  isCompactionEnabled,
+  isDiscoveredSkillExecutionEnabled,
+  isGoalHelpfulnessEvalEnabled,
+  isHybridRankerEnabled,
+  isInsightEngineV2Enabled,
+  isOpenAIHostedShellEnabled,
+  isOpsManualSkillControlEnabled,
+  isPersonaSubmodesEnabled,
+  isPersonaRouterEnabled,
+  isSkillDiscoveryShadowEnabled,
+  isSkillRouterEnabled,
+} from "../lib/flags";
+import {
+  classifyPersonaSubmode,
+  classifyPersonaTrack,
+  type PersonaSubmode,
+  type PersonaTrack,
+} from "../lib/insights/persona";
+import {
+  applySkillPolicy,
+  allowPartnerSkills,
+  shouldUseDiscoveredSkill,
+  type EvaluatedDiscoveredSkill,
+} from "../lib/insights/policy";
+import {
+  discoverExternalSkillCandidates,
+  evaluateDiscoveredSkillCandidate,
+} from "../lib/insights/skillDiscovery";
+import { loadInsightManualControls } from "../lib/insights/manualControls";
+import {
+  normalizeInsightMeta,
+  rankInsightCards,
+  type InsightMeta,
+} from "../lib/insights/ranker";
+import { skillsForPersona } from "../lib/insights/skillRegistry";
 import { bootstrapWorkspaceConfigIfNeeded } from "../lib/workspaceBootstrap";
 
 import {
@@ -14,6 +50,10 @@ import {
   syncUserConnectorsAndMaybeCodex,
   toJsonCitations,
 } from "./nightlyWorkspaceRunHelpers";
+import {
+  classifyActivationFailure,
+  summarizeActivationFailureReason,
+} from "./activationFailure";
 
 const NightlyWorkspaceRunPayloadSchema = z.object({
   workspaceId: z.string().min(1),
@@ -34,9 +74,168 @@ function parseIntEnv(name: string, fallback: number): number {
   return Math.floor(n);
 }
 
+function parsePromptCacheRetentionEnv(
+  value: string | undefined,
+): "in_memory" | "24h" | undefined {
+  const normalized = (value ?? "").trim().toLowerCase();
+  if (!normalized) return undefined;
+  if (normalized === "in_memory" || normalized === "24h") return normalized;
+  return undefined;
+}
+
 function pulseMin5Enabled(): boolean {
   if (process.env.STARB_PULSE_MIN5_V1 === undefined) return true;
   return isTruthyEnv(process.env.STARB_PULSE_MIN5_V1);
+}
+
+function sourceWithInsightMeta(
+  sources: Prisma.InputJsonValue | undefined,
+  insightMeta: InsightMeta,
+): Prisma.InputJsonValue {
+  const base =
+    sources && typeof sources === "object" && !Array.isArray(sources)
+      ? ({ ...(sources as Record<string, unknown>) } as Record<string, unknown>)
+      : {};
+  return {
+    ...base,
+    insightMeta: {
+      personaTrack: insightMeta.personaTrack,
+      ...(insightMeta.personaSubmode
+        ? { personaSubmode: insightMeta.personaSubmode }
+        : {}),
+      ...(insightMeta.skillRef ? { skillRef: insightMeta.skillRef } : {}),
+      ...(insightMeta.skillOrigin
+        ? { skillOrigin: insightMeta.skillOrigin }
+        : {}),
+      ...(typeof insightMeta.expectedHelpfulLift === "number"
+        ? { expectedHelpfulLift: insightMeta.expectedHelpfulLift }
+        : {}),
+      ...(typeof insightMeta.expectedActionLift === "number"
+        ? { expectedActionLift: insightMeta.expectedActionLift }
+        : {}),
+      relevanceScore: insightMeta.relevanceScore,
+      actionabilityScore: insightMeta.actionabilityScore,
+      confidenceScore: insightMeta.confidenceScore,
+      noveltyScore: insightMeta.noveltyScore,
+    },
+  };
+}
+
+type OutcomePrior = { helpfulRatePct: number; actionCompletionRatePct: number };
+
+function toRate(numerator: number, denominator: number): number {
+  if (denominator <= 0) return 0;
+  return Math.round((numerator / denominator) * 1000) / 10;
+}
+
+async function buildHybridOutcomePriors(args: {
+  workspaceId: string;
+  userId: string;
+  lookbackDays: number;
+}): Promise<{
+  bySkillRef: Record<string, OutcomePrior>;
+  bySubmode: Record<string, OutcomePrior>;
+}> {
+  const lookback = Math.max(1, Math.min(60, Math.floor(args.lookbackDays)));
+  const windowStart = new Date(Date.now() - lookback * 24 * 60 * 60 * 1000);
+
+  const deliveries = await prisma.insightDelivery.findMany({
+    where: {
+      workspaceId: args.workspaceId,
+      userId: args.userId,
+      createdAt: { gte: windowStart },
+    },
+    select: { cardId: true, skillRef: true, personaSubmode: true },
+    orderBy: { createdAt: "desc" },
+    take: 1000,
+  });
+
+  if (deliveries.length === 0) {
+    return { bySkillRef: {}, bySubmode: {} };
+  }
+
+  const interactions = await prisma.insightInteraction.findMany({
+    where: {
+      workspaceId: args.workspaceId,
+      userId: args.userId,
+      createdAt: { gte: windowStart },
+      cardId: { in: deliveries.map((d) => d.cardId) },
+    },
+    select: { cardId: true, interactionType: true },
+  });
+
+  const countsByCardId = new Map<
+    string,
+    { viewed: number; helpful: number; markedDone: number }
+  >();
+  for (const row of interactions) {
+    const counts = countsByCardId.get(row.cardId) ?? {
+      viewed: 0,
+      helpful: 0,
+      markedDone: 0,
+    };
+    if (row.interactionType === "VIEWED") counts.viewed += 1;
+    if (row.interactionType === "HELPFUL") counts.helpful += 1;
+    if (row.interactionType === "MARKED_DONE") counts.markedDone += 1;
+    countsByCardId.set(row.cardId, counts);
+  }
+
+  const aggBySkill = new Map<
+    string,
+    { viewed: number; helpful: number; markedDone: number }
+  >();
+  const aggBySubmode = new Map<
+    string,
+    { viewed: number; helpful: number; markedDone: number }
+  >();
+
+  for (const delivery of deliveries) {
+    const counts = countsByCardId.get(delivery.cardId) ?? {
+      viewed: 0,
+      helpful: 0,
+      markedDone: 0,
+    };
+    if (delivery.skillRef) {
+      const prev = aggBySkill.get(delivery.skillRef) ?? {
+        viewed: 0,
+        helpful: 0,
+        markedDone: 0,
+      };
+      prev.viewed += counts.viewed;
+      prev.helpful += counts.helpful;
+      prev.markedDone += counts.markedDone;
+      aggBySkill.set(delivery.skillRef, prev);
+    }
+
+    const submodeKey = delivery.personaSubmode;
+    const prevSubmode = aggBySubmode.get(submodeKey) ?? {
+      viewed: 0,
+      helpful: 0,
+      markedDone: 0,
+    };
+    prevSubmode.viewed += counts.viewed;
+    prevSubmode.helpful += counts.helpful;
+    prevSubmode.markedDone += counts.markedDone;
+    aggBySubmode.set(submodeKey, prevSubmode);
+  }
+
+  const bySkillRef: Record<string, OutcomePrior> = {};
+  for (const [skillRef, counts] of aggBySkill.entries()) {
+    bySkillRef[skillRef] = {
+      helpfulRatePct: toRate(counts.helpful, counts.viewed),
+      actionCompletionRatePct: toRate(counts.markedDone, counts.viewed),
+    };
+  }
+
+  const bySubmode: Record<string, OutcomePrior> = {};
+  for (const [submode, counts] of aggBySubmode.entries()) {
+    bySubmode[submode] = {
+      helpfulRatePct: toRate(counts.helpful, counts.viewed),
+      actionCompletionRatePct: toRate(counts.markedDone, counts.viewed),
+    };
+  }
+
+  return { bySkillRef, bySubmode };
 }
 
 export async function nightly_workspace_run(payload: unknown) {
@@ -88,7 +287,7 @@ export async function nightly_workspace_run(payload: unknown) {
     ] = await Promise.all([
       prisma.workspace.findUnique({
         where: { id: workspaceId },
-        select: { id: true, name: true, slug: true },
+        select: { id: true, name: true, slug: true, programType: true },
       }),
       prisma.workspaceProfile.findUnique({
         where: { workspaceId },
@@ -212,7 +411,17 @@ export async function nightly_workspace_run(payload: unknown) {
     ] = await Promise.all([
       prisma.workspaceMemberProfile.findMany({
         where: { workspaceId, userId: { in: memberUserIds } },
-        select: { userId: true, jobTitle: true, about: true },
+        select: {
+          userId: true,
+          fullName: true,
+          location: true,
+          company: true,
+          companyUrl: true,
+          linkedinUrl: true,
+          websiteUrl: true,
+          jobTitle: true,
+          about: true,
+        },
       }),
       prisma.personalGoal.findMany({
         where: { workspaceId, userId: { in: memberUserIds } },
@@ -364,10 +573,25 @@ export async function nightly_workspace_run(payload: unknown) {
 
     const personalProfileByUser = new Map<
       string,
-      { jobTitle: string | null; about: string | null }
+      {
+        fullName: string | null;
+        location: string | null;
+        company: string | null;
+        companyUrl: string | null;
+        linkedinUrl: string | null;
+        websiteUrl: string | null;
+        jobTitle: string | null;
+        about: string | null;
+      }
     >();
     for (const p of personalProfiles) {
       personalProfileByUser.set(p.userId, {
+        fullName: p.fullName,
+        location: p.location,
+        company: p.company,
+        companyUrl: p.companyUrl,
+        linkedinUrl: p.linkedinUrl,
+        websiteUrl: p.websiteUrl,
         jobTitle: p.jobTitle,
         about: p.about,
       });
@@ -416,7 +640,6 @@ export async function nightly_workspace_run(payload: unknown) {
     >();
     for (const task of userTasks) {
       const list = tasksByUser.get(task.userId) ?? [];
-      if (list.length >= 30) continue;
       list.push({
         id: task.id,
         title: task.title,
@@ -435,6 +658,24 @@ export async function nightly_workspace_run(payload: unknown) {
           : null,
       });
       tasksByUser.set(task.userId, list);
+    }
+    for (const [userId, list] of tasksByUser.entries()) {
+      const sorted = list.slice().sort((a, b) => {
+        const statusRank = (status: "OPEN" | "SNOOZED" | "DONE"): number => {
+          if (status === "OPEN") return 0;
+          if (status === "SNOOZED") return 1;
+          return 2;
+        };
+        const rankDiff = statusRank(a.status) - statusRank(b.status);
+        if (rankDiff !== 0) return rankDiff;
+
+        if (a.status === "OPEN" && b.status === "OPEN") {
+          // Oldest-open tasks first so overnight blockers stay visible to the model.
+          return a.updatedAt.getTime() - b.updatedAt.getTime();
+        }
+        return b.updatedAt.getTime() - a.updatedAt.getTime();
+      });
+      tasksByUser.set(userId, sorted.slice(0, 30));
     }
 
     const sourceItemsByUser = new Map<
@@ -587,6 +828,22 @@ export async function nightly_workspace_run(payload: unknown) {
     if (legacyWillRun && !openaiApiKey) {
       onPartialError("OPENAI_API_KEY missing; legacy web research skipped.");
     }
+    const promptCacheRetentionRaw =
+      process.env.STARB_PROMPT_CACHE_RETENTION ?? "";
+    const promptCacheRetention = parsePromptCacheRetentionEnv(
+      promptCacheRetentionRaw,
+    );
+    if (promptCacheRetentionRaw.trim() && !promptCacheRetention) {
+      onPartialError(
+        "Invalid STARB_PROMPT_CACHE_RETENTION; expected in_memory or 24h.",
+      );
+    }
+    const legacyWebResearchUsage = {
+      requestsWithUsage: 0,
+      inputTokens: 0,
+      cachedInputTokens: 0,
+      outputTokens: 0,
+    };
 
     const legacyResearchDepartments = departments.filter((d) =>
       d.memberships.some((m) => activeRunUserIdSet.has(m.userId)),
@@ -599,11 +856,28 @@ export async function nightly_workspace_run(payload: unknown) {
       profile,
       goals: workspaceGoals,
       departments: legacyResearchDepartments,
+      promptCacheRetention,
+      onUsage: (usage) => {
+        legacyWebResearchUsage.requestsWithUsage += 1;
+        legacyWebResearchUsage.inputTokens += usage.inputTokens;
+        legacyWebResearchUsage.cachedInputTokens += usage.cachedInputTokens;
+        legacyWebResearchUsage.outputTokens += usage.outputTokens;
+      },
       onPartialError,
     });
+    const legacyWebResearchCacheHitPct =
+      legacyWebResearchUsage.inputTokens > 0
+        ? Math.round(
+            (legacyWebResearchUsage.cachedInputTokens /
+              legacyWebResearchUsage.inputTokens) *
+              1000,
+          ) / 10
+        : 0;
 
     const codexEstimates = {
       runs: 0,
+      attemptCount: 0,
+      retryRuns: 0,
       promptBytes: 0,
       contextBytes: 0,
       approxInputTokens: 0,
@@ -623,6 +897,68 @@ export async function nightly_workspace_run(payload: unknown) {
       INTERNAL: 0,
     };
     let min5FallbackUsers = 0;
+    const insightEngineV2 = isInsightEngineV2Enabled();
+    const personaRouterV1 = isPersonaRouterEnabled();
+    const skillRouterV1 = isSkillRouterEnabled();
+    const skillDiscoveryShadowV1 = isSkillDiscoveryShadowEnabled();
+    const openAIHostedShellV1 = isOpenAIHostedShellEnabled();
+    const compactionV1 = isCompactionEnabled();
+    const personaSubmodesV1 = isPersonaSubmodesEnabled();
+    const discoveredSkillExecV1 = isDiscoveredSkillExecutionEnabled();
+    const goalHelpfulnessEvalV1 = isGoalHelpfulnessEvalEnabled();
+    const hybridRankerV1 = isHybridRankerEnabled();
+    const opsManualSkillControlV1 = isOpsManualSkillControlEnabled();
+    const manualSkillControls = opsManualSkillControlV1
+      ? await loadInsightManualControls()
+      : {
+          discoveredSkillExecutionEnabled: true,
+          disabledSkillRefs: [],
+        };
+    const discoveredSkillExecutionAllowed =
+      discoveredSkillExecV1 &&
+      manualSkillControls.discoveredSkillExecutionEnabled;
+    const disabledSkillRefs = new Set(
+      [
+        ...(process.env.STARB_DISABLED_SKILL_REFS ?? "")
+          .split(",")
+          .map((value) => value.trim())
+          .filter(Boolean),
+        ...manualSkillControls.disabledSkillRefs,
+      ].filter(Boolean),
+    );
+    const partnerSkillsEnabled = allowPartnerSkills({
+      programType: workspace.programType,
+      partnerSkillsFlagEnabled: skillRouterV1,
+    });
+    const skillDiscoveryShadowMeta: {
+      enabled: boolean;
+      attempted: boolean;
+      personaTrack?: PersonaTrack;
+      personaSubmode?: PersonaSubmode;
+      candidates: Array<{
+        skillRef: string;
+        source: "curated" | "partner" | "external";
+        fitReason: string;
+        risk: "low" | "medium" | "high";
+        decision?: "USE" | "SKIP";
+        confidence?: number;
+        expectedHelpfulLift?: number;
+        expectedActionLift?: number;
+        expectedLift: {
+          helpfulRatePct: number;
+          actionCompletionRatePct: number;
+        };
+      }>;
+      error?: string;
+    } | null = skillDiscoveryShadowV1
+      ? {
+          enabled: true,
+          attempted: false,
+          candidates: [],
+        }
+      : null;
+    let discoveryAttempted = false;
+    let cachedDiscoveredSkillEvaluations: EvaluatedDiscoveredSkill[] = [];
 
     for (const userId of memberUserIds) {
       const tzRaw =
@@ -661,6 +997,236 @@ export async function nightly_workspace_run(payload: unknown) {
       const userPersonalGoals = personalGoalsByUser.get(userId) ?? [];
       const userTasks = tasksByUser.get(userId) ?? [];
       const userSourceItems = sourceItemsByUser.get(userId) ?? [];
+      const integrationCountForUser =
+        (googleConnectionsByUser.get(userId)?.length ?? 0) +
+        (githubConnectionsByUser.get(userId)?.length ?? 0) +
+        (linearConnectionsByUser.get(userId)?.length ?? 0) +
+        (notionConnectionsByUser.get(userId)?.length ?? 0);
+      const openTaskCount = userTasks.filter(
+        (task) => task.status === "OPEN",
+      ).length;
+      const hasGoalsForUser =
+        userPersonalGoals.some((goal) => goal.active) ||
+        userWorkspaceGoals.length > 0;
+      const personaTrack: PersonaTrack = personaRouterV1
+        ? classifyPersonaTrack({
+            memberCount: memberships.length,
+            activeMemberCount: activeRunUserIds.length,
+            integrationCount: integrationCountForUser,
+            openTaskCount,
+            hasPersonalProfile: Boolean(
+              userPersonalProfile &&
+              ((userPersonalProfile.jobTitle ?? "").trim() ||
+                (userPersonalProfile.about ?? "").trim()),
+            ),
+            hasGoals: hasGoalsForUser,
+          })
+        : "UNKNOWN";
+      const personaSubmode: PersonaSubmode = personaSubmodesV1
+        ? classifyPersonaSubmode({
+            personaTrack,
+            activeMemberCount: activeRunUserIds.length,
+            integrationCount: integrationCountForUser,
+            openTaskCount,
+            hasGoals: hasGoalsForUser,
+          })
+        : "UNKNOWN";
+      const curatedSkills = skillRouterV1
+        ? applySkillPolicy({
+            skills: skillsForPersona(personaTrack),
+            includePartnerSkills: partnerSkillsEnabled,
+            maxSkills: 3,
+          })
+        : [];
+      const curatedSkillRefs = curatedSkills.map((skill) => skill.ref);
+      const curatedSkillSourceByRef = new Map(
+        curatedSkills.map((skill) => [skill.ref, skill.source]),
+      );
+      let discoveredSkillEvaluations = cachedDiscoveredSkillEvaluations.slice();
+      if (
+        !discoveryAttempted &&
+        isActiveForRun &&
+        (skillDiscoveryShadowV1 || discoveredSkillExecV1)
+      ) {
+        discoveryAttempted = true;
+        if (skillDiscoveryShadowMeta) {
+          skillDiscoveryShadowMeta.attempted = true;
+          skillDiscoveryShadowMeta.personaTrack = personaTrack;
+          skillDiscoveryShadowMeta.personaSubmode = personaSubmode;
+        }
+        if (openaiApiKey) {
+          try {
+            const discovery = await discoverExternalSkillCandidates({
+              openaiApiKey,
+              model: process.env.STARB_SKILL_DISCOVERY_MODEL ?? "gpt-5.2",
+              workspaceName: workspace.name,
+              personaTrack,
+              allowedSkillRefs: curatedSkillRefs,
+              profile,
+              goals: userWorkspaceGoals.map((goal) => ({
+                title: goal.title,
+                body: goal.body,
+                priority: goal.priority,
+              })),
+              tasks: userTasks.map((task) => ({
+                title: task.title,
+                status: task.status,
+                sourceType: task.sourceItem?.type ?? null,
+                updatedAt: task.updatedAt,
+              })),
+            });
+            discoveredSkillEvaluations = [];
+            for (const candidate of discovery.candidates) {
+              let evaluated: EvaluatedDiscoveredSkill = {
+                skillRef: candidate.skillRef,
+                source: candidate.source,
+                fitReason: candidate.fitReason,
+                risk: candidate.risk,
+                expectedHelpfulLift:
+                  candidate.expectedLift.helpfulRatePct / 100,
+                expectedActionLift:
+                  candidate.expectedLift.actionCompletionRatePct / 100,
+                confidence: candidate.risk === "low" ? 0.7 : 0.55,
+                decision:
+                  candidate.expectedLift.helpfulRatePct >= 10 &&
+                  candidate.risk !== "high"
+                    ? "USE"
+                    : "SKIP",
+              };
+
+              if (goalHelpfulnessEvalV1) {
+                try {
+                  const evalResult = await evaluateDiscoveredSkillCandidate({
+                    openaiApiKey,
+                    model:
+                      process.env.STARB_GOAL_HELPFULNESS_EVAL_MODEL ??
+                      "gpt-5.2",
+                    workspaceName: workspace.name,
+                    personaTrack,
+                    personaSubmode,
+                    goals: userWorkspaceGoals.map((goal) => ({
+                      title: goal.title,
+                      body: goal.body,
+                      priority: goal.priority,
+                    })),
+                    tasks: userTasks.map((task) => ({
+                      title: task.title,
+                      status: task.status,
+                      sourceType: task.sourceItem?.type ?? null,
+                      updatedAt: task.updatedAt,
+                    })),
+                    candidate,
+                  });
+                  evaluated = {
+                    ...evaluated,
+                    fitReason: evalResult.fitReason,
+                    risk: evalResult.risk,
+                    expectedHelpfulLift: evalResult.expectedHelpfulLift,
+                    expectedActionLift: evalResult.expectedActionLift,
+                    confidence: evalResult.confidence,
+                    decision: evalResult.decision,
+                  };
+                } catch (err) {
+                  const msg = err instanceof Error ? err.message : String(err);
+                  onPartialError(
+                    `Goal helpfulness evaluator failed for ${candidate.skillRef}: ${msg}`,
+                  );
+                }
+              }
+
+              discoveredSkillEvaluations.push(evaluated);
+            }
+
+            cachedDiscoveredSkillEvaluations =
+              discoveredSkillEvaluations.slice();
+            if (skillDiscoveryShadowMeta) {
+              skillDiscoveryShadowMeta.candidates =
+                discoveredSkillEvaluations.map((candidate) => ({
+                  skillRef: candidate.skillRef,
+                  source: candidate.source,
+                  fitReason: candidate.fitReason,
+                  risk: candidate.risk,
+                  decision: candidate.decision,
+                  confidence: candidate.confidence,
+                  expectedHelpfulLift: candidate.expectedHelpfulLift,
+                  expectedActionLift: candidate.expectedActionLift,
+                  expectedLift: {
+                    helpfulRatePct:
+                      Math.round(candidate.expectedHelpfulLift * 1000) / 10,
+                    actionCompletionRatePct:
+                      Math.round(candidate.expectedActionLift * 1000) / 10,
+                  },
+                }));
+            }
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            if (skillDiscoveryShadowMeta) {
+              skillDiscoveryShadowMeta.error = msg.slice(0, 400);
+            }
+            onPartialError(`Skill discovery shadow failed: ${msg}`);
+          }
+        } else {
+          if (skillDiscoveryShadowMeta) {
+            skillDiscoveryShadowMeta.error = "OPENAI_API_KEY missing";
+          }
+        }
+      }
+      const shouldExecuteDiscoveredSkill = (
+        candidate: EvaluatedDiscoveredSkill,
+      ): boolean =>
+        discoveredSkillExecutionAllowed &&
+        shouldUseDiscoveredSkill(candidate) &&
+        !disabledSkillRefs.has(candidate.skillRef);
+      const discoveredSkillRefs = discoveredSkillExecutionAllowed
+        ? discoveredSkillEvaluations
+            .filter((candidate) => shouldExecuteDiscoveredSkill(candidate))
+            .map((candidate) => candidate.skillRef)
+        : [];
+      const allowedSkillRefs = Array.from(
+        new Set([...curatedSkillRefs, ...discoveredSkillRefs]),
+      )
+        .filter((skillRef) => !disabledSkillRefs.has(skillRef))
+        .slice(0, 5);
+      const discoveredSkillByRef = new Map(
+        discoveredSkillEvaluations.map((candidate) => [
+          candidate.skillRef,
+          candidate,
+        ]),
+      );
+      const skillOriginForRef = (
+        skillRef: string | undefined,
+      ): "CURATED" | "PARTNER" | "DISCOVERED" | undefined => {
+        if (!skillRef) return undefined;
+        if (discoveredSkillByRef.has(skillRef)) return "DISCOVERED";
+        const source = curatedSkillSourceByRef.get(skillRef);
+        if (source === "PARTNER") return "PARTNER";
+        if (source === "CURATED") return "CURATED";
+        return undefined;
+      };
+
+      if (discoveredSkillEvaluations.length) {
+        await prisma.skillCandidate.createMany({
+          data: discoveredSkillEvaluations.map((candidate) => ({
+            workspaceId,
+            userId,
+            runId: jobRun.id,
+            personaTrack,
+            personaSubmode,
+            skillRef: candidate.skillRef,
+            source: candidate.source,
+            fitReason: candidate.fitReason,
+            risk: candidate.risk,
+            decision: candidate.decision,
+            expectedHelpfulLift: candidate.expectedHelpfulLift,
+            expectedActionLift: candidate.expectedActionLift,
+            confidence: candidate.confidence,
+            evaluatorMetadata: {
+              gateVersion: "goal_helpfulness_evaluator_v1",
+              usedForExecution: shouldExecuteDiscoveredSkill(candidate),
+            },
+          })),
+        });
+      }
       const hadReadyEditionBefore = await prisma.pulseEdition.findFirst({
         where: { workspaceId, userId, status: "READY" },
         select: { id: true },
@@ -684,12 +1250,22 @@ export async function nightly_workspace_run(payload: unknown) {
         codexModel,
         codexReasoningEffort,
         codexWebSearchEnabled: codexWebSearchEnabled && isActiveForRun,
+        openaiHostedShellEnabled: openAIHostedShellV1 && isActiveForRun,
+        openaiApiKey,
+        compactionEnabled: compactionV1,
+        personaTrack,
+        personaSubmode,
+        allowedSkillRefs,
         editionDate,
         onPartialError,
       });
 
       if (codexPulse?.estimate) {
         codexEstimates.runs += 1;
+        codexEstimates.attemptCount += codexPulse.estimate.attemptCount;
+        if (codexPulse.estimate.attemptCount > 1) {
+          codexEstimates.retryRuns += 1;
+        }
         codexEstimates.promptBytes += codexPulse.estimate.promptBytes;
         codexEstimates.contextBytes += codexPulse.estimate.contextBytes;
         codexEstimates.approxInputTokens +=
@@ -727,6 +1303,11 @@ export async function nightly_workspace_run(payload: unknown) {
       await prisma.pulseCard.deleteMany({ where: { editionId: edition.id } });
 
       type CardKind = "ANNOUNCEMENT" | "GOAL" | "WEB_RESEARCH" | "INTERNAL";
+      type CardOrigin =
+        | "system"
+        | "legacy_web_research"
+        | "codex"
+        | "hosted_shell";
       const cards: Array<{
         editionId: string;
         kind: CardKind;
@@ -737,6 +1318,8 @@ export async function nightly_workspace_run(payload: unknown) {
         action: string;
         sources?: Prisma.InputJsonValue;
         priority: number;
+        insightMeta: InsightMeta;
+        origin: CardOrigin;
       }> = [];
 
       for (const a of announcements) {
@@ -751,6 +1334,15 @@ export async function nightly_workspace_run(payload: unknown) {
           why: "Pinned announcement from management.",
           action: "Read and align on this.",
           priority: 1000,
+          insightMeta: normalizeInsightMeta({
+            personaTrack,
+            personaSubmode,
+            relevanceScore: 0.78,
+            actionabilityScore: 0.55,
+            confidenceScore: 0.95,
+            noveltyScore: 0.3,
+          }),
+          origin: "system",
         });
       }
 
@@ -764,6 +1356,15 @@ export async function nightly_workspace_run(payload: unknown) {
           why: "Active goal for this workspace.",
           action: "Use this to prioritize today.",
           priority: priorityForGoal(g.priority),
+          insightMeta: normalizeInsightMeta({
+            personaTrack,
+            personaSubmode,
+            relevanceScore: 0.84,
+            actionabilityScore: 0.7,
+            confidenceScore: 0.92,
+            noveltyScore: 0.28,
+          }),
+          origin: "system",
         });
       }
 
@@ -780,16 +1381,61 @@ export async function nightly_workspace_run(payload: unknown) {
             action: wc.action,
             sources: wc.sources,
             priority: wc.priority,
+            insightMeta: normalizeInsightMeta({
+              personaTrack,
+              personaSubmode,
+              skillRef: allowedSkillRefs[0],
+              skillOrigin: skillOriginForRef(allowedSkillRefs[0]),
+              expectedHelpfulLift: discoveredSkillByRef.get(
+                allowedSkillRefs[0] ?? "",
+              )?.expectedHelpfulLift,
+              expectedActionLift: discoveredSkillByRef.get(
+                allowedSkillRefs[0] ?? "",
+              )?.expectedActionLift,
+              relevanceScore: 0.74,
+              actionabilityScore: 0.62,
+              confidenceScore: 0.68,
+              noveltyScore: 0.72,
+            }),
+            origin: "legacy_web_research",
           });
         }
       }
 
       if (codexPulse?.output.cards.length) {
         const memberDeptIds = new Set(userDepartments.map((d) => d.id));
+        const codexOrigin: CardOrigin =
+          codexPulse.estimate.provider === "openai_hosted_shell"
+            ? "hosted_shell"
+            : "codex";
 
         let webIdx = 0;
         let internalIdx = 0;
         for (const c of codexPulse.output.cards) {
+          const chosenSkillRef =
+            c.insightMeta?.skillRef &&
+            allowedSkillRefs.includes(c.insightMeta.skillRef)
+              ? c.insightMeta.skillRef
+              : allowedSkillRefs[0];
+          const discoveredEval = chosenSkillRef
+            ? discoveredSkillByRef.get(chosenSkillRef)
+            : undefined;
+          const codexMeta = normalizeInsightMeta({
+            personaTrack,
+            personaSubmode,
+            skillRef: chosenSkillRef,
+            skillOrigin: skillOriginForRef(chosenSkillRef),
+            expectedHelpfulLift:
+              discoveredEval?.expectedHelpfulLift ??
+              c.insightMeta?.expectedHelpfulLift,
+            expectedActionLift:
+              discoveredEval?.expectedActionLift ??
+              c.insightMeta?.expectedActionLift,
+            relevanceScore: c.insightMeta?.relevanceScore,
+            actionabilityScore: c.insightMeta?.actionabilityScore,
+            confidenceScore: c.insightMeta?.confidenceScore,
+            noveltyScore: c.insightMeta?.noveltyScore,
+          });
           const mapped =
             c.department && codexPulse.departmentNameToId.has(c.department)
               ? (codexPulse.departmentNameToId.get(c.department) ?? null)
@@ -806,8 +1452,10 @@ export async function nightly_workspace_run(payload: unknown) {
               body: c.body,
               why: c.why,
               action: c.action,
-              sources: toJsonCitations(c.citations),
+              sources: toJsonCitations(c.citations, codexMeta),
               priority: 700 - webIdx,
+              insightMeta: codexMeta,
+              origin: codexOrigin,
             });
             webIdx += 1;
           } else {
@@ -819,10 +1467,13 @@ export async function nightly_workspace_run(payload: unknown) {
               body: c.body,
               why: c.why,
               action: c.action,
-              sources: c.citations.length
-                ? toJsonCitations(c.citations)
-                : undefined,
+              sources:
+                c.citations.length || insightEngineV2
+                  ? toJsonCitations(c.citations, codexMeta)
+                  : undefined,
               priority: 650 - internalIdx,
+              insightMeta: codexMeta,
+              origin: codexOrigin,
             });
             internalIdx += 1;
           }
@@ -849,23 +1500,179 @@ export async function nightly_workspace_run(payload: unknown) {
             cards.push({
               editionId: edition.id,
               ...fallbackCard,
+              insightMeta: normalizeInsightMeta({
+                personaTrack,
+                personaSubmode,
+                relevanceScore: 0.66,
+                actionabilityScore: 0.67,
+                confidenceScore: 0.72,
+                noveltyScore: 0.4,
+              }),
+              origin: "system",
             });
           }
         }
       }
 
-      cards.sort((a, b) => {
-        if (b.priority !== a.priority) return b.priority - a.priority;
-        return a.title.localeCompare(b.title);
-      });
-      const cappedCards = cards.slice(0, pulseMaxCards);
+      let orderedCards = cards.slice();
+      const hybridPriors = hybridRankerV1
+        ? await buildHybridOutcomePriors({
+            workspaceId,
+            userId,
+            lookbackDays: 14,
+          })
+        : { bySkillRef: {}, bySubmode: {} };
+      if (insightEngineV2 && orderedCards.length) {
+        orderedCards = rankInsightCards({
+          cards: orderedCards.map((card) => ({
+            card,
+            title: card.title,
+            kind: card.kind,
+            insightMeta: card.insightMeta,
+          })),
+          explorationPct: 0.2,
+          seed: `${workspaceId}:${userId}:${editionDate.toISOString().slice(0, 10)}`,
+          hybridLearning: {
+            enabled: hybridRankerV1,
+            priorBySkillRef: hybridPriors.bySkillRef,
+            priorBySubmode: hybridPriors.bySubmode,
+          },
+        }).map((entry) => ({
+          ...entry.card,
+          insightMeta: entry.insightMeta,
+          sources: sourceWithInsightMeta(entry.card.sources, entry.insightMeta),
+        }));
+      } else {
+        orderedCards.sort((a, b) => {
+          if (b.priority !== a.priority) return b.priority - a.priority;
+          return a.title.localeCompare(b.title);
+        });
+      }
+      const cappedCards = orderedCards.slice(0, pulseMaxCards);
 
       for (const card of cappedCards) {
         cardMixTotals[card.kind] += 1;
       }
 
-      if (cappedCards.length) {
-        await prisma.pulseCard.createMany({ data: cappedCards });
+      const createdCards: Array<{
+        id: string;
+        kind: CardKind;
+        priority: number;
+        title: string;
+        insightMeta: InsightMeta;
+        origin: CardOrigin;
+      }> = [];
+      for (const card of cappedCards) {
+        const created = await prisma.pulseCard.create({
+          data: {
+            editionId: card.editionId,
+            kind: card.kind,
+            departmentId: card.departmentId ?? null,
+            title: card.title,
+            body: card.body,
+            why: card.why,
+            action: card.action,
+            sources: sourceWithInsightMeta(card.sources, card.insightMeta),
+            priority: card.priority,
+          },
+          select: { id: true },
+        });
+        createdCards.push({
+          id: created.id,
+          kind: card.kind,
+          priority: card.priority,
+          title: card.title,
+          insightMeta: card.insightMeta,
+          origin: card.origin,
+        });
+      }
+
+      if (insightEngineV2 && createdCards.length) {
+        await prisma.insightDelivery.createMany({
+          data: createdCards.map((card) => ({
+            workspaceId,
+            userId,
+            editionId: edition.id,
+            cardId: card.id,
+            cardKind: card.kind,
+            personaTrack: card.insightMeta.personaTrack,
+            personaSubmode: card.insightMeta.personaSubmode ?? "UNKNOWN",
+            skillRef: card.insightMeta.skillRef ?? null,
+            skillOrigin: card.insightMeta.skillOrigin ?? null,
+            expectedHelpfulLift: card.insightMeta.expectedHelpfulLift ?? null,
+            expectedActionLift: card.insightMeta.expectedActionLift ?? null,
+            relevanceScore: card.insightMeta.relevanceScore,
+            actionabilityScore: card.insightMeta.actionabilityScore,
+            confidenceScore: card.insightMeta.confidenceScore,
+            noveltyScore: card.insightMeta.noveltyScore,
+            modelSource:
+              card.origin === "codex"
+                ? "local_codex"
+                : card.origin === "hosted_shell"
+                  ? "openai_hosted_shell"
+                  : card.origin === "legacy_web_research"
+                    ? "legacy_web_research"
+                    : "system",
+            metadata: {
+              runSource,
+              title: card.title,
+              priority: card.priority,
+            },
+          })),
+        });
+      }
+
+      const skillTraceRows = createdCards
+        .filter((card) => Boolean(card.insightMeta.skillRef))
+        .map((card) => ({
+          workspaceId,
+          userId,
+          runId: jobRun.id,
+          cardId: card.id,
+          personaTrack: card.insightMeta.personaTrack,
+          personaSubmode: card.insightMeta.personaSubmode ?? "UNKNOWN",
+          skillRef: card.insightMeta.skillRef ?? "unknown",
+          skillOrigin: card.insightMeta.skillOrigin ?? "CURATED",
+          decision: "EXECUTED",
+          expectedHelpfulLift: card.insightMeta.expectedHelpfulLift ?? null,
+          expectedActionLift: card.insightMeta.expectedActionLift ?? null,
+          confidence: card.insightMeta.confidenceScore,
+          metadata: {
+            origin: card.origin,
+            title: card.title,
+          },
+        }));
+      if (skillTraceRows.length) {
+        await prisma.skillExecutionTrace.createMany({ data: skillTraceRows });
+      }
+
+      const skippedDiscovered = discoveredSkillEvaluations.filter(
+        (candidate) => !shouldExecuteDiscoveredSkill(candidate),
+      );
+      if (skippedDiscovered.length) {
+        await prisma.skillExecutionTrace.createMany({
+          data: skippedDiscovered.map((candidate) => ({
+            workspaceId,
+            userId,
+            runId: jobRun.id,
+            personaTrack,
+            personaSubmode,
+            skillRef: candidate.skillRef,
+            skillOrigin: "DISCOVERED",
+            decision: "SKIPPED",
+            reason: !discoveredSkillExecutionAllowed
+              ? "manual:discovered_execution_disabled"
+              : disabledSkillRefs.has(candidate.skillRef)
+                ? "manual:skill_disabled"
+                : `gate:${candidate.decision}:${candidate.risk}`,
+            expectedHelpfulLift: candidate.expectedHelpfulLift,
+            expectedActionLift: candidate.expectedActionLift,
+            confidence: candidate.confidence,
+            metadata: {
+              fitReason: candidate.fitReason,
+            },
+          })),
+        });
       }
 
       await prisma.pulseEdition.update({
@@ -906,10 +1713,36 @@ export async function nightly_workspace_run(payload: unknown) {
           ...(typeof jobRun.meta === "object" && jobRun.meta
             ? (jobRun.meta as object)
             : {}),
+          activationFailure:
+            partial && errorSummary
+              ? {
+                  class: classifyActivationFailure(errorSummary),
+                  reason: summarizeActivationFailureReason(errorSummary),
+                }
+              : null,
           codex: {
             model: codexModel,
             reasoningEffort: codexReasoningEffort,
             webSearch: codexWebSearchEnabled,
+            insights: {
+              engineV2: insightEngineV2,
+              personaRouterV1,
+              skillRouterV1,
+              skillDiscoveryShadowV1,
+              openAIHostedShellV1,
+              compactionV1,
+              personaSubmodesV1,
+              discoveredSkillExecV1,
+              goalHelpfulnessEvalV1,
+              hybridRankerV1,
+              opsManualSkillControlV1,
+              discoveredSkillExecutionAllowed,
+              manualDisabledSkillRefs: manualSkillControls.disabledSkillRefs,
+              partnerSkillsEnabled,
+            },
+            ...(skillDiscoveryShadowMeta
+              ? { skillDiscovery: skillDiscoveryShadowMeta }
+              : {}),
             activeWindowDays,
             activeRunUsers: activeRunUserIds.length,
             ...(codexDetect ? { detect: codexDetect } : {}),
@@ -922,6 +1755,15 @@ export async function nightly_workspace_run(payload: unknown) {
               fallbackUsers: min5FallbackUsers,
             },
           },
+          legacyWebResearch: {
+            enabled: Boolean(openaiApiKey) && legacyWillRun,
+            model: openaiModel,
+            departmentsEligible: legacyResearchDepartments.length,
+            departmentsWithCards: deptCardsByDeptId.size,
+            promptCacheRetention: promptCacheRetention ?? "off",
+            usage: legacyWebResearchUsage,
+            cacheHitPct: legacyWebResearchCacheHitPct,
+          },
         },
       },
     });
@@ -929,7 +1771,20 @@ export async function nightly_workspace_run(payload: unknown) {
     const message = err instanceof Error ? err.message : "Job failed";
     await prisma.jobRun.update({
       where: { id: jobRun.id },
-      data: { status: "FAILED", finishedAt: new Date(), errorSummary: message },
+      data: {
+        status: "FAILED",
+        finishedAt: new Date(),
+        errorSummary: message,
+        meta: {
+          ...(typeof jobRun.meta === "object" && jobRun.meta
+            ? (jobRun.meta as object)
+            : {}),
+          activationFailure: {
+            class: classifyActivationFailure(message),
+            reason: summarizeActivationFailureReason(message),
+          },
+        },
+      },
     });
     throw err;
   }
