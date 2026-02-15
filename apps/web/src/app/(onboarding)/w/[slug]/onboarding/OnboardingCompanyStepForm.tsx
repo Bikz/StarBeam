@@ -4,8 +4,8 @@ import type { HTMLAttributes } from "react";
 import { useActionState, useId, useMemo, useState } from "react";
 import { sbButtonClass } from "@starbeam/shared";
 
-import type { OnboardingActionState } from "./actions";
-import { initialOnboardingActionState } from "./actions";
+import type { OnboardingActionState } from "./actionState";
+import { initialOnboardingActionState } from "./actionState";
 
 type ServerAction = (
   workspaceSlug: string,

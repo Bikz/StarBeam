@@ -142,8 +142,12 @@ export default function OpenClawLandingPage() {
             </div>
             <ol className="mt-3 grid gap-2 text-sm text-[color:var(--sb-muted)] leading-relaxed list-decimal pl-5">
               <li>
-                In Starbeam, go to <span className="font-semibold">OpenClaws</span>{" "}
-                and click <span className="font-semibold">Copy OpenClaw setup prompt</span>.
+                In Starbeam, go to{" "}
+                <span className="font-semibold">OpenClaws</span> and click{" "}
+                <span className="font-semibold">
+                  Copy OpenClaw setup prompt
+                </span>
+                .
               </li>
               <li>
                 Paste that prompt into your OpenClaw control chat. If{" "}
@@ -185,10 +189,10 @@ export default function OpenClawLandingPage() {
                 OpenClaw execution (v1)
               </h2>
               <p className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
-                If you want reliable &quot;OpenClaw execution&quot;, Starbeam can
-                queue commands to your OpenClaw and track statuses like queued,
-                running, completed, dismissed, or failed. You can run a single
-                instance as a brief-receiver or as an autopilot executor.
+                If you want reliable &quot;OpenClaw execution&quot;, Starbeam
+                can queue commands to your OpenClaw and track statuses like
+                queued, running, completed, dismissed, or failed. You can run a
+                single instance as a brief-receiver or as an autopilot executor.
               </p>
             </section>
 
@@ -207,7 +211,9 @@ export default function OpenClawLandingPage() {
           </div>
 
           <div className="mt-10 sb-card-inset p-5">
-            <div className="text-xs font-extrabold sb-title">Plugin details</div>
+            <div className="text-xs font-extrabold sb-title">
+              Plugin details
+            </div>
             <div className="mt-2 text-sm text-[color:var(--sb-muted)] leading-relaxed">
               This integration is shipped as an external OpenClaw plugin, so it
               does not require upstream changes in the OpenClaw repo.
@@ -246,4 +252,3 @@ export default function OpenClawLandingPage() {
     </div>
   );
 }
-
