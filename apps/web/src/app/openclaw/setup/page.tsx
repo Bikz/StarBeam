@@ -1,7 +1,14 @@
 import { sbButtonClass } from "@starbeam/shared";
+import type { Metadata } from "next";
 import Link from "next/link";
 
+import { OPENCLAW_STARBEAM_PLUGIN_INSTALL_SNIPPET } from "@/lib/openclawStarbeamPlugin";
 import { webOrigin } from "@/lib/webOrigin";
+
+export const metadata: Metadata = {
+  title: "Starbeam x OpenClaw Setup",
+  robots: { index: false, follow: false },
+};
 
 export default async function OpenClawSetupPage({
   searchParams,
@@ -11,8 +18,6 @@ export default async function OpenClawSetupPage({
   const sp = await searchParams;
   const code = (sp.code ?? "").trim();
 
-  const pluginInstallSnippet =
-    "openclaw plugins install github:Bikz/openclaw-starbeam#v0.1.0";
   const setupLink = code
     ? `${webOrigin()}/openclaw/setup?code=${encodeURIComponent(code)}`
     : "";
@@ -56,7 +61,7 @@ export default async function OpenClawSetupPage({
                 available. If <span className="font-mono">/starbeam</span> is
                 unknown, install the plugin, restart the gateway, and try again:
                 <div className="mt-2 font-mono text-xs sb-card-inset p-3 text-[color:var(--sb-fg)] break-all">
-                  {pluginInstallSnippet}
+                  {OPENCLAW_STARBEAM_PLUGIN_INSTALL_SNIPPET}
                 </div>
               </li>
               <li>
@@ -95,6 +100,15 @@ export default async function OpenClawSetupPage({
               })}
             >
               Go to Starbeam
+            </Link>
+            <Link
+              href="/openclaw"
+              className={sbButtonClass({
+                variant: "ghost",
+                className: "h-11 px-5 text-sm font-semibold",
+              })}
+            >
+              What is this?
             </Link>
           </div>
         </div>

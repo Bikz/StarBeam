@@ -9,9 +9,8 @@ import { z } from "zod";
 
 import { authOptions } from "@/lib/auth";
 import { sha256Hex } from "@/lib/apiTokens";
+import { OPENCLAW_STARBEAM_PLUGIN_SPEC } from "@/lib/openclawStarbeamPlugin";
 import { webOrigin } from "@/lib/webOrigin";
-
-const OPENCLAW_STARBEAM_PLUGIN_SPEC = "github:Bikz/openclaw-starbeam#v0.1.0";
 
 const CreateOpenClawSchema = z.object({
   name: z.string().trim().min(1).max(80),
