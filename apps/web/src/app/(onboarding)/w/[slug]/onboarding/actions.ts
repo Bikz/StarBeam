@@ -25,6 +25,22 @@ function normalizeWebsiteUrl(input: string): string | null {
   return `https://${trimmed}`;
 }
 
+function isNextRedirectError(error: unknown): error is Error {
+  if (!(error instanceof Error)) return false;
+  return (error as { digest?: string }).digest === "NEXT_REDIRECT";
+}
+
+function normalizeError(
+  error: unknown,
+  fallback: string,
+): OnboardingActionState {
+  if (isNextRedirectError(error)) throw error;
+  return {
+    ok: false,
+    message: error instanceof Error ? error.message : fallback,
+  };
+}
+
 async function requireWorkspaceMembership(workspaceSlug: string): Promise<{
   userId: string;
   workspace: { id: string; slug: string };
@@ -89,8 +105,7 @@ export async function saveName(
 
     redirect(`/w/${workspace.slug}/onboarding/location`);
   } catch (err) {
-    const msg = err instanceof Error ? err.message : "Could not save name";
-    return { ok: false, message: msg };
+    return normalizeError(err, "Could not save name");
   }
 }
 
@@ -130,8 +145,7 @@ export async function saveLocation(
 
     redirect(`/w/${workspace.slug}/onboarding/role`);
   } catch (err) {
-    const msg = err instanceof Error ? err.message : "Could not save location";
-    return { ok: false, message: msg };
+    return normalizeError(err, "Could not save location");
   }
 }
 
@@ -171,8 +185,7 @@ export async function saveRole(
 
     redirect(`/w/${workspace.slug}/onboarding/company`);
   } catch (err) {
-    const msg = err instanceof Error ? err.message : "Could not save role";
-    return { ok: false, message: msg };
+    return normalizeError(err, "Could not save role");
   }
 }
 
@@ -225,8 +238,7 @@ export async function saveCompany(
 
     redirect(`/w/${workspace.slug}/onboarding/profile`);
   } catch (err) {
-    const msg = err instanceof Error ? err.message : "Could not save company";
-    return { ok: false, message: msg };
+    return normalizeError(err, "Could not save company");
   }
 }
 
@@ -267,9 +279,7 @@ export async function savePublicProfile(
 
     redirect(`/w/${workspace.slug}/onboarding/goals`);
   } catch (err) {
-    const msg =
-      err instanceof Error ? err.message : "Could not save profile URL";
-    return { ok: false, message: msg };
+    return normalizeError(err, "Could not save profile URL");
   }
 }
 
@@ -307,8 +317,7 @@ export async function saveGoal(
 
     redirect(`/w/${workspace.slug}/onboarding/integrations`);
   } catch (err) {
-    const msg = err instanceof Error ? err.message : "Could not save goal";
-    return { ok: false, message: msg };
+    return normalizeError(err, "Could not save goal");
   }
 }
 
@@ -401,8 +410,6 @@ export async function completeOnboardingAndQueueFirstPulse(
 
     redirect(`/w/${workspace.slug}/pulse?queued=1&from=onboarding`);
   } catch (err) {
-    const msg =
-      err instanceof Error ? err.message : "Could not start your first pulse";
-    return { ok: false, message: msg };
+    return normalizeError(err, "Could not start your first pulse");
   }
 }
