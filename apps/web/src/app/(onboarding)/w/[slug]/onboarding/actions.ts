@@ -2,6 +2,7 @@
 
 import { headers } from "next/headers";
 import { getServerSession } from "next-auth";
+import { isNextRouterError } from "next/dist/client/components/is-next-router-error";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
@@ -25,16 +26,14 @@ function normalizeWebsiteUrl(input: string): string | null {
   return `https://${trimmed}`;
 }
 
-function isNextRedirectError(error: unknown): error is Error {
-  if (!(error instanceof Error)) return false;
-  return (error as { digest?: string }).digest === "NEXT_REDIRECT";
-}
-
 function normalizeError(
   error: unknown,
   fallback: string,
 ): OnboardingActionState {
-  if (isNextRedirectError(error)) throw error;
+  if (isNextRouterError(error)) throw error;
+  if (error === "NEXT_REDIRECT") {
+    throw new Error("NEXT_REDIRECT");
+  }
   return {
     ok: false,
     message: error instanceof Error ? error.message : fallback,
