@@ -16,6 +16,8 @@ In the Render dashboard:
    - `starbeam-web`
    - `starbeam-worker`
 
+Auto-deploy on `main` is the default for routine changes (push to `main` -> deploy).
+
 ## Database
 
 Bring-your-own Postgres (Neon recommended).

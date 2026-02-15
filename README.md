@@ -300,7 +300,7 @@ This will:
 
 - ensure `STARB_TOKEN_ENC_KEY_B64` exists (generates one if missing)
 - update env vars on `starbeam-web` and `starbeam-worker`
-- trigger deploys without clearing build cache
+- optionally trigger deploys (pass `--deploy`) without clearing build cache. Otherwise, changes take effect on the next deploy (auto-deploy on git push is the default).
 
 ### Encryption Key Rotation
 
